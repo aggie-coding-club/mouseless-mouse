@@ -10,5 +10,7 @@ void loop() {
   digitalWrite(12,HIGH);
   delay(900);
   digitalWrite(12,LOW);
-  delay(1000);
+  delay(150);
+
+  // this is casey's branch :D
 }
