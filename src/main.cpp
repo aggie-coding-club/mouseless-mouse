@@ -4,7 +4,9 @@
 #include <Wire.h>
 
 Adafruit_MPU6050 mpu;
-
+float x=0;
+float y=0;
+float z=0;
 
 void setup(void) {
   Serial.begin(9600);//115200
@@ -38,7 +40,7 @@ void setup(void) {
   case MPU6050_RANGE_16_G:
     Serial.println("+-16G");
     break;
-  }
+}
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
   Serial.print("Gyro range set to: ");
   switch (mpu.getGyroRange()) {
@@ -55,7 +57,7 @@ void setup(void) {
     Serial.println("+- 2000 deg/s");
     break;
   }
-
+  
   mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
   Serial.print("Filter bandwidth set to: ");
   switch (mpu.getFilterBandwidth()) {
@@ -85,36 +87,46 @@ void setup(void) {
   Serial.println("");
   delay(100);
   
-}
+  }
 
 void loop() {
   //Serial.println("help");
   //Get new sensor events with the readings
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
-
-  //Print out the values 
-  Serial.print("Acceleration X: ");
-  Serial.print(a.acceleration.x);
-  Serial.print(", Y: ");
-  Serial.print(a.acceleration.y);
-  Serial.print(", Z: ");
-  Serial.print(a.acceleration.z);
-  Serial.println(" m/s^2");
-
+  if(-.3<=g.gyro.x+.1<=.3){
+    x=0;
+  }else{
+    x=g.gyro.x+.1;
+  }
+  if(-.3<=g.gyro.y-.01<=.3){
+    y=0;
+  }else{
+    y=g.gyro.y-.01;
+  }
+  if(-.7<=g.gyro.z+.01<=.7){
+    z+=0;
+  }else{
+    if(g.gyro.z+.01>0){
+      z+=(g.gyro.z+.01)/5;
+    }else{
+      z+=g.gyro.z+.01;
+    }
+  }/*
+  for(int i=0;i<500;i++){
+    x+=g.gyro.x+.1;
+    y+=g.gyro.y-.01;
+    z+=g.gyro.z+.01;
+    delay(10);
+  }*/
   Serial.print("Rotation X: ");
-  Serial.print(g.gyro.x);
+  Serial.print(int(x*100));
   Serial.print(", Y: ");
-  Serial.print(g.gyro.y);
+  Serial.print(int(y*100));
   Serial.print(", Z: ");
-  Serial.print(g.gyro.z);
-  Serial.println(" rad/s");
-
-  Serial.print("Temperature: ");
-  Serial.print(temp.temperature);
-  Serial.println(" degC");
-
+  Serial.print(int(z*100));
+  Serial.println(" rad");
   Serial.println("");
-  delay(500);
+  //delay(500);
   
 }
