@@ -10,6 +10,8 @@
             "includePath": [
                 "c:/Users/jeury/mouseless-mouse/include",
                 "c:/Users/jeury/mouseless-mouse/src",
+                "c:/Users/jeury/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/ESP32 BLE Mouse",
+                "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
                 "c:/Users/jeury/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit MPU6050",
                 "c:/Users/jeury/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit Unified Sensor",
                 "c:/Users/jeury/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit BusIO",
@@ -207,7 +209,6 @@
                 "c:/Users/jeury/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit SSD1306",
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
-                "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/BluetoothSerial/src",
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/DNSServer/src",
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/EEPROM/src",
@@ -242,6 +243,8 @@
                 "path": [
                     "c:/Users/jeury/mouseless-mouse/include",
                     "c:/Users/jeury/mouseless-mouse/src",
+                    "c:/Users/jeury/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/ESP32 BLE Mouse",
+                    "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
                     "c:/Users/jeury/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit MPU6050",
                     "c:/Users/jeury/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit Unified Sensor",
                     "c:/Users/jeury/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit BusIO",
@@ -439,7 +442,6 @@
                     "c:/Users/jeury/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit SSD1306",
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
-                    "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/BluetoothSerial/src",
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/DNSServer/src",
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/EEPROM/src",
