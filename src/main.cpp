@@ -86,14 +86,6 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-<<<<<<< HEAD
-  digitalWrite(12,HIGH);
-  delay(900);
-  digitalWrite(12,LOW);
-  delay(150);
-
-  // this is casey's branch :D
-=======
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
   if (buttonPress) {
@@ -118,5 +110,4 @@ void loop() {
     Serial.printf("Roll: %f (%d)\n", roll.get(), gRoll.stability());
   }
   delay(10);
->>>>>>> 21a8085c67f5efc9a19d66cea41b1b36d57645a4
 }
