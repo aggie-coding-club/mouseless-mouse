@@ -220,6 +220,10 @@
                 "C:/Users/joshm/OneDrive/Mouseless2/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit SSD1306",
                 "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                 "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
+                "C:/Users/joshm/OneDrive/Mouseless2/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/ESP32 BLE Mouse",
+                "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
+                "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
+                "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
                 "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/BluetoothSerial/src",
                 "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/DNSServer/src",
                 "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/EEPROM/src",
@@ -242,6 +246,7 @@
 
                 "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
 
+                "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
                 "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/SPIFFS/src",
                 "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/SimpleBLE/src",
                 "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/Ticker/src",
@@ -254,6 +259,7 @@
 
                 "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
 
+                "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                 ""
             ],
             "browse": {
@@ -471,6 +477,10 @@
                     "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
                     "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
 
+                    "C:/Users/joshm/OneDrive/Mouseless2/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/ESP32 BLE Mouse",
+                    "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
+                    "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
+                    "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
                     "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/BluetoothSerial/src",
                     "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/DNSServer/src",
                     "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/EEPROM/src",
@@ -493,6 +503,7 @@
 
                     "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
 
+                    "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
                     "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/SPIFFS/src",
                     "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/SimpleBLE/src",
                     "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/Ticker/src",
@@ -505,6 +516,7 @@
 
                     "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
 
+                    "C:/Users/joshm/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                     ""
                 ]
             },
