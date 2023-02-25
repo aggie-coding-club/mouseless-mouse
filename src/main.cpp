@@ -9,17 +9,21 @@
 Adafruit_MPU6050 mpu;
 BleMouse mouse("Mouseless Mouse", "Espressif", 100);
 
+
 inline int sign(float inVal) {
+  /*Returns 1 if input is greater than 0, 0 if input is 0, or -1 if input is less than 0*/
   return (inVal > 0) - (inVal < 0);
 }
 
 class RollingAverage {
+
 private:
   float avg[AVG_SIZE];
   bool isInit = false;  // Is the avg buffer full of samples?
   uint8_t head = 0;     // Index of most recent value
   float avgVal;
   uint8_t dStable = 0;  // How stable the direction of the movement is
+
 public:
   RollingAverage () {}
   ~RollingAverage () {}
