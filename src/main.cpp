@@ -1,132 +1,141 @@
 #include <Arduino.h>
 #include <Adafruit_MPU6050.h>
-#include <Adafruit_Sensor.h>
 #include <Wire.h>
+#include <BleMouse.h>
 
-Adafruit_MPU6050 mpu;
-float x=0;
-float y=0;
-float z=0;
+#define BUTTON_PIN 14 //Which pin is the mouse click button connected to?
+#define AVG_SIZE 20 //How many inputs will we keep in rolling average array?
 
-void setup(void) {
-  Serial.begin(9600);//115200
-  
-  while (!Serial)
-    delay(10); // will pause Zero, Leonardo, etc until serial console opens
+Adafruit_MPU6050 mpu; //Initialize MPU - tracks rotation in terms of acceleratioin + gyroscope
+BleMouse mouse("Mouseless Mouse", "Espressif", 100); //Initialize bluetooth mouse to send mouse events
 
-  Serial.println("Adafruit MPU6050 test!");
 
-  // Try to initialize!
-  if (!mpu.begin()) {
-    Serial.println("Failed to find MPU6050 chip");
-    while (1) {
-      delay(10);
+inline int sign(float inVal) {
+  /*Returns 1 if input is greater than 0, 0 if input is 0, or -1 if input is less than 0*/
+  return (inVal > 0) - (inVal < 0);
+}
+
+class RollingAverage {
+/*Used to keep track of past inputed values to try to smooth movement*/
+private:
+  float avg[AVG_SIZE];
+  bool isInit = false;  // Is the avg buffer full of samples?
+  uint8_t head = 0;     // Index of most recent value
+  float avgVal;
+  uint8_t dStable = 0;  // How stable the direction of the movement is
+
+public:
+  RollingAverage () {}
+  ~RollingAverage () {}
+
+  void update(float val) {
+    /*Update Rolling array with input*/
+    if (isInit) {
+      this->avg[++this->head%=AVG_SIZE] = val;
+      float sum = 0;
+      int dir = 0;
+      for (uint8_t i=(this->head+1)%AVG_SIZE; i!=this->head; ++i%=AVG_SIZE) {
+        sum += this->avg[i];
+        dir += sign(this->avg[(i+1)%AVG_SIZE]-this->avg[i]);
+      }
+      this->avgVal = sum / AVG_SIZE;
+      this->dStable = abs(dir);
+    }
+    else {
+      for (uint8_t i=0; i<AVG_SIZE; i++) this->avg[++this->head%=AVG_SIZE] = val;
+      this->avgVal = val;
+      isInit = true;
     }
   }
-  Serial.println("MPU6050 Found!");
 
-  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-  Serial.print("Accelerometer range set to: ");
-  switch (mpu.getAccelerometerRange()) {
-  case MPU6050_RANGE_2_G:
-    Serial.println("+-2G");
-    break;
-  case MPU6050_RANGE_4_G:
-    Serial.println("+-4G");
-    break;
-  case MPU6050_RANGE_8_G:
-    Serial.println("+-8G");
-    break;
-  case MPU6050_RANGE_16_G:
-    Serial.println("+-16G");
-    break;
+  uint8_t stability() {
+    /*Returns how consistant is the recent input with eachother?*/
+    return this->dStable;
+  }
+
+  float get() {
+    /*Returns the average value of recent inputs*/
+    return this->avgVal;
+  }
+};
+
+volatile bool buttonPress = false;//Is the button currently pressed?
+
+//Initialize values to be smoothed later on
+RollingAverage roll;
+RollingAverage pitch;
+RollingAverage gRoll;
+RollingAverage gPitch;
+
+
+//set previous inputs to 0
+float oldRoll = 0;
+float oldPitch = 0;
+
+//sets up a function that can interupt and immediately be ran
+void IRAM_ATTR onButtonPress() {
+  buttonPress = true;
 }
-  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-  Serial.print("Gyro range set to: ");
-  switch (mpu.getGyroRange()) {
-  case MPU6050_RANGE_250_DEG:
-    Serial.println("+- 250 deg/s");
-    break;
-  case MPU6050_RANGE_500_DEG:
-    Serial.println("+- 500 deg/s");
-    break;
-  case MPU6050_RANGE_1000_DEG:
-    Serial.println("+- 1000 deg/s");
-    break;
-  case MPU6050_RANGE_2000_DEG:
-    Serial.println("+- 2000 deg/s");
-    break;
-  }
-  
-  mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
-  Serial.print("Filter bandwidth set to: ");
-  switch (mpu.getFilterBandwidth()) {
-  case MPU6050_BAND_260_HZ:
-    Serial.println("260 Hz");
-    break;
-  case MPU6050_BAND_184_HZ:
-    Serial.println("184 Hz");
-    break;
-  case MPU6050_BAND_94_HZ:
-    Serial.println("94 Hz");
-    break;
-  case MPU6050_BAND_44_HZ:
-    Serial.println("44 Hz");
-    break;
-  case MPU6050_BAND_21_HZ:
-    Serial.println("21 Hz");
-    break;
-  case MPU6050_BAND_10_HZ:
-    Serial.println("10 Hz");
-    break;
-  case MPU6050_BAND_5_HZ:
-    Serial.println("5 Hz");
-    break;
+
+void setup() {
+  // put your setup code here, to run once:
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  attachInterrupt(BUTTON_PIN, onButtonPress, FALLING);//when Button_pin goes from High to low (button is released) onButtonPress is ran
+
+  //starts Serial Monitor
+  Serial.begin(115200);
+
+
+  if (!mpu.begin()) {//if MPU can't connect
+    Serial.println("Could not find MPU");
+    while(1);
   }
 
-  Serial.println("");
-  delay(100);
-  
-  }
+  Serial.println("Found MPU6050");
+  Serial.println("Starting Bluetooth mouse");
+  mouse.begin();//starts Bluetooth mouse
+}
 
 void loop() {
-  //Serial.println("help");
-  //Get new sensor events with the readings
-  sensors_event_t a, g, temp;
+  // put your main code here, to run repeatedly:
+
+
+  sensors_event_t a, g, temp;//sets events (special class)
   mpu.getEvent(&a, &g, &temp);
-  if(-.3<=g.gyro.x+.1<=.3){
-    x=0;
-  }else{
-    x=g.gyro.x+.1;
-  }
-  if(-.3<=g.gyro.y-.01<=.3){
-    y=0;
-  }else{
-    y=g.gyro.y-.01;
-  }
-  if(-.7<=g.gyro.z+.01<=.7){
-    z+=0;
-  }else{
-    if(g.gyro.z+.01>0){
-      z+=(g.gyro.z+.01)/5;
-    }else{
-      z+=g.gyro.z+.01;
+
+
+  //button press stuff
+  if (buttonPress) {
+    if (mouse.isConnected()) {
+      mouse.click();
     }
-  }/*
-  for(int i=0;i<500;i++){
-    x+=g.gyro.x+.1;
-    y+=g.gyro.y-.01;
-    z+=g.gyro.z+.01;
-    delay(10);
-  }*/
-  Serial.print("Rotation X: ");
-  Serial.print(int(x*100));
-  Serial.print(", Y: ");
-  Serial.print(int(y*100));
-  Serial.print(", Z: ");
-  Serial.print(int(z*100));
-  Serial.println(" rad");
-  Serial.println("");
-  //delay(500);
-  
+    else Serial.println("Mouse not connected!");
+    buttonPress = false;
+  }
+
+
+  roll.update(-atan2(a.acceleration.x, a.acceleration.z));//weird math to calculate direction change for roll (currently x-axis) then add it to array of prior inputs
+  pitch.update(-atan2(a.acceleration.y,a.acceleration.z));
+  gRoll.update(g.gyro.y);
+  gPitch.update(g.gyro.x);//adding gyroscope in x axis
+
+  //currently using information from gyroscope for if statements
+  if (gPitch.stability() > 8) {//if the stability is decent
+
+    if (mouse.isConnected()){//If the mouse is connected
+      mouse.move(0, (pitch.get() - oldPitch) * 100);//move mouse by current pitch (of accelerometer) - old pitch (of accelerometer)
+    }
+    oldPitch = pitch.get();//update old pitch
+    Serial.printf("Pitch: %f (%d)\n", pitch.get(), gPitch.stability());//prints accelerometer stability and (gyroscope stability)
+  }
+  if (gRoll.stability() > 8) {//currently using information from gyro
+
+    if (mouse.isConnected()){
+      mouse.move((roll.get() - oldRoll) * 100, 0);
+    }
+    oldRoll = roll.get();
+    Serial.printf("Roll: %f (%d)\n", roll.get(), gRoll.stability());
+  }
+
+  delay(10);
 }
