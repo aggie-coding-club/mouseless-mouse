@@ -98,44 +98,8 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-
-
-  sensors_event_t a, g, temp;//sets events (special class)
-  mpu.getEvent(&a, &g, &temp);
-
-
-  //button press stuff
-  if (buttonPress) {
-    if (mouse.isConnected()) {
-      mouse.click();
-    }
-    else Serial.println("Mouse not connected!");
-    buttonPress = false;
-  }
-
-
-  roll.update(-atan2(a.acceleration.x, a.acceleration.z));//weird math to calculate direction change for roll (currently x-axis) then add it to array of prior inputs
-  pitch.update(-atan2(a.acceleration.y,a.acceleration.z));
-  gRoll.update(g.gyro.y);
-  gPitch.update(g.gyro.x);//adding gyroscope in x axis
-
-  //currently using information from gyroscope for if statements
-  if (gPitch.stability() > 8) {//if the stability is decent
-
-    if (mouse.isConnected()){//If the mouse is connected
-      mouse.move(0, (pitch.get() - oldPitch) * 100);//move mouse by current pitch (of accelerometer) - old pitch (of accelerometer)
-    }
-    oldPitch = pitch.get();//update old pitch
-    Serial.printf("Pitch: %f (%d)\n", pitch.get(), gPitch.stability());//prints accelerometer stability and (gyroscope stability)
-  }
-  if (gRoll.stability() > 8) {//currently using information from gyro
-
-    if (mouse.isConnected()){
-      mouse.move((roll.get() - oldRoll) * 100, 0);
-    }
-    oldRoll = roll.get();
-    Serial.printf("Roll: %f (%d)\n", roll.get(), gRoll.stability());
-  }
-
-  delay(10);
+  digitalWrite(12,HIGH);
+  delay(900);
+  digitalWrite(12,LOW);
+  delay(650);
 }
