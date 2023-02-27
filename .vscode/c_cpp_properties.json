@@ -10,6 +10,8 @@
             "includePath": [
                 "c:/Users/MattM/Documents/GitHub/mouseless-mouse/include",
                 "c:/Users/MattM/Documents/GitHub/mouseless-mouse/src",
+                "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/ESP32 BLE Mouse",
+                "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
                 "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit MPU6050",
                 "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit BusIO",
                 "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
@@ -210,7 +212,6 @@
                 "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit SSD1306",
                 "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                 "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
-                "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
                 "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/BluetoothSerial/src",
                 "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/DNSServer/src",
                 "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/EEPROM/src",
@@ -246,6 +247,8 @@
                 "path": [
                     "c:/Users/MattM/Documents/GitHub/mouseless-mouse/include",
                     "c:/Users/MattM/Documents/GitHub/mouseless-mouse/src",
+                    "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/ESP32 BLE Mouse",
+                    "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
                     "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit MPU6050",
                     "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit BusIO",
                     "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src",
@@ -446,7 +449,6 @@
                     "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/Adafruit SSD1306",
                     "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                     "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
-                    "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
                     "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/BluetoothSerial/src",
                     "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/DNSServer/src",
                     "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/EEPROM/src",

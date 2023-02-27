@@ -85,6 +85,25 @@ void IRAM_ATTR onButtonPress()
   buttonPress = true;
 }
 
+[[noreturn]] void errNoMPU()
+{
+  Serial.println("Could not find MPU");
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  // Endlessly loop on LED flash pattern of short flash, long flash
+  for (;;)
+  {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(500);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(1000);
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(1000);
+  }
+}
+
 void setup()
 {
   // put your setup code here, to run once:
@@ -95,15 +114,16 @@ void setup()
   Serial.begin(115200);
 
   if (!mpu.begin())
-  { // if MPU can't connect
-    Serial.println("Could not find MPU");
-    while (1)
-      ;
+  {
+    errNoMPU();
+  }
+  else
+  {
+    Serial.println("Found MPU6050");
   }
 
-  Serial.println("Found MPU6050");
   Serial.println("Starting Bluetooth mouse");
-  mouse.begin(); // starts Bluetooth mouse
+  mouse.begin();
 }
 
 void loop()
