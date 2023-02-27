@@ -22,7 +22,7 @@ class RollingAverage
   /*Used to keep track of past inputed values to try to smooth movement*/
 private:
   std::array<float, buffer_length> m_buffer{0.0f}; // Used to implement a ring buffer
-  std::size_t m_to_drop = 0;                       // Index of most recent value
+  std::size_t m_to_drop = buffer_length - 1;       // Index of most recent value
   std::size_t m_num_values = 0;
   std::size_t m_direction_stability = 0; // How stable the direction of the movement is
   float m_average = 0.0f;
