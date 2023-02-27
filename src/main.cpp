@@ -11,7 +11,7 @@
 Adafruit_MPU6050 mpu;                                // Initialize MPU - tracks rotation in terms of acceleratioin + gyroscope
 BleMouse mouse("Mouseless Mouse", "Espressif", 100); // Initialize bluetooth mouse to send mouse events
 
-int sign(float inVal)
+[[nodiscard]] long sign(float inVal)
 {
   return (inVal > 0) ? 1 : -1;
 }
@@ -22,36 +22,43 @@ class RollingAverage
   /*Used to keep track of past inputed values to try to smooth movement*/
 private:
   std::array<float, buffer_length> m_buffer{0.0f}; // Used to implement a ring buffer
-  std::size_t m_to_drop = buffer_length - 1;       // Index of most recent value
+  std::size_t m_to_drop = 0;                       // Index of most recent value
   std::size_t m_num_values = 0;
-  std::size_t m_direction_stability = 0; // How stable the direction of the movement is
+  long m_direction_stability = 0; // How stable the direction of the movement is
   float m_average = 0.0f;
 
 public:
   void update(float val)
   {
-    m_to_drop++;
-    m_to_drop %= buffer_length;
-    std::size_t to_replace;
+    if (m_num_values > 0)
+    {
+      float preceding = (m_to_drop == 0) ? m_buffer[buffer_length - 1] : m_buffer[m_to_drop - 1];
+      m_direction_stability -= sign(m_buffer[m_to_drop] - preceding);
+      m_direction_stability += sign(val - preceding);
+    }
+
+    float overall_sum = m_average * m_num_values;
+    overall_sum -= m_buffer[m_to_drop];
+    overall_sum += val;
+
     if (m_num_values < buffer_length)
     {
       m_num_values++;
     }
-
-    float overall_sum = m_average * (m_num_values - 1);
-    overall_sum -= m_buffer[m_to_drop];
-    overall_sum += val;
-
     m_average = overall_sum / m_num_values;
+    m_buffer[m_to_drop] = val;
+
+    m_to_drop++;
+    m_to_drop %= buffer_length;
   }
 
-  std::size_t stability()
+  [[nodiscard]] long stability() const
   {
     /*Returns how consistant is the recent input with eachother?*/
-    return m_direction_stability;
+    return std::abs(m_direction_stability);
   }
 
-  float get()
+  [[nodiscard]] float get() const noexcept
   {
     /*Returns the average value of recent inputs*/
     return m_average;
@@ -97,7 +104,6 @@ void IRAM_ATTR onButtonPress()
 
 void setup()
 {
-  // put your setup code here, to run once:
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   attachInterrupt(BUTTON_PIN, onButtonPress, FALLING); // when Button_pin goes from High to low (button is released) onButtonPress is ran
 
