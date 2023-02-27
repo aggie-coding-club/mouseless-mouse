@@ -3,77 +3,68 @@
 #include <Wire.h>
 #include <BleMouse.h>
 
-#define BUTTON_PIN 14 // Which pin is the mouse click button connected to?
-#define AVG_SIZE 20   // How many inputs will we keep in rolling average array?
+#include <array>
+
+#define BUTTON_PIN 14          // Which pin is the mouse click button connected to?
+#define ROLLING_BUFFER_SIZE 20 // How many inputs will we keep in rolling average array?
 
 Adafruit_MPU6050 mpu;                                // Initialize MPU - tracks rotation in terms of acceleratioin + gyroscope
 BleMouse mouse("Mouseless Mouse", "Espressif", 100); // Initialize bluetooth mouse to send mouse events
 
-inline int sign(float inVal)
+int sign(float inVal)
 {
-  /*Returns 1 if input is greater than 0, 0 if input is 0, or -1 if input is less than 0*/
-  return (inVal > 0) - (inVal < 0);
+  return (inVal > 0) ? 1 : -1;
 }
 
+template <std::size_t buffer_length>
 class RollingAverage
 {
   /*Used to keep track of past inputed values to try to smooth movement*/
 private:
-  float avg[AVG_SIZE];
-  bool isInit = false; // Is the avg buffer full of samples?
-  uint8_t head = 0;    // Index of most recent value
-  float avgVal;
-  uint8_t dStable = 0; // How stable the direction of the movement is
+  std::array<float, buffer_length> m_buffer{0.0f}; // Used to implement a ring buffer
+  std::size_t m_to_drop = 0;                       // Index of most recent value
+  std::size_t m_num_values = 0;
+  std::size_t m_direction_stability = 0; // How stable the direction of the movement is
+  float m_average = 0.0f;
 
 public:
-  RollingAverage() {}
-  ~RollingAverage() {}
-
   void update(float val)
   {
-    /*Update Rolling array with input*/
-    if (isInit)
+    m_to_drop++;
+    m_to_drop %= buffer_length;
+    std::size_t to_replace;
+    if (m_num_values < buffer_length)
     {
-      this->avg[++this->head %= AVG_SIZE] = val;
-      float sum = 0;
-      int dir = 0;
-      for (uint8_t i = (this->head + 1) % AVG_SIZE; i != this->head; ++i %= AVG_SIZE)
-      {
-        sum += this->avg[i];
-        dir += sign(this->avg[(i + 1) % AVG_SIZE] - this->avg[i]);
-      }
-      this->avgVal = sum / AVG_SIZE;
-      this->dStable = abs(dir);
+      m_num_values++;
     }
-    else
-    {
-      for (uint8_t i = 0; i < AVG_SIZE; i++)
-        this->avg[++this->head %= AVG_SIZE] = val;
-      this->avgVal = val;
-      isInit = true;
-    }
+
+    float overall_sum = m_average * (m_num_values - 1);
+    overall_sum -= m_buffer[m_to_drop];
+    overall_sum += val;
+
+    m_average = overall_sum / m_num_values;
   }
 
-  uint8_t stability()
+  std::size_t stability()
   {
     /*Returns how consistant is the recent input with eachother?*/
-    return this->dStable;
+    return m_direction_stability;
   }
 
   float get()
   {
     /*Returns the average value of recent inputs*/
-    return this->avgVal;
+    return m_average;
   }
 };
 
 volatile bool buttonPress = false; // Is the button currently pressed?
 
 // Initialize values to be smoothed later on
-RollingAverage roll;
-RollingAverage pitch;
-RollingAverage gRoll;
-RollingAverage gPitch;
+RollingAverage<ROLLING_BUFFER_SIZE> roll;
+RollingAverage<ROLLING_BUFFER_SIZE> pitch;
+RollingAverage<ROLLING_BUFFER_SIZE> gRoll;
+RollingAverage<ROLLING_BUFFER_SIZE> gPitch;
 
 // set previous inputs to 0
 float oldRoll = 0;
@@ -128,8 +119,6 @@ void setup()
 
 void loop()
 {
-  // put your main code here, to run repeatedly:
-
   sensors_event_t a, g, temp; // sets events (special class)
   mpu.getEvent(&a, &g, &temp);
 
@@ -141,7 +130,9 @@ void loop()
       mouse.click();
     }
     else
+    {
       Serial.println("Mouse not connected!");
+    }
     buttonPress = false;
   }
 
