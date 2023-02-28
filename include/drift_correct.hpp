@@ -17,7 +17,7 @@ public:
     /**
      * @param cornerFrequency the maximum frequency (in Hz) of changes that should be considered drift
      */
-    DriftCorrector(float cornerFrequency = 0.5f);
+    DriftCorrector(float cornerFrequency = 0.1f);
     /**
      * @brief Sends a value through for correction.
      *
