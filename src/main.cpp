@@ -142,6 +142,10 @@ void setup()
   else
   {
     Serial.println("Found MPU6050");
+    mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+    mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+    mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);
+    mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ); // This choice of value might be problematic, needs testing lol
   }
 
   Serial.println("Starting Bluetooth mouse");
