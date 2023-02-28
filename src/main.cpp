@@ -21,7 +21,7 @@ BleMouse mouse("Mouseless Mouse", "Espressif", 100); // Initialize bluetooth mou
 /**
  * Tracks the rolling average of a series of sampled floats.
  *
- * All samples are given equal length. A maximum of buffer_length samples will be retained.
+ * All samples are given equal weight. A maximum of buffer_length samples will be retained.
  */
 template <std::size_t buffer_length>
 class RollingAverage
