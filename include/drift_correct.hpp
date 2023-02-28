@@ -8,11 +8,16 @@
  */
 class DriftCorrector
 {
+private:
+    float m_lastSampleUncorrected;
+    float m_lastSampleCorrected;
+    float m_RC; // time constant (RC)
+
 public:
     /**
-     * @param upperBound the maximum frequency (in Hz) of changes that should be considered drift
+     * @param cornerFrequency the maximum frequency (in Hz) of changes that should be considered drift
      */
-    DriftCorrector(float upperBound);
+    DriftCorrector(float cornerFrequency = 0.1f);
     /**
      * @brief Sends a value through for correction.
      *
