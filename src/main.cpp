@@ -48,12 +48,16 @@ public:
     if (m_num_values > 0)
     {
       float preceding = (m_next == 0) ? m_buffer[buffer_length - 1] : m_buffer[m_next - 1];
-      m_direction_stability -= sign(m_buffer[m_next] - preceding);
+      if (m_num_values == buffer_length)
+      {
+        // Only roll back stability if we're replacing a value, not just adding one
+        m_direction_stability -= sign(m_buffer[m_next] - preceding);
+      }
       m_direction_stability += sign(val - preceding);
     }
 
     float overall_sum = m_average * m_num_values;
-    overall_sum -= m_buffer[m_next];
+    overall_sum -= m_buffer[m_next]; // Depends on buffer being 0.0f-initialized
     overall_sum += val;
 
     if (m_num_values < buffer_length)
