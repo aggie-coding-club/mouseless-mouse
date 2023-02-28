@@ -4,11 +4,11 @@
 #include <cmath>
 #include <limits>
 
-DriftCorrector::DriftCorrector(float cornerFrequency = 0.1f)
+DriftCorrector::DriftCorrector(float cornerFrequency = 0.5f)
 {
-    if (std::isnan(cornerFrequency) || std::isinf(cornerFrequency) || cornerFrequency <= 0.0f)
+    if (std::isnan(cornerFrequency) || std::isinf(cornerFrequency) || cornerFrequency <= (1.0f / (2.0f * PI)))
     {
-        Log.errorln("invalid corner frequency given to drift corrector, correcting to default 0.1 Hz");
+        Log.errorln("invalid corner frequency given to drift corrector, correcting to default 0.5 Hz");
         cornerFrequency = 0.1f;
     }
 
