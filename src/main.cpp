@@ -2,6 +2,7 @@
 #include <Adafruit_MPU6050.h>
 #include <Wire.h>
 #include <BleMouse.h>
+#include <ArduinoLog.h>
 
 #include <array>
 
@@ -110,7 +111,7 @@ void IRAM_ATTR onButtonPress()
 
 [[noreturn]] void errNoMPU()
 {
-  Serial.println("Could not find MPU");
+  Log.fatalln("Could not find MPU");
   pinMode(LED_BUILTIN, OUTPUT);
 
   // Endlessly loop on LED flash pattern of short flash, long flash
@@ -134,6 +135,7 @@ void setup()
 
   // starts Serial Monitor
   Serial.begin(115200);
+  Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 
   if (!mpu.begin())
   {
@@ -141,15 +143,19 @@ void setup()
   }
   else
   {
-    Serial.println("Found MPU6050");
+    Log.infoln("Found MPU6050");
     mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+    Log.infoln("Accelerometer range set to +-8 G");
     mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+    Log.infoln("Gyrometer range set to +-500 deg");
     mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);
+    Log.infoln("Low-pass filter frequency set to 44 Hz");
     mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ); // This choice of value might be problematic, needs testing lol
+    Log.infoln("High-pass filter frequency set to 0.63 Hz");
   }
 
-  Serial.println("Starting Bluetooth mouse");
   mouse.begin();
+  Log.infoln("Started Bluetooth mouse");
 }
 
 void loop()
@@ -166,7 +172,7 @@ void loop()
     }
     else
     {
-      Serial.println("Mouse not connected!");
+      Log.noticeln("Mouse not connected!");
     }
     buttonPress = false;
   }
@@ -184,8 +190,8 @@ void loop()
     {                                                // If the mouse is connected
       mouse.move(0, (pitch.get() - oldPitch) * 100); // move mouse by current pitch (of accelerometer) - old pitch (of accelerometer)
     }
-    oldPitch = pitch.get();                                             // update old pitch
-    Serial.printf("Pitch: %f (%d)\n", pitch.get(), gPitch.stability()); // prints accelerometer stability and (gyroscope stability)
+    oldPitch = pitch.get();                                         // update old pitch
+    Log.trace("Pitch: %f (%d)\n", pitch.get(), gPitch.stability()); // prints accelerometer stability and (gyroscope stability)
   }
   if (gRoll.stability() > 8)
   { // currently using information from gyro
@@ -195,7 +201,7 @@ void loop()
       mouse.move((roll.get() - oldRoll) * 100, 0);
     }
     oldRoll = roll.get();
-    Serial.printf("Roll: %f (%d)\n", roll.get(), gRoll.stability());
+    Log.trace("Roll: %f (%d)\n", roll.get(), gRoll.stability());
   }
 
   delay(10);
