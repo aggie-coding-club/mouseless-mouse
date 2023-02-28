@@ -6,7 +6,6 @@
  * @details Uses a high-pass filter to correct for unintended long-term drift in a signal, assuming that changes below
  *  a minimum frequency are to be considered drift
  */
-template <std::size_t history_length = 256U>
 class DriftCorrector
 {
 public:
