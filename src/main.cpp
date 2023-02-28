@@ -8,7 +8,7 @@
 #define BUTTON_PIN 14          // Which pin is the mouse click button connected to?
 #define ROLLING_BUFFER_SIZE 20 // How many inputs will we keep in rolling average array?
 
-Adafruit_MPU6050 mpu;                                // Initialize MPU - tracks rotation in terms of acceleratioin + gyroscope
+Adafruit_MPU6050 mpu;                                // Initialize MPU - tracks rotation in terms of acceleration + gyroscope
 BleMouse mouse("Mouseless Mouse", "Espressif", 100); // Initialize bluetooth mouse to send mouse events
 
 [[nodiscard]] long sign(float inVal)
@@ -35,12 +35,12 @@ public:
   /**
    * Adds another value to the rolling average buffer.
    *
-   * Also updates the running average and directional stability measurements. If the buffer is full, `val` will
+   * Also updates the running average and directional stability measurements. If the buffer is full, val will
    * replace the oldest value in the buffer.
    *
    * @param val the value to be added
-   * @pre The magnitude of `val` must be less than the quotient of the greatest finite float value divided by
-   *  `buffer_length`.
+   * @pre The magnitude of val must be less than the quotient of the greatest finite float value divided by
+   *  buffer_length.
    */
   void update(float val)
   {
@@ -71,7 +71,7 @@ public:
    *
    * The stability is measured as an unsigned long integer whose magnitude depends on the length of the buffer. If the
    * samples are uniformly increasing or decreasing, then the stability will be equal to the length of the buffer.
-   * Alternatively, if the samples are going alternately up and down, stability will be measured as zero.
+   * Alternatively, if the samples are alternating up and down, stability will be measured as zero.
    */
   [[nodiscard]] long stability() const
   {
@@ -79,9 +79,9 @@ public:
   }
 
   /**
-   * Gets the mean of the last `buffer_length` samples.
+   * Gets the mean of the last buffer_length samples.
    *
-   * Returns zero if no samples have been added. If less than `buffer_length` samples have been added, then returns
+   * Returns zero if no samples have been added. If less than buffer_length samples have been added, then returns
    * the average of all samples taken.
    */
   [[nodiscard]] float get() const noexcept
