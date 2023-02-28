@@ -5,6 +5,7 @@
 #include <ArduinoLog.h>
 
 #include <array>
+#include <type_traits>
 
 #define BUTTON_PIN 14          // Which pin is the mouse click button connected to?
 #define ROLLING_BUFFER_SIZE 20 // How many inputs will we keep in rolling average array?
@@ -33,6 +34,10 @@ private:
   float m_average = 0.0f;
 
 public:
+  // Guarantee stability() will never overflow
+  static_assert(buffer_length < std::numeric_limits<long>::max(),
+                "buffer_length must be shorter than the maximum magnitude of a long");
+
   /**
    * Adds another value to the rolling average buffer.
    *
