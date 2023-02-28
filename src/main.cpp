@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Adafruit_MPU6050.h>
+#include<Adafruit_BusIO_Register.h>
 #include <Wire.h>
 #include <BleMouse.h>
 
