@@ -19,6 +19,8 @@ DriftCorrector::DriftCorrector(float cornerFrequency = 0.1f)
 
 float DriftCorrector::next(float value, float timeDelta)
 {
+    // Algorithm shamelessly stolen from https://en.wikipedia.org/wiki/High-pass_filter
+
     if (std::isnan(value) || std::isinf(value))
     {
         Log.warningln("invalid value passed into drift correction, ignoring");
