@@ -16,29 +16,43 @@ BleMouse mouse("Mouseless Mouse", "Espressif", 100); // Initialize bluetooth mou
   return (inVal > 0) ? 1 : -1;
 }
 
+/**
+ * Tracks the rolling average of a series of sampled floats.
+ *
+ * All samples are given equal length. A maximum of buffer_length samples will be retained.
+ */
 template <std::size_t buffer_length>
 class RollingAverage
 {
-  /*Used to keep track of past inputed values to try to smooth movement*/
 private:
-  std::array<float, buffer_length> m_buffer{0.0f}; // Used to implement a ring buffer
-  std::size_t m_to_drop = 0;                       // Index of most recent value
+  std::array<float, buffer_length> m_buffer{0.0f};
+  std::size_t m_next = 0;
   std::size_t m_num_values = 0;
-  long m_direction_stability = 0; // How stable the direction of the movement is
+  long m_direction_stability = 0;
   float m_average = 0.0f;
 
 public:
+  /**
+   * Adds another value to the rolling average buffer.
+   *
+   * Also updates the running average and directional stability measurements. If the buffer is full, `val` will
+   * replace the oldest value in the buffer.
+   *
+   * @param val the value to be added
+   * @pre The magnitude of `val` must be less than the quotient of the greatest finite float value divided by
+   *  `buffer_length`.
+   */
   void update(float val)
   {
     if (m_num_values > 0)
     {
-      float preceding = (m_to_drop == 0) ? m_buffer[buffer_length - 1] : m_buffer[m_to_drop - 1];
-      m_direction_stability -= sign(m_buffer[m_to_drop] - preceding);
+      float preceding = (m_next == 0) ? m_buffer[buffer_length - 1] : m_buffer[m_next - 1];
+      m_direction_stability -= sign(m_buffer[m_next] - preceding);
       m_direction_stability += sign(val - preceding);
     }
 
     float overall_sum = m_average * m_num_values;
-    overall_sum -= m_buffer[m_to_drop];
+    overall_sum -= m_buffer[m_next];
     overall_sum += val;
 
     if (m_num_values < buffer_length)
@@ -46,21 +60,32 @@ public:
       m_num_values++;
     }
     m_average = overall_sum / m_num_values;
-    m_buffer[m_to_drop] = val;
+    m_buffer[m_next] = val;
 
-    m_to_drop++;
-    m_to_drop %= buffer_length;
+    m_next++;
+    m_next %= buffer_length;
   }
 
+  /**
+   * Measures the "stability" of the samples over time.
+   *
+   * The stability is measured as an unsigned long integer whose magnitude depends on the length of the buffer. If the
+   * samples are uniformly increasing or decreasing, then the stability will be equal to the length of the buffer.
+   * Alternatively, if the samples are going alternately up and down, stability will be measured as zero.
+   */
   [[nodiscard]] long stability() const
   {
-    /*Returns how consistant is the recent input with eachother?*/
     return std::abs(m_direction_stability);
   }
 
+  /**
+   * Gets the mean of the last `buffer_length` samples.
+   *
+   * Returns zero if no samples have been added. If less than `buffer_length` samples have been added, then returns
+   * the average of all samples taken.
+   */
   [[nodiscard]] float get() const noexcept
   {
-    /*Returns the average value of recent inputs*/
     return m_average;
   }
 };
