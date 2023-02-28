@@ -23,7 +23,7 @@ float DriftCorrector::next(float value, float timeDelta)
 
     if (std::isnan(value) || std::isinf(value))
     {
-        Log.warningln("invalid value passed into drift correction, ignoring");
+        Log.warningln("invalid sample passed into drift correction, ignoring");
         return value;
     }
     else if (std::isnan(timeDelta) || std::isinf(timeDelta) || timeDelta <= 0.0f)
