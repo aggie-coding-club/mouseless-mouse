@@ -4,52 +4,53 @@
 #include <cmath>
 #include <limits>
 
-DriftCorrector::DriftCorrector(float cornerFrequency = 0.1f)
+namespace mlm
 {
-    if (std::isnan(cornerFrequency) || std::isinf(cornerFrequency) || cornerFrequency <= 0.0f)
+    DriftCorrector::DriftCorrector(float timeDelta, float cornerFrequency)
     {
-        Log.errorln(
-            "invalid corner frequency given to drift corrector, substituting with 0.1 Hz");
-        cornerFrequency = 0.1f;
-    }
-
-    m_lastSampleCorrected = std::numeric_limits<float>::signaling_NaN();
-    m_lastSampleUncorrected = std::numeric_limits<float>::signaling_NaN();
-    m_timeSinceGoodSample = 0.0f;
-    m_RC = 1.0f / (2.0f * PI * cornerFrequency);
-}
-
-float DriftCorrector::next(float sample, float timeDelta)
-{
-    // Algorithm from https://en.wikipedia.org/wiki/High-pass_filter (2023-02-28)
-
-    if (std::isnan(sample) || std::isinf(sample))
-    {
-        Log.warningln("invalid sample passed into drift correction, ignoring");
-        if (!std::isnan(timeDelta) && !std::isinf(timeDelta) && timeDelta > 0.0f)
+        if (!std::isfinite(cornerFrequency) || cornerFrequency <= 0.0f)
         {
-            m_timeSinceGoodSample += timeDelta;
+            Log.fatalln("invalid corner frequency given to drift corrector");
+            // TODO: add fatal error logic
         }
-        return sample;
-    }
-    else if (std::isnan(timeDelta) || std::isinf(timeDelta) || timeDelta <= 0.0f)
-    {
-        Log.warningln("invalid time delta passed into drift correction, ignoring");
-        return sample;
-    }
-    timeDelta += m_timeSinceGoodSample;
-    m_timeSinceGoodSample = 0.0f;
+        if (!std::isfinite(timeDelta) || timeDelta <= 0.0f)
+        {
+            Log.fatalln("invalid time delta given to drift corrector");
+            // TODO: add fatal error logic
+        }
 
-    if (std::isnan(m_lastSampleCorrected) || std::isnan(m_lastSampleUncorrected))
-    {
-        // First sample taken in, just pass it straight through
-        m_lastSampleCorrected = sample;
-        m_lastSampleUncorrected = sample;
-        return sample;
+        m_lastSampleCorrected = std::numeric_limits<float>::signaling_NaN();
+        m_lastSampleUncorrected = std::numeric_limits<float>::signaling_NaN();
+
+        float RC = 1.0f / (2.0f * PI * cornerFrequency);
+        m_alpha = RC / (RC + timeDelta);
+        if (!std::isfinite(m_alpha) || !std::isnormal(m_alpha))
+        {
+            Log.fatalln("corner frequency given to drift corrector is too great or too small");
+            // TODO: add fatal error logic
+        }
     }
-    float alpha = m_RC / (m_RC + timeDelta);
-    float corrected = alpha * (m_lastSampleCorrected + sample - m_lastSampleUncorrected);
-    m_lastSampleCorrected = corrected;
-    m_lastSampleUncorrected = sample;
-    return corrected;
+
+    float DriftCorrector::next(float sample)
+    {
+        // Algorithm from https://en.wikipedia.org/wiki/High-pass_filter (2023-02-28)
+
+        if (!std::isfinite(sample))
+        {
+            Log.warningln("invalid sample passed into drift correction, ignoring");
+            return m_lastSampleCorrected;
+        }
+        if (std::isnan(m_lastSampleCorrected) || std::isnan(m_lastSampleUncorrected))
+        {
+            // First sample taken in, just pass it straight through
+            m_lastSampleCorrected = sample;
+            m_lastSampleUncorrected = sample;
+            return sample;
+        }
+
+        float corrected = m_alpha * (m_lastSampleCorrected + sample - m_lastSampleUncorrected);
+        m_lastSampleCorrected = corrected;
+        m_lastSampleUncorrected = sample;
+        return corrected;
+    }
 }
