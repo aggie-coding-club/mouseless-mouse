@@ -19,7 +19,7 @@ DriftCorrector::DriftCorrector(float cornerFrequency = 0.1f)
 
 float DriftCorrector::next(float value, float timeDelta)
 {
-    // Algorithm shamelessly stolen from https://en.wikipedia.org/wiki/High-pass_filter
+    // Algorithm from https://en.wikipedia.org/wiki/High-pass_filter (2023-02-28)
 
     if (std::isnan(value) || std::isinf(value))
     {
