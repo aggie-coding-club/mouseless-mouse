@@ -1,6 +1,7 @@
 #include "drift_correct.hpp"
-#include <ArduinoLog.h>
+#include "errors.hpp"
 
+#include <ArduinoLog.h>
 #include <cmath>
 #include <limits>
 
@@ -10,13 +11,13 @@ namespace mlm
     {
         if (!std::isfinite(cornerFrequency) || cornerFrequency <= 0.0f)
         {
-            Log.fatalln("invalid corner frequency given to drift corrector");
-            // TODO: add fatal error logic
+            errors::doFatalError(
+                "invalid corner frequency passed into drift corrector", errors::SOFTWARE_INITIALIZATION_FAILED);
         }
         if (!std::isfinite(timeDelta) || timeDelta <= 0.0f)
         {
-            Log.fatalln("invalid time delta given to drift corrector");
-            // TODO: add fatal error logic
+            errors::doFatalError(
+                "invalid time delta passed into drift corrector", errors::SOFTWARE_INITIALIZATION_FAILED);
         }
 
         m_lastSampleCorrected = std::numeric_limits<float>::signaling_NaN();
@@ -26,8 +27,9 @@ namespace mlm
         m_alpha = RC / (RC + timeDelta);
         if (!std::isfinite(m_alpha) || !std::isnormal(m_alpha))
         {
-            Log.fatalln("corner frequency given to drift corrector is too great or too small");
-            // TODO: add fatal error logic
+            errors::doFatalError(
+                "corner frequency given to drift corrector is too great or too small",
+                errors::SOFTWARE_INITIALIZATION_FAILED);
         }
     }
 

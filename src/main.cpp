@@ -1,9 +1,10 @@
+#include "errors.hpp"
+
 #include <Arduino.h>
 #include <Adafruit_MPU6050.h>
 #include <Wire.h>
 #include <BleMouse.h>
 #include <ArduinoLog.h>
-
 #include <array>
 #include <type_traits>
 
@@ -118,25 +119,6 @@ void IRAM_ATTR onButtonPress()
   buttonPress = true;
 }
 
-[[noreturn]] void errNoMPU()
-{
-  Log.fatalln("Could not find MPU");
-  pinMode(LED_BUILTIN, OUTPUT);
-
-  // Endlessly loop on LED flash pattern of short flash, long flash
-  for (;;)
-  {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(500);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(1000);
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(1000);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(1000);
-  }
-}
-
 void setup()
 {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -148,7 +130,7 @@ void setup()
 
   if (!mpu.begin())
   {
-    errNoMPU();
+    mlm::errors::doFatalError("no MPU detected", mlm::errors::HARDWARE_INITIALIZATION_FAILED);
   }
   else
   {
