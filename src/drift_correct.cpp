@@ -7,7 +7,7 @@
 
 namespace mlm
 {
-    DriftCorrector::DriftCorrector(float timeDelta, float cornerFrequency)
+    DriftCorrector::DriftCorrector(float timeDelta, float cornerFrequency) noexcept
     {
         if (!std::isfinite(cornerFrequency) || cornerFrequency <= 0.0f)
         {
@@ -33,7 +33,7 @@ namespace mlm
         }
     }
 
-    float DriftCorrector::next(float sample)
+    float DriftCorrector::next(float sample) noexcept
     {
         // Algorithm from https://en.wikipedia.org/wiki/High-pass_filter (2023-02-28)
 

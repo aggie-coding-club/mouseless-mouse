@@ -17,7 +17,7 @@ namespace mlm::errors
      * @param message the message to be logged
      * @param flashPattern an mlm::errors::flashpattern_t corresponding to the desired flash pattern
      */
-    [[noreturn]] void doFatalError(std::string message, flashpattern_t flashPattern);
+    [[noreturn]] void doFatalError(const char *message, flashpattern_t flashPattern);
 }
 
 #endif

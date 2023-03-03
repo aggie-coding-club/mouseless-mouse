@@ -5,7 +5,7 @@
 
 namespace mlm::errors
 {
-    [[noreturn]] void doFatalError(std::string message, flashpattern_t flashPattern)
+    [[noreturn]] void doFatalError(const char *message, flashpattern_t flashPattern)
     {
         vTaskSuspendAll();
         Log.fatalln(message);
