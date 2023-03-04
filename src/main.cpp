@@ -181,8 +181,8 @@ void loop()
     {                                                // If the mouse is connected
       mouse.move(0, (pitch.get() - oldPitch) * 100); // move mouse by current pitch (of accelerometer) - old pitch (of accelerometer)
     }
-    oldPitch = pitch.get();                                         // update old pitch
-    Log.trace("Pitch: %f (%d)\n", pitch.get(), gPitch.stability()); // prints accelerometer stability and (gyroscope stability)
+    oldPitch = pitch.get();                                                          // update old pitch
+    Log.trace("Pitch: %f rad (stability of %d)\n", pitch.get(), gPitch.stability()); // prints accelerometer stability and (gyroscope stability)
   }
   if (gRoll.stability() > 8)
   { // currently using information from gyro
@@ -192,7 +192,7 @@ void loop()
       mouse.move((roll.get() - oldRoll) * 100, 0);
     }
     oldRoll = roll.get();
-    Log.trace("Roll: %f (%d)\n", roll.get(), gRoll.stability());
+    Log.trace("Roll: %f rad (stability of %d)\n", roll.get(), gRoll.stability());
   }
 
   delay(10);
