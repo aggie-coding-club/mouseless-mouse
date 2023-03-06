@@ -168,8 +168,8 @@ void loop()
     buttonPress = false;
   }
 
-  roll.update(-atan2(a.acceleration.x, a.acceleration.z)); // weird math to calculate direction change for roll (currently x-axis) then add it to array of prior inputs
-  pitch.update(-atan2(a.acceleration.y, a.acceleration.z));
+  roll.update(atan2(-a.acceleration.z, -a.acceleration.x)); // weird math to calculate direction change for roll (currently x-axis) then add it to array of prior inputs
+  pitch.update(atan2(-a.acceleration.z, -a.acceleration.y));
   gRoll.update(g.gyro.y);
   gPitch.update(g.gyro.x); // adding gyroscope in x axis
 
