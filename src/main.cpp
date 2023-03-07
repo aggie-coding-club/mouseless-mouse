@@ -8,6 +8,10 @@
 #include <array>
 #include <type_traits>
 
+#define ICM_20948_USE_DMP
+#include <ICM_20948.h>
+#include <ArduinoEigen/Eigen/Geometry>
+
 #define BUTTON_PIN 14          // Which pin is the mouse click button connected to?
 #define ROLLING_BUFFER_SIZE 20 // How many inputs will we keep in rolling average array?
 
@@ -17,6 +21,29 @@ BleMouse mouse("Mouseless Mouse", "Espressif", 100); // Initialize bluetooth mou
 [[nodiscard]] long sign(float inVal)
 {
   return (inVal > 0) ? 1 : -1;
+}
+
+/**
+ * @brief Transforms a given vector based on the orientation recorded by the DMP.
+ *
+ * @details Given a vector in Arduino-space (i.e., basis vectors relative to the ICM), uses the ICM sensor data to
+ *   transform it into a vector in world-space (i.e., z parallel to gravity, y parallel to magnetic north, x
+ *   parallel to magnetic east).
+ *
+ * @param vec the vector in Arduino-space to be transformed
+ * @param packet the sensor data packet from the DMP
+ * @pre the packet must contain valid orientation-mode 9-DOF Quat9 data.
+ */
+[[nodiscard]] Eigen::Vector3<double>
+toWorldSpace(const Eigen::Vector3<double> vec, const icm_20948_DMP_data_t packet) noexcept
+{
+  const double scalingFactor = std::pow(2.0, 30.0);
+  const double w = ((double)packet.Quat9.Data.Q1) / scalingFactor;
+  const double x = ((double)packet.Quat9.Data.Q2) / scalingFactor;
+  const double y = ((double)packet.Quat9.Data.Q3) / scalingFactor;
+  const double z = std::sqrt(x * x + y * y + z * z);
+  const Eigen::Quaternion<double> quat(w, x, y, z);
+  return quat._transformVector(vec);
 }
 
 /**
