@@ -1,5 +1,6 @@
+hideakitai/ArduinoEigen@^0.2.3
+sparkfun/SparkFun 9DoF IMU Breakout - ICM 20948 - Arduino Library@^1.2.11
 t-vk/ESP32 BLE Mouse@^0.3.1
 adafruit/Adafruit Unified Sensor@^1.1.6
 adafruit/Adafruit MPU6050@^2.2.4
 thijse/ArduinoLog@^1.1.1
-sparkfun/SparkFun 9DoF IMU Breakout - ICM 20948 - Arduino Library@^1.2.11
