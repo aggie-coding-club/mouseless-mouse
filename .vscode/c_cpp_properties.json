@@ -10,6 +10,7 @@
             "includePath": [
                 "c:/Users/MattM/Documents/GitHub/mouseless-mouse/include",
                 "c:/Users/MattM/Documents/GitHub/mouseless-mouse/src",
+                "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/SparkFun 9DoF IMU Breakout - ICM 20948 - Arduino Library/src",
                 "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/ArduinoLog",
                 "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/ESP32 BLE Mouse",
                 "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
@@ -248,6 +249,7 @@
                 "path": [
                     "c:/Users/MattM/Documents/GitHub/mouseless-mouse/include",
                     "c:/Users/MattM/Documents/GitHub/mouseless-mouse/src",
+                    "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/SparkFun 9DoF IMU Breakout - ICM 20948 - Arduino Library/src",
                     "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/ArduinoLog",
                     "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/wemos_d1_uno32/ESP32 BLE Mouse",
                     "C:/Users/MattM/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
