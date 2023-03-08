@@ -43,7 +43,7 @@ template <typename Smaller, typename Larger> [[nodiscard]] Smaller saturate_cast
   const double w = ((double)packet.Quat9.Data.Q1) / scalingFactor;
   const double x = ((double)packet.Quat9.Data.Q2) / scalingFactor;
   const double y = ((double)packet.Quat9.Data.Q3) / scalingFactor;
-  const double z = std::sqrt(x * x + y * y + z * z);
+  const double z = std::sqrt(1.0 - (x * x + y * y + z * z));
   const Eigen::Quaternion<double> quat(w, x, y, z);
   return quat._transformVector(vec);
 }
@@ -102,7 +102,7 @@ public:
 };
 
 ICM_20948_I2C icm;
-BleMouse mouse("Mouseless Mouse", "Espressif"); // Initialize Bluetooth mouse object to send mouse events
+BleMouse mouse("Mouseless Mouse", "Mouseless Mouse Team"); // Initialize Bluetooth mouse object to send mouse events
 Screen screen(100, Eigen::Vector3d(0, 1, 0), Eigen::Vector3d(0, 0, 1));
 
 volatile bool buttonPress = false;
@@ -124,7 +124,9 @@ void setup() {
       icm.setDMPODRrate(DMP_ODR_Reg_Quat9, 0) != ICM_20948_Stat_Ok || icm.enableFIFO() != ICM_20948_Stat_Ok ||
       icm.enableDMP() != ICM_20948_Stat_Ok || icm.resetFIFO() != ICM_20948_Stat_Ok ||
       icm.resetDMP() != ICM_20948_Stat_Ok) {
-    mlm::errors::doFatalError("ICM initialization failed", mlm::errors::HARDWARE_INITIALIZATION_FAILED);
+    std::string error_message = "ICM initialization failed with error status \"";
+    mlm::errors::doFatalError((error_message + icm.statusString() + "\"").c_str(),
+                              mlm::errors::HARDWARE_INITIALIZATION_FAILED);
   } else {
     Log.infoln("ICM successfully initialized");
   }
@@ -151,7 +153,7 @@ void loop() {
     if (mouse.isConnected()) {
       mouse.click();
     } else {
-      Log.noticeln("Mouse not connected!");
+      Log.noticeln("Click registered, but mouse not connected");
     }
     buttonPress = false;
   }
