@@ -129,15 +129,15 @@ void setup() {
     Log.infoln("ICM successfully initialized");
   }
 
-  icm_20948_DMP_data_t data_frame;
+  icm_20948_DMP_data_t dataFrame;
   for (;;) {
-    icm.readDMPdataFromFIFO(&data_frame);
+    icm.readDMPdataFromFIFO(&dataFrame);
     if (icm.status != ICM_20948_Stat_Ok && icm.status != ICM_20948_Stat_FIFOMoreDataAvail) {
       Log.traceln("Waiting for first DMP packet");
       delay(20);
     } else {
       Log.traceln("First DMP packet received");
-      mousePosition = screen.project(toWorldSpace(Eigen::Vector3d(0, 1, 0), data_frame));
+      mousePosition = screen.project(toWorldSpace(Eigen::Vector3d(0, 1, 0), dataFrame));
       break;
     }
   }
@@ -156,10 +156,10 @@ void loop() {
     buttonPress = false;
   }
 
-  icm_20948_DMP_data_t data_frame;
-  icm.readDMPdataFromFIFO(&data_frame);
+  icm_20948_DMP_data_t dataFrame;
+  icm.readDMPdataFromFIFO(&dataFrame);
   if (icm.status == ICM_20948_Stat_Ok || icm.status == ICM_20948_Stat_FIFOMoreDataAvail) {
-    Eigen::Vector2<long> diff = screen.project(toWorldSpace(Eigen::Vector3d(0, 1, 0), data_frame)) - mousePosition;
+    Eigen::Vector2<long> diff = screen.project(toWorldSpace(Eigen::Vector3d(0, 1, 0), dataFrame)) - mousePosition;
     mouse.move(saturate_cast<signed char>(diff.x()), saturate_cast<signed char>(diff.y()));
   }
   if (icm.status != ICM_20948_Stat_FIFOMoreDataAvail) {
