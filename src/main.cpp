@@ -1,7 +1,9 @@
 #include "errors.hpp"
 
-#include <Arduino.h>
+#include <ArduinoEigen/Eigen/Dense>
 #include <ArduinoEigen/Eigen/Geometry>
+
+#include <Arduino.h>
 #include <ArduinoLog.h>
 #include <BleMouse.h>
 #include <Wire.h>
@@ -56,8 +58,8 @@ class Screen {
 private:
   Eigen::Vector3d m_center;
   Eigen::Vector3d m_forward;
-  Eigen::Vector3d m_right;
   Eigen::Vector3d m_up;
+  Eigen::Vector3d m_right;
 
 public:
   /**
