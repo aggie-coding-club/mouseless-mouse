@@ -1,14 +1,12 @@
-#if 0
+#if 1
 
 #include "errors.hpp"
 
 #include <ArduinoEigen/Eigen/Dense>
 #include <ArduinoEigen/Eigen/Geometry>
 
-#include <Arduino.h>
 #include <ArduinoLog.h>
 #include <BleMouse.h>
-#include <Wire.h>
 
 #include <cmath>
 #include <limits>
@@ -122,21 +120,17 @@ void setup() {
   // starts Serial Monitor
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
-  Log.infoln("Oh god did we make it here");
-  icm.begin();
-  icm.initializeDMP();
-  icm.enableDMPSensor(INV_ICM20948_SENSOR_ORIENTATION);
-  icm.enableFIFO();
-  icm.setDMPODRrate(DMP_ODR_Reg_Quat9, 0);
-  icm.enableDMP();
-  icm.resetFIFO();
-  icm.resetDMP();
-  if (false) {
-    std::string error_message = "ICM initialization failed with error status \"";
+
+  if (icm.begin() == ICM_20948_Stat_Ok && icm.initializeDMP() == ICM_20948_Stat_Ok &&
+      icm.enableDMPSensor(INV_ICM20948_SENSOR_ORIENTATION) == ICM_20948_Stat_Ok &&
+      icm.enableFIFO() == ICM_20948_Stat_Ok && icm.setDMPODRrate(DMP_ODR_Reg_Quat9, 0) == ICM_20948_Stat_Ok &&
+      icm.enableDMP() == ICM_20948_Stat_Ok && icm.resetFIFO() == ICM_20948_Stat_Ok &&
+      icm.resetDMP() == ICM_20948_Stat_Ok) {
+    Log.infoln("ICM successfully initialized");
+  } else {
+    const std::string error_message = "ICM initialization failed with error status \"";
     mlm::errors::doFatalError((error_message + icm.statusString() + "\"").c_str(),
                               mlm::errors::HARDWARE_INITIALIZATION_FAILED);
-  } else {
-    Log.infoln("ICM successfully initialized");
   }
 
   icm_20948_DMP_data_t dataFrame;
@@ -179,7 +173,7 @@ void loop() {
 }
 
 #endif
-#if 1
+#if 0
 
 /****************************************************************
  * Example6_DMP_Quat9_Orientation.ino
