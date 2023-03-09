@@ -104,7 +104,7 @@ public:
 };
 
 ICM_20948_I2C icm;
-BleMouse mouse("Mouseless Mouse", "Mouseless Mouse Team"); // Initialize Bluetooth mouse object to send mouse events
+BleMouse mouse("Mouseless Mouse", "Mouseless Team"); // Initialize Bluetooth mouse object to send mouse events
 Screen screen(100, Eigen::Vector3d(0, 1, 0), Eigen::Vector3d(0, 0, 1));
 
 volatile bool buttonPress = false;
@@ -120,6 +120,7 @@ void setup() {
   // starts Serial Monitor
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
+  Log.infoln("Oh god did we make it here");
 
   if (!icm.begin() || icm.initializeDMP() != ICM_20948_Stat_Ok ||
       icm.enableDMPSensor(INV_ICM20948_SENSOR_ORIENTATION) != ICM_20948_Stat_Ok ||
