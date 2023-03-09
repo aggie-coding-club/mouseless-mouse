@@ -45,7 +45,7 @@ template <typename Smaller, typename Larger> [[nodiscard]] Smaller saturate_cast
   const double w = ((double)packet.Quat9.Data.Q1) / scalingFactor;
   const double x = ((double)packet.Quat9.Data.Q2) / scalingFactor;
   const double y = ((double)packet.Quat9.Data.Q3) / scalingFactor;
-  const double z = std::sqrt(1.0 - (x * x + y * y + z * z));
+  const double z = std::sqrt(1.0 - (w * w + x * x + y * y));
   const Eigen::Quaternion<double> quat(w, x, y, z);
   return quat._transformVector(vec);
 }
