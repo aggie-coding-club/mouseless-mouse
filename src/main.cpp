@@ -1,4 +1,4 @@
-#if 1
+#if 0
 
 #include "errors.hpp"
 
@@ -121,16 +121,20 @@ void setup() {
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 
-  if (icm.begin() == ICM_20948_Stat_Ok && icm.initializeDMP() == ICM_20948_Stat_Ok &&
+  Wire.begin();
+  Wire.setClock(400000);
+
+  if (icm.begin(Wire, 1) == ICM_20948_Stat_Ok && icm.initializeDMP() == ICM_20948_Stat_Ok &&
       icm.enableDMPSensor(INV_ICM20948_SENSOR_ORIENTATION) == ICM_20948_Stat_Ok &&
       icm.enableFIFO() == ICM_20948_Stat_Ok && icm.setDMPODRrate(DMP_ODR_Reg_Quat9, 0) == ICM_20948_Stat_Ok &&
       icm.enableDMP() == ICM_20948_Stat_Ok && icm.resetFIFO() == ICM_20948_Stat_Ok &&
       icm.resetDMP() == ICM_20948_Stat_Ok) {
     Log.infoln("ICM successfully initialized");
   } else {
-    const std::string error_message = "ICM initialization failed with error status \"";
-    mlm::errors::doFatalError((error_message + icm.statusString() + "\"").c_str(),
-                              mlm::errors::HARDWARE_INITIALIZATION_FAILED);
+    Log.infoln(icm.statusString());
+    // const std::string error_message = "ICM initialization failed with error status \"";
+    // mlm::errors::doFatalError((error_message + icm.statusString() + "\"").c_str(),
+    //                           mlm::errors::HARDWARE_INITIALIZATION_FAILED);
   }
 
   icm_20948_DMP_data_t dataFrame;
@@ -173,7 +177,7 @@ void loop() {
 }
 
 #endif
-#if 0
+#if 1
 
 /****************************************************************
  * Example6_DMP_Quat9_Orientation.ino
@@ -183,10 +187,11 @@ void loop() {
  * Based on original code by:
  * Owen Lyke @ SparkFun Electronics
  * Original Creation Date: April 17 2019
- * 
- * ** This example is based on InvenSense's _confidential_ Application Note "Programming Sequence for DMP Hardware Functions".
+ *
+ * ** This example is based on InvenSense's _confidential_ Application Note "Programming Sequence for DMP Hardware
+ *Functions".
  * ** We are grateful to InvenSense for sharing this with us.
- * 
+ *
  * ** Important note: by default the DMP functionality is disabled in the library
  * ** as the DMP firmware takes up 14301 Bytes of program memory.
  * ** To use the DMP, you will need to:
@@ -201,7 +206,8 @@ void loop() {
  * Distributed as-is; no warranty is given.
  ***************************************************************/
 
-//#define QUAT_ANIMATION // Uncomment this line to output data in the correct format for ZaneL's Node.js Quaternion animation tool: https://github.com/ZaneL/quaternion_sensor_3d_nodejs
+// #define QUAT_ANIMATION // Uncomment this line to output data in the correct format for ZaneL's Node.js Quaternion
+// animation tool: https://github.com/ZaneL/quaternion_sensor_3d_nodejs
 #define ICM_20948_USE_DMP
 
 #include <ArduinoEigen/Eigen/Dense>
@@ -209,7 +215,9 @@ void loop() {
 
 #include "ICM_20948.h" // Click here to get the library: http://librarymanager/All#SparkFun_ICM_20948_IMU
 
-//#define USE_SPI       // Uncomment this to use SPI
+#include <BleMouse.h>
+
+// #define USE_SPI       // Uncomment this to use SPI
 
 #define SERIAL_PORT Serial
 
@@ -227,6 +235,32 @@ ICM_20948_SPI myICM; // If using SPI create an ICM_20948_SPI object
 ICM_20948_I2C myICM; // Otherwise create an ICM_20948_I2C object
 #endif
 
+/**
+ * @brief converts from a wider data type to a narrower one, capping the output value to prevent undefined behavior
+ *
+ * @param n the value to be converted
+ */
+template <typename Smaller, typename Larger> [[nodiscard]] Smaller saturate_cast(Larger n) noexcept {
+  if (n > std::numeric_limits<Smaller>::max()) {
+    return std::numeric_limits<Smaller>::max();
+  } else if (n < std::numeric_limits<Smaller>::min()) {
+    return std::numeric_limits<Smaller>::min();
+  } else {
+    return static_cast<Smaller>(n);
+  }
+}
+
+/**
+ * @brief Transforms a given vector based on the orientation recorded by the DMP.
+ *
+ * @details Given a vector in Arduino-space (i.e., basis vectors relative to the ICM), uses the ICM
+ * sensor data to transform it into a vector in world-space (i.e., z parallel to gravity, y parallel
+ * to magnetic north, x parallel to magnetic east).
+ *
+ * @param vec the vector in Arduino-space to be transformed
+ * @param packet the sensor data packet from the DMP
+ * @pre the packet must contain valid orientation-mode 9-DOF Quat9 data.
+ */
 [[nodiscard]] Eigen::Vector3d toWorldSpace(const Eigen::Vector3d vec, const icm_20948_DMP_data_t packet) noexcept {
   const double scalingFactor = std::pow(2.0, 30.0);
   const double w = ((double)packet.Quat9.Data.Q1) / scalingFactor;
@@ -237,8 +271,75 @@ ICM_20948_I2C myICM; // Otherwise create an ICM_20948_I2C object
   return quat._transformVector(vec);
 }
 
-void setup()
-{
+/**
+ * @class Screen
+ * @brief Represents the viewscreen the mouse will be on
+ */
+class Screen {
+private:
+  Eigen::Vector3d m_center;
+  Eigen::Vector3d m_forward;
+  Eigen::Vector3d m_up;
+  Eigen::Vector3d m_right;
+
+public:
+  /**
+   * @param sensitivity the factor by which changes in the mouse angle are multiplied
+   * @param forward a vector normal to the plane of the screen and pointing out the back
+   * @param up a vector parallel to the plane of the screen and pointing straight up it
+   */
+  Screen(double sensitivity, Eigen::Vector3d forward, Eigen::Vector3d up) noexcept
+      : m_center(forward.normalized() * sensitivity), m_forward(forward.normalized()), m_up(up.normalized()),
+        m_right(m_forward.cross(m_up)) {}
+
+  /**
+   * @brief recalibrate the position of the screen in space
+   *
+   * @param sensitivity factor by which changed in the mouse angle are multiplied
+   * @param forward a vector normal to the plane of the screen and pointing out the back
+   * @param up a vector parallel to the plane of the screen and pointing straight up it
+   */
+  void recalibrate(double sensitivity, Eigen::Vector3d forward, Eigen::Vector3d up) noexcept {
+    m_center = forward.normalized() * sensitivity;
+    m_forward = forward.normalized();
+    m_up = up.normalized();
+    m_right = m_forward.cross(m_up);
+  }
+
+  /**
+   * @brief determines a pixel position the 'mouse' is pointing at
+   *
+   * @details The screen is treated as being `sensitivity` pixels away from the mouse. If the mouse is facing away
+   * from the screen, an imaginary vector is drawn backwards from the mouse and calculations are performed using
+   * this. If the mouse is exactly parallel with the screen, behavior is undefined. Pixel positions are given
+   * relative to the center of the screen and should not be treated as absolute.
+   * @param mouseDirection a unit vector denoting the 'forward' vector of the mouse
+   */
+  [[nodiscard]] Eigen::Vector2<long> project(const Eigen::Vector3d mouseDirection) const noexcept {
+    const Eigen::Hyperplane<double, 3> screenPlane(m_forward, m_center);
+    const Eigen::ParametrizedLine<double, 3> ray(Eigen::Vector3d::Zero(), mouseDirection);
+    const Eigen::Vector3d intersectionPoint = ray.intersectionPoint(screenPlane);
+    return Eigen::Vector2<long>((long)m_right.dot(intersectionPoint - m_center),
+                                (long)m_up.dot(intersectionPoint - m_center));
+  }
+};
+
+ICM_20948_I2C icm;
+BleMouse mouse("Mouseless Mouse", "Mouseless Team"); // Initialize Bluetooth mouse object to send mouse events
+Screen screen(100, Eigen::Vector3d(0, 1, 0), Eigen::Vector3d(0, 0, 1));
+Eigen::Vector2<long> mousePosition = {0, 0};
+
+[[nodiscard]] Eigen::Vector3d toWorldSpace(const Eigen::Vector3d vec, const icm_20948_DMP_data_t packet) noexcept {
+  const double scalingFactor = std::pow(2.0, 30.0);
+  const double w = ((double)packet.Quat9.Data.Q1) / scalingFactor;
+  const double x = ((double)packet.Quat9.Data.Q2) / scalingFactor;
+  const double y = ((double)packet.Quat9.Data.Q3) / scalingFactor;
+  const double z = std::sqrt(1.0 - (w * w + x * x + y * y));
+  const Eigen::Quaternion<double> quat(w, x, y, z);
+  return quat._transformVector(vec);
+}
+
+void setup() {
 
   SERIAL_PORT.begin(115200); // Start the serial console
 #ifndef QUAT_ANIMATION
@@ -265,12 +366,11 @@ void setup()
 #endif
 
 #ifndef QUAT_ANIMATION
-  //myICM.enableDebugging(); // Uncomment this line to enable helpful debug messages on Serial
+  // myICM.enableDebugging(); // Uncomment this line to enable helpful debug messages on Serial
 #endif
 
   bool initialized = false;
-  while (!initialized)
-  {
+  while (!initialized) {
 
     // Initialize the ICM-20948
     // If the DMP is enabled, .begin performs a minimal startup. We need to configure the sample mode etc. manually.
@@ -284,15 +384,12 @@ void setup()
     SERIAL_PORT.print(F("Initialization of the sensor returned: "));
     SERIAL_PORT.println(myICM.statusString());
 #endif
-    if (myICM.status != ICM_20948_Stat_Ok)
-    {
+    if (myICM.status != ICM_20948_Stat_Ok) {
 #ifndef QUAT_ANIMATION
       SERIAL_PORT.println(F("Trying again..."));
 #endif
       delay(500);
-    }
-    else
-    {
+    } else {
       initialized = true;
     }
   }
@@ -303,7 +400,8 @@ void setup()
 
   bool success = true; // Use success to show if the DMP configuration was successful
 
-  // Initialize the DMP. initializeDMP is a weak function. You can overwrite it if you want to e.g. to change the sample rate
+  // Initialize the DMP. initializeDMP is a weak function. You can overwrite it if you want to e.g. to change the sample
+  // rate
   success &= (myICM.initializeDMP() == ICM_20948_Stat_Ok);
 
   // DMP sensor options are defined in ICM_20948_DMP.h
@@ -327,9 +425,9 @@ void setup()
   success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_ORIENTATION) == ICM_20948_Stat_Ok);
 
   // Enable any additional sensors / features
-  //success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_RAW_GYROSCOPE) == ICM_20948_Stat_Ok);
-  //success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_RAW_ACCELEROMETER) == ICM_20948_Stat_Ok);
-  //success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_MAGNETIC_FIELD_UNCALIBRATED) == ICM_20948_Stat_Ok);
+  // success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_RAW_GYROSCOPE) == ICM_20948_Stat_Ok);
+  // success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_RAW_ACCELEROMETER) == ICM_20948_Stat_Ok);
+  // success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_MAGNETIC_FIELD_UNCALIBRATED) == ICM_20948_Stat_Ok);
 
   // Configuring DMP to output data at multiple ODRs:
   // DMP is capable of outputting multiple sensor data at different rates to FIFO.
@@ -337,11 +435,11 @@ void setup()
   // Value = (DMP running rate / ODR ) - 1
   // E.g. For a 5Hz ODR rate when DMP is running at 55Hz, value = (55/5) - 1 = 10.
   success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Quat9, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Accel, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Gyro, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Gyro_Calibr, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Cpass, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Cpass_Calibr, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+  // success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Accel, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+  // success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Gyro, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+  // success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Gyro_Calibr, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+  // success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Cpass, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+  // success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Cpass_Calibr, 0) == ICM_20948_Stat_Ok); // Set to the maximum
 
   // Enable the FIFO
   success &= (myICM.enableFIFO() == ICM_20948_Stat_Ok);
@@ -356,48 +454,47 @@ void setup()
   success &= (myICM.resetFIFO() == ICM_20948_Stat_Ok);
 
   // Check success
-  if (success)
-  {
+  if (success) {
 #ifndef QUAT_ANIMATION
     SERIAL_PORT.println(F("DMP enabled!"));
 #endif
-  }
-  else
-  {
+  } else {
     SERIAL_PORT.println(F("Enable DMP failed!"));
-    SERIAL_PORT.println(F("Please check that you have uncommented line 29 (#define ICM_20948_USE_DMP) in ICM_20948_C.h..."));
+    SERIAL_PORT.println(
+        F("Please check that you have uncommented line 29 (#define ICM_20948_USE_DMP) in ICM_20948_C.h..."));
     while (1)
       ; // Do nothing more
   }
 }
 
-void loop()
-{
+void loop() {
   // Read any DMP data waiting in the FIFO
   // Note:
   //    readDMPdataFromFIFO will return ICM_20948_Stat_FIFONoDataAvail if no data is available.
   //    If data is available, readDMPdataFromFIFO will attempt to read _one_ frame of DMP data.
   //    readDMPdataFromFIFO will return ICM_20948_Stat_FIFOIncompleteData if a frame was present but was incomplete
   //    readDMPdataFromFIFO will return ICM_20948_Stat_Ok if a valid frame was read.
-  //    readDMPdataFromFIFO will return ICM_20948_Stat_FIFOMoreDataAvail if a valid frame was read _and_ the FIFO contains more (unread) data.
+  //    readDMPdataFromFIFO will return ICM_20948_Stat_FIFOMoreDataAvail if a valid frame was read _and_ the FIFO
+  //    contains more (unread) data.
   icm_20948_DMP_data_t data;
   myICM.readDMPdataFromFIFO(&data);
 
-  if ((myICM.status == ICM_20948_Stat_Ok) || (myICM.status == ICM_20948_Stat_FIFOMoreDataAvail)) // Was valid data available?
+  if ((myICM.status == ICM_20948_Stat_Ok) ||
+      (myICM.status == ICM_20948_Stat_FIFOMoreDataAvail)) // Was valid data available?
   {
-    //SERIAL_PORT.print(F("Received data! Header: 0x")); // Print the header in HEX so we can see what data is arriving in the FIFO
-    //if ( data.header < 0x1000) SERIAL_PORT.print( "0" ); // Pad the zeros
-    //if ( data.header < 0x100) SERIAL_PORT.print( "0" );
-    //if ( data.header < 0x10) SERIAL_PORT.print( "0" );
-    //SERIAL_PORT.println( data.header, HEX );
+    // SERIAL_PORT.print(F("Received data! Header: 0x")); // Print the header in HEX so we can see what data is arriving
+    // in the FIFO if ( data.header < 0x1000) SERIAL_PORT.print( "0" ); // Pad the zeros if ( data.header < 0x100)
+    // SERIAL_PORT.print( "0" ); if ( data.header < 0x10) SERIAL_PORT.print( "0" ); SERIAL_PORT.println( data.header,
+    // HEX );
 
     if ((data.header & DMP_header_bitmap_Quat9) > 0) // We have asked for orientation data so we should receive Quat9
     {
       // Q0 value is computed from this equation: Q0^2 + Q1^2 + Q2^2 + Q3^2 = 1.
-      // In case of drift, the sum will not add to 1, therefore, quaternion data need to be corrected with right bias values.
-      // The quaternion data is scaled by 2^30.
+      // In case of drift, the sum will not add to 1, therefore, quaternion data need to be corrected with right bias
+      // values. The quaternion data is scaled by 2^30.
 
-      //SERIAL_PORT.printf("Quat9 data is: Q1:%ld Q2:%ld Q3:%ld Accuracy:%d\r\n", data.Quat9.Data.Q1, data.Quat9.Data.Q2, data.Quat9.Data.Q3, data.Quat9.Data.Accuracy);
+      // SERIAL_PORT.printf("Quat9 data is: Q1:%ld Q2:%ld Q3:%ld Accuracy:%d\r\n", data.Quat9.Data.Q1,
+      // data.Quat9.Data.Q2, data.Quat9.Data.Q3, data.Quat9.Data.Accuracy);
 
       // Scale to +/- 1
       double q1 = ((double)data.Quat9.Data.Q1) / 1073741824.0; // Convert to double. Divide by 2^30
@@ -407,6 +504,8 @@ void loop()
 
       const Eigen::Vector3d j(0, 1, 0);
       const Eigen::Vector3d transformed = toWorldSpace(j, data);
+      Eigen::Vector2<long> diff = screen.project(transformed) - mousePosition;
+      mouse.move(saturate_cast<signed char>(diff.x()), saturate_cast<signed char>(diff.y()));
 
 #ifndef QUAT_ANIMATION
       SERIAL_PORT.print(transformed.x(), 3);
@@ -439,7 +538,8 @@ void loop()
 #endif
     }
   }
-  if (myICM.status != ICM_20948_Stat_FIFOMoreDataAvail) // If more data is available then we should read it right away - and not delay
+  if (myICM.status !=
+      ICM_20948_Stat_FIFOMoreDataAvail) // If more data is available then we should read it right away - and not delay
   {
     delay(10);
   }
