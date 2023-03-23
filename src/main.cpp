@@ -12,6 +12,7 @@
 TFT_eSPI tft=TFT_eSPI(); //initialize T-display
 
 
+
 // inline int sign(float inVal) {
 //   /*Returns 1 if input is greater than 0, 0 if input is 0, or -1 if input is less than 0*/
 //   return (inVal > 0) - (inVal < 0);
@@ -91,6 +92,8 @@ void setup() {
 
   //starts Serial Monitor
   Serial.begin(115200);
+  pinMode(14,OUTPUT);
+  digitalWrite(14, HIGH);
 
 
   // if (!mpu.begin()) {//if MPU can't connect
@@ -104,11 +107,13 @@ void setup() {
 }
 
 void loop() {
+  tft.fillScreen(TFT_BLACK);
   // put your main code here, to run repeatedly:
  // Read battery voltage and calculate battery percentage
-  int battery_pin = A4;
-  float battery_voltage = analogRead(battery_pin) * 3.3 / 4095 * 2;
-  int battery_percentage = (battery_voltage - 3.2) / (4.2 - 3.2) * 100;
+  uint16_t v1 = analogRead(34);
+
+  float battery_voltage = ((float)v1 / 4095.0) * 2.0 * 3.3 * (1100 / 1000.0);
+  float battery_percentage = (battery_voltage-3.2)*100;
 
   // Display battery percentage on OLED display
 
@@ -119,9 +124,9 @@ void loop() {
   tft.setTextSize(3);
   tft.setCursor(0, 20);
   tft.drawString(String(battery_percentage), 30, 50);
-  tft.drawString("%", 50, 60);
+  tft.drawString("%", 100, 50);
 
-  delay(1000);
+  delay(100);
 
 //   sensors_event_t a, g, temp;//sets events (special class)
 //   mpu.getEvent(&a, &g, &temp);
