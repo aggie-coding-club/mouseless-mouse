@@ -2,13 +2,14 @@
 #include <Adafruit_MPU6050.h>
 #include <Wire.h>
 #include <BleMouse.h>
+#include <TFT_eSPI.h>
 
 #define BUTTON_PIN 14 //Which pin is the mouse click button connected to?
 #define AVG_SIZE 20 //How many inputs will we keep in rolling average array?
 
 Adafruit_MPU6050 mpu; //Initialize MPU - tracks rotation in terms of acceleratioin + gyroscope
 BleMouse mouse("Mouseless Mouse", "Espressif", 100); //Initialize bluetooth mouse to send mouse events
-
+TFT_eSPI tft = TFT_eSPI();
 
 inline int sign(float inVal) {
   /*Returns 1 if input is greater than 0, 0 if input is 0, or -1 if input is less than 0*/
@@ -81,9 +82,11 @@ void setup() {
   // put your setup code here, to run once:
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   attachInterrupt(BUTTON_PIN, onButtonPress, FALLING);//when Button_pin goes from High to low (button is released) onButtonPress is ran
-
+  tft.init();
+  tft.setRotation(1);
+  
   //starts Serial Monitor
-  Serial.begin(115200);
+  //Serial.begin(115200);
 
 
   if (!mpu.begin()) {//if MPU can't connect
@@ -102,6 +105,24 @@ void loop() {
 
   sensors_event_t a, g, temp;//sets events (special class)
   mpu.getEvent(&a, &g, &temp);
+
+  //Battery life
+  // Read battery voltage and calculate battery percentage
+  int battery_pin = A4;
+  float battery_voltage = analogRead(battery_pin) * 3.3 / 4095 * 2;
+  int battery_percentage = (battery_voltage - 3.2) / (4.2 - 3.2) * 100;
+
+  // Display battery percentage on OLED display
+  tft.setTextSize(2);
+  tft.setTextColor(TFT_WHITE);
+  tft.setCursor(0, 0);
+  tft.drawString("Battery Life:", 30,30);
+  tft.setTextSize(3);
+  tft.setCursor(0, 20);
+  tft.drawString(String(battery_percentage), 30, 50);
+  tft.drawString("%", 50, 60);
+
+  delay(1000);
 
 
   //button press stuff
