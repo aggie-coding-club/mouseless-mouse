@@ -105,7 +105,23 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+ // Read battery voltage and calculate battery percentage
+  int battery_pin = A4;
+  float battery_voltage = analogRead(battery_pin) * 3.3 / 4095 * 2;
+  int battery_percentage = (battery_voltage - 3.2) / (4.2 - 3.2) * 100;
 
+  // Display battery percentage on OLED display
+
+  tft.setTextSize(2);
+  tft.setTextColor(TFT_WHITE);
+  tft.setCursor(0, 0);
+  tft.drawString("Battery Life:", 30,30);
+  tft.setTextSize(3);
+  tft.setCursor(0, 20);
+  tft.drawString(String(battery_percentage), 30, 50);
+  tft.drawString("%", 50, 60);
+
+  delay(1000);
 
 //   sensors_event_t a, g, temp;//sets events (special class)
 //   mpu.getEvent(&a, &g, &temp);
