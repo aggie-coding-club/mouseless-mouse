@@ -8,5 +8,6 @@
         "vector": "cpp",
         "string_view": "cpp",
         "initializer_list": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "${workspaceFolder}/.pio/libdeps/wemos_d1_uno32/Adafruit BusIO"
 }

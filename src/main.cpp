@@ -2,12 +2,14 @@
 #include <Adafruit_MPU6050.h>
 #include <Wire.h>
 #include <BleMouse.h>
+//#include <TFT_eSPI.h>
 
 #define BUTTON_PIN 14 //Which pin is the mouse click button connected to?
 #define AVG_SIZE 20 //How many inputs will we keep in rolling average array?
 
 Adafruit_MPU6050 mpu; //Initialize MPU - tracks rotation in terms of acceleratioin + gyroscope
 BleMouse mouse("Mouseless Mouse", "Espressif", 100); //Initialize bluetooth mouse to send mouse events
+//TFT_eSPI tft=TFT_eSPI(); //initialize T-display
 
 
 inline int sign(float inVal) {
@@ -81,6 +83,11 @@ void setup() {
   // put your setup code here, to run once:
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   attachInterrupt(BUTTON_PIN, onButtonPress, FALLING);//when Button_pin goes from High to low (button is released) onButtonPress is ran
+  // tft.init();
+  // tft.setRotation(1);
+  // tft.fillScreen(TFT_BLACK);
+  // tft.drawString("Loading", 30, 30);
+
 
   //starts Serial Monitor
   Serial.begin(115200);
