@@ -484,7 +484,7 @@
             },
             "defines": [
                 "PLATFORMIO=60106",
-                "ARDUINO_D1_UNO32",
+                "ARDUINO_TTGO_LoRa32_V1",
                 "HAVE_CONFIG_H",
                 "MBEDTLS_CONFIG_FILE=\"mbedtls/esp_config.h\"",
                 "UNITY_INCLUDE_CONFIG_H",
@@ -497,8 +497,8 @@
                 "ESP32",
                 "F_CPU=240000000L",
                 "ARDUINO=10812",
-                "ARDUINO_VARIANT=\"d1_uno32\"",
-                "ARDUINO_BOARD=\"WEMOS D1 R32\"",
+                "ARDUINO_VARIANT=\"ttgo-lora32-v1\"",
+                "ARDUINO_BOARD=\"TTGO LoRa32-OLED V1\"",
                 "ARDUINO_PARTITION_default",
                 ""
             ],
