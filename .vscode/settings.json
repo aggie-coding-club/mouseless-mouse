@@ -9,5 +9,5 @@
         "string_view": "cpp",
         "initializer_list": "cpp"
     },
-    "cmake.sourceDirectory": "${workspaceFolder}/.pio/libdeps/wemos_d1_uno32/Adafruit BusIO"
+    "cmake.sourceDirectory": "${workspaceFolder}/.pio/libdeps/ttgo-lora32-v1/TFT_eSPI"
 }
