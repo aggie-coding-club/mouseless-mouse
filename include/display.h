@@ -26,7 +26,7 @@ public:
 };
 
 // Types of events that can be sent to the active page
-typedef enum : byte {NAV_ENTER, NAV_EXIT, NAV_UP, NAV_DOWN, NAV_SELECT} pageEvent_t;
+enum class pageEvent_t : byte {ENTER, EXIT, NAV_UP, NAV_DOWN, NAV_SELECT};
 
 // DisplayPage class - base class for a full-screen display routine
 class DisplayPage {
@@ -46,7 +46,6 @@ public:
 };
 
 // MenuPage class - holds a collection of Page classes and facilitates recursive menus
-template <typename... Ts>
 class MenuPage : public DisplayPage {
     // Array of subpage classes - these are expected to implement certain methods, see below
     uint16_t numPages;
@@ -57,7 +56,16 @@ class MenuPage : public DisplayPage {
     byte subpageIdx;
 
 public:
-    MenuPage(Display* display, xQueueHandle eventQueue, const char* pageName, Ts*... pages);
+    template <typename... Ts>
+    // MenuPage(Display* display, xQueueHandle eventQueue, const char* pageName, Ts*... pages);
+    MenuPage(Display* display, QueueHandle_t eventQueue, const char* pageName, Ts*... pages) : DisplayPage(display, eventQueue, pageName) {
+        this->numPages = sizeof...(Ts);
+        byte pageInit = 0;
+        this->memberPages = (DisplayPage**)malloc(sizeof...(Ts) * sizeof(DisplayPage*));
+        auto dummy = {(this->memberPages[pageInit++] = pages)...};
+        this->subpageActive = false;
+        this->subpageIdx = 0;
+    }
     ~MenuPage();
 
     inline bool isActive();    // Is the menu itself active, or is one of its subpages active?
@@ -67,13 +75,12 @@ public:
 };
 
 // HomePage class - displays when no menus are open
-template <typename... Ts>
 class HomePage : public DisplayPage {
-    MenuPage<Ts...>* mainMenu;
+    MenuPage* mainMenu;
     bool menuActive;
 
 public:
-    HomePage(Display* display, xQueueHandle eventQueue, const char* pageName, MenuPage<Ts...>* mainMenu);
+    HomePage(Display* display, xQueueHandle eventQueue, const char* pageName, MenuPage* mainMenu);
 
     void draw();
     void onEvent(pageEvent_t event);

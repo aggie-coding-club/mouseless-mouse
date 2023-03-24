@@ -70,9 +70,10 @@ void Display::textFormat(uint8_t size, uint16_t color) {
 
 void Display::drawStatusBar() {
     byte batPercentage = getBatteryPercentage();
-    activeBuffer->drawRect(0, 0, 240, SBAR_HEIGHT, ACCENT_COLOR);
-    activeBuffer->drawRoundRect(210, 2, 18, 11, 3, BGND_COLOR);
-    activeBuffer->drawRoundRect(212, 4, 14 * (batPercentage / 100.0), 7, 3, TEXT_COLOR);
+    activeBuffer->fillRect(0, 0, 240, SBAR_HEIGHT, ACCENT_COLOR);
+    activeBuffer->fillRoundRect(210, 2, 18, 11, 2, BGND_COLOR);
+    activeBuffer->fillRoundRect(226, 5, 5, 5, 2, BGND_COLOR);
+    activeBuffer->fillRoundRect(212, 4, 14 * (batPercentage / 100.0), 7, 2, TEXT_COLOR);
 }
 
 void Display::pushChanges() {
@@ -92,87 +93,97 @@ DisplayPage::~DisplayPage() {}
 
 
 
+/* TODO: Figure out correct syntax for parameter pack constructor outside class
 template <typename... Ts>
-MenuPage<Ts...>::MenuPage(Display* display, QueueHandle_t eventQueue, const char* pageName, Ts*... pages) : DisplayPage(display, eventQueue, pageName) {
+MenuPage::MenuPage(Display* display, QueueHandle_t eventQueue, const char* pageName, Ts*... pages) : DisplayPage(display, eventQueue, pageName) {
     this->numPages = sizeof...(Ts);
     this->memberPages = new DisplayPage*[numPages];
     *(this->memberPages) = {pages...};
     this->subpageActive = false;
     this->subpageIdx = 0;
 }
+*/
 
-template <typename... Ts>
-MenuPage<Ts...>::~MenuPage() {
+MenuPage::~MenuPage() {
     delete[] this->memberPages;
 }
 
 // Check if the menu itself is the active page
-template <typename... Ts>
-inline bool MenuPage<Ts...>::isActive() {
+inline bool MenuPage::isActive() {
     return !this->subpageActive;
 }
 
 // Draw the menu if no subpage is active; otherwise, draw the active subpage
-template <typename... Ts>
-void MenuPage<Ts...>::draw() {
+void MenuPage::draw() {
     if (subpageActive) {
         this->memberPages[subpageIdx]->draw();
     }
     else {
         // Draw the menu, highlighting item # subpageIdx
+        display->textFormat(2, TFT_WHITE);
+        display->drawString(pageName, 30,30);
+        display->drawString("Selection: " + String(subpageIdx), 30, 60);
     }
 }
 
 // Callback runs when an event appears in the event queue
-template <typename... Ts>
-void MenuPage<Ts...>::onEvent(pageEvent_t event) {
+void MenuPage::onEvent(pageEvent_t event) {
     if (subpageActive) {
         this->memberPages[subpageIdx]->onEvent(event);
     }
     else switch (event) {
-        case NAV_ENTER:
+        case pageEvent_t::ENTER:
             break;
-        case NAV_EXIT:
+        case pageEvent_t::EXIT:
             break;
-        case NAV_UP:
+        case pageEvent_t::NAV_UP:
             if (subpageIdx > 0)
                 subpageIdx--;
             break;
-        case NAV_DOWN:
+        case pageEvent_t::NAV_DOWN:
             if (subpageIdx < numPages - 1)
                 subpageIdx++;
             break;
-        case NAV_SELECT:
+        case pageEvent_t::NAV_SELECT: {
+            this->memberPages[subpageIdx]->onEvent(pageEvent_t::ENTER);
             subpageActive = true;
-            break;
+        }   break;
     }
 }
 
 
 
-template <typename... Ts>
-HomePage<Ts...>::HomePage(Display* display, xQueueHandle eventQueue, const char* pageName, MenuPage<Ts...>* mainMenu) : DisplayPage(display, eventQueue, pageName) {
+HomePage::HomePage(Display* display, xQueueHandle eventQueue, const char* pageName, MenuPage* mainMenu) : DisplayPage(display, eventQueue, pageName) {
     this->mainMenu = mainMenu;
     this->menuActive = false;
 }
 
-template <typename... Ts>
-void HomePage<Ts...>::draw() {
+void HomePage::draw() {
+    // The status bar will always be drawn regardless of what page we're looking at
+    this->display->drawStatusBar();
+    if (uxQueueMessagesWaiting(eventQueue)) {
+        pageEvent_t event;
+        xQueueReceive(eventQueue, &event, 0);
+        this->onEvent(event);
+    }
+
     if (menuActive) {
         mainMenu->draw();
     }
     else {
-        this->display->drawStatusBar();
+        display->textFormat(2, TFT_WHITE);
+        display->drawString("Battery Life:", 30,30);
+        display->textFormat(3, TFT_WHITE);
+        display->drawString(String(getBatteryPercentage()) + "%", 30, 50);
     }
 }
 
-template <typename... Ts>
-void HomePage<Ts...>::onEvent(pageEvent_t event) {
+void HomePage::onEvent(pageEvent_t event) {
     if (menuActive) {
         mainMenu->onEvent(event);
     }
     else switch (event) {
-        case NAV_SELECT:
+        case pageEvent_t::NAV_SELECT:
             menuActive = true;
             break;
         default:

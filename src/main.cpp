@@ -4,6 +4,9 @@
 #include <esp32/rom/spi_flash.h>
 #include "display.h"
 
+#define UP_BUTTON_PIN 35
+#define DOWN_BUTTON_PIN 0
+
 TFT_eSPI tft = TFT_eSPI(); //initialize T-display
 TFT_eSprite bufferA = TFT_eSprite(&tft);
 TFT_eSprite bufferB = TFT_eSprite(&tft);
@@ -23,32 +26,53 @@ int16_t getBatteryPercentage() {
 class BlankPage : public DisplayPage {
 public:
   BlankPage(Display* display, xQueueHandle eventQueue, const char* pageName) : DisplayPage(display, eventQueue, pageName) {}
-  void draw() {};
+  void draw() {
+    display->textFormat(2, TFT_WHITE);
+    display->drawString(pageName, 30,30);
+  };
   void onEvent(pageEvent_t event) {};
 };
 
 xQueueHandle navigationEvents = xQueueCreate(4, sizeof(pageEvent_t));
-BlankPage myPlaceholder(&display, navigationEvents, "Placeholder");
-MenuPage<BlankPage> mainMenuPage(&display, navigationEvents, "Main Menu", &myPlaceholder);
-// HomePage<> homepage(&display, navigationEvents, "Home Page", &mainMenuPage);
+BlankPage myPlaceholderA(&display, navigationEvents, "Placeholder A");
+BlankPage myPlaceholderB(&display, navigationEvents, "Placeholder B");
+MenuPage mainMenuPage(&display, navigationEvents, "Main Menu", &myPlaceholderA, &myPlaceholderB);
+HomePage homepage(&display, navigationEvents, "Home Page", &mainMenuPage);
 
 TaskHandle_t drawTaskHandle;
 void drawTask (void * pvParameters) {
   TickType_t lastWakeTime = xTaskGetTickCount();
+
+  pageEvent_t testEvent = pageEvent_t::NAV_SELECT;
+  xQueueSend(navigationEvents, &testEvent, 0);
+  // testEvent = pageEvent_t::NAV_DOWN;
+  // xQueueSend(navigationEvents, &testEvent, 0);
+  // testEvent = pageEvent_t::NAV_SELECT;
+  // xQueueSend(navigationEvents, &testEvent, 0);
+
   while (true) {
     display.clear();
-    display.textFormat(2, TFT_WHITE);
-    display.drawString("Battery Life:", 30,30);
-    display.textFormat(3, TFT_WHITE);
-    display.drawString(String(getBatteryPercentage()) + "%", 30, 50);
+    homepage.draw();
 
-    display.drawLine(200, 20, 200 + 10 * cos(frame / 10.0), 20 + 10 * sin(frame / 10.0));
+    display.drawLine(210, 40, 210 + 10 * cos(frame / 10.0), 40 + 10 * sin(frame / 10.0));
 
     display.pushChanges();
     display.dim(127 + 127 * cos(frame / 30.0));
     frame++;
     vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(33));
   }
+}
+
+void IRAM_ATTR upButtonHandler() {
+  pageEvent_t upEvent = pageEvent_t::NAV_UP;
+  BaseType_t dunno;
+  xQueueSendFromISR(navigationEvents, &upEvent, &dunno);
+}
+
+void IRAM_ATTR downButtonHandler() {
+  pageEvent_t downEvent = pageEvent_t::NAV_DOWN;
+  BaseType_t dunno;
+  xQueueSendFromISR(navigationEvents, &downEvent, &dunno);
 }
 
 void setup() {
@@ -59,6 +83,10 @@ void setup() {
   //starts Serial Monitor
   Serial.begin(115200);
   pinMode(14, OUTPUT);
+  pinMode(UP_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(DOWN_BUTTON_PIN, INPUT_PULLUP);
+  attachInterrupt(UP_BUTTON_PIN, upButtonHandler, FALLING);
+  attachInterrupt(DOWN_BUTTON_PIN, downButtonHandler, FALLING);
 
   uint32_t id = g_rom_flashchip.device_id;
   id = ((id & 0xff) << 16) | ((id >> 16) & 0xff) | (id & 0xff00);
