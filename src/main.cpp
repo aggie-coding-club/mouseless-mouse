@@ -3,9 +3,13 @@
 #include <TFT_eSPI.h>
 #include <esp32/rom/spi_flash.h>
 #include "display.h"
+#include "io.h"
 
+#define ADC_ENABLE_PIN 14
 #define UP_BUTTON_PIN 35
 #define DOWN_BUTTON_PIN 0
+
+xQueueHandle navigationEvents = xQueueCreate(4, sizeof(pageEvent_t));
 
 TFT_eSPI tft = TFT_eSPI(); //initialize T-display
 TFT_eSprite bufferA = TFT_eSprite(&tft);
@@ -14,14 +18,15 @@ Display display = Display(&tft, &bufferA, &bufferB);
 
 uint32_t frame = 0;
 
-int16_t getBatteryPercentage() {
-  digitalWrite(14, HIGH);
-  uint16_t v1 = analogRead(34);
-  digitalWrite(14, LOW);
+// Button setup initialization
+template<>
+ButtonStatus Button<0>::status {navigationEvents, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT};
+template<>
+ButtonStatus Button<35>::status {navigationEvents, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL};
 
-  float battery_voltage = ((float)v1 / 4095.0) * 2.0 * 3.3 * (1100 / 1000.0);
-  return max(0, min(100, int((battery_voltage-3.2) * 100)));
-}
+// Button instantiation
+Button<0> upButton;
+Button<35> downButton;
 
 class BlankPage : public DisplayPage {
 public:
@@ -33,22 +38,23 @@ public:
   void onEvent(pageEvent_t event) {};
 };
 
-xQueueHandle navigationEvents = xQueueCreate(4, sizeof(pageEvent_t));
 BlankPage myPlaceholderA(&display, navigationEvents, "Placeholder A");
 BlankPage myPlaceholderB(&display, navigationEvents, "Placeholder B");
 MenuPage mainMenuPage(&display, navigationEvents, "Main Menu", &myPlaceholderA, &myPlaceholderB);
 HomePage homepage(&display, navigationEvents, "Home Page", &mainMenuPage);
 
+int16_t getBatteryPercentage() {
+  digitalWrite(ADC_ENABLE_PIN, HIGH);
+  uint16_t v1 = analogRead(34);
+  digitalWrite(ADC_ENABLE_PIN, LOW);
+
+  float battery_voltage = ((float)v1 / 4095.0) * 2.0 * 3.3 * (1100 / 1000.0);
+  return max(0, min(100, int((battery_voltage-3.2) * 100)));
+}
+
 TaskHandle_t drawTaskHandle;
 void drawTask (void * pvParameters) {
   TickType_t lastWakeTime = xTaskGetTickCount();
-
-  pageEvent_t testEvent = pageEvent_t::NAV_SELECT;
-  xQueueSend(navigationEvents, &testEvent, 0);
-  // testEvent = pageEvent_t::NAV_DOWN;
-  // xQueueSend(navigationEvents, &testEvent, 0);
-  // testEvent = pageEvent_t::NAV_SELECT;
-  // xQueueSend(navigationEvents, &testEvent, 0);
 
   while (true) {
     display.clear();
@@ -63,18 +69,6 @@ void drawTask (void * pvParameters) {
   }
 }
 
-void IRAM_ATTR upButtonHandler() {
-  pageEvent_t upEvent = pageEvent_t::NAV_UP;
-  BaseType_t dunno;
-  xQueueSendFromISR(navigationEvents, &upEvent, &dunno);
-}
-
-void IRAM_ATTR downButtonHandler() {
-  pageEvent_t downEvent = pageEvent_t::NAV_DOWN;
-  BaseType_t dunno;
-  xQueueSendFromISR(navigationEvents, &downEvent, &dunno);
-}
-
 void setup() {
   // put your setup code here, to run once:
   display.begin();
@@ -82,16 +76,16 @@ void setup() {
 
   //starts Serial Monitor
   Serial.begin(115200);
-  pinMode(14, OUTPUT);
-  pinMode(UP_BUTTON_PIN, INPUT_PULLUP);
-  pinMode(DOWN_BUTTON_PIN, INPUT_PULLUP);
-  attachInterrupt(UP_BUTTON_PIN, upButtonHandler, FALLING);
-  attachInterrupt(DOWN_BUTTON_PIN, downButtonHandler, FALLING);
+  pinMode(ADC_ENABLE_PIN, OUTPUT);
+
+  // Attach button interrupts
+  upButton.attach();
+  downButton.attach();
 
   uint32_t id = g_rom_flashchip.device_id;
   id = ((id & 0xff) << 16) | ((id >> 16) & 0xff) | (id & 0xff00);
   id = (id >> 16) & 0xFF;
-  Serial.printf("Flash size is %i", 2 << (id - 1));
+  Serial.printf("Flash size is %i\n", 2 << (id - 1));
 
   xTaskCreatePinnedToCore(
     drawTask,         // Task code is in the drawTask() function

@@ -87,6 +87,7 @@ DisplayPage::DisplayPage(Display* display, xQueueHandle eventQueue, const char* 
     this->display = display;
     this->eventQueue = eventQueue;
     this->pageName = pageName;
+    this->frameCounter = 0;
 }
 
 DisplayPage::~DisplayPage() {}
@@ -121,8 +122,10 @@ void MenuPage::draw() {
     else {
         // Draw the menu, highlighting item # subpageIdx
         display->textFormat(2, TFT_WHITE);
-        display->drawString(pageName, 30,30);
+        display->drawString(pageName, 30, 30);
         display->drawString("Selection: " + String(subpageIdx), 30, 60);
+        display->drawString(String(millis()), 30, 90);
+        this->frameCounter++;
     }
 }
 
@@ -148,6 +151,8 @@ void MenuPage::onEvent(pageEvent_t event) {
             this->memberPages[subpageIdx]->onEvent(pageEvent_t::ENTER);
             subpageActive = true;
         }   break;
+        case pageEvent_t::NAV_CANCEL:
+            break;
     }
 }
 
@@ -175,6 +180,7 @@ void HomePage::draw() {
         display->drawString("Battery Life:", 30,30);
         display->textFormat(3, TFT_WHITE);
         display->drawString(String(getBatteryPercentage()) + "%", 30, 50);
+        this->frameCounter++;
     }
 }
 

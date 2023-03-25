@@ -26,7 +26,7 @@ public:
 };
 
 // Types of events that can be sent to the active page
-enum class pageEvent_t : byte {ENTER, EXIT, NAV_UP, NAV_DOWN, NAV_SELECT};
+enum class pageEvent_t : byte {ENTER, EXIT, NAV_UP, NAV_DOWN, NAV_SELECT, NAV_CANCEL};
 
 // DisplayPage class - base class for a full-screen display routine
 class DisplayPage {
@@ -34,6 +34,7 @@ protected:
     Display* display;
     xQueueHandle eventQueue;
     const char* pageName;
+    uint32_t frameCounter;
 
 public:
     DisplayPage(Display* display, xQueueHandle eventQueue, const char* pageName);
