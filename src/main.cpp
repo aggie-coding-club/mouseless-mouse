@@ -18,15 +18,9 @@ Display display = Display(&tft, &bufferA, &bufferB);
 
 uint32_t frame = 0;
 
-// Button setup initialization
-template<>
-ButtonStatus Button<0>::status {navigationEvents, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT};
-template<>
-ButtonStatus Button<35>::status {navigationEvents, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL};
-
 // Button instantiation
-Button<0> upButton;
-Button<35> downButton;
+Button<0> upButton(navigationEvents, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT);
+Button<35> downButton(navigationEvents, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
 
 class BlankPage : public DisplayPage {
 public:

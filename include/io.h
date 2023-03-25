@@ -11,12 +11,6 @@ struct ButtonStatus {
   pageEvent_t holdEvent;
   bool isPressed = false;
   uint32_t pressTimestamp = 0;  // Timestamp of the last time the button was pressed down
-
-  ButtonStatus(xQueueHandle eventQueue, pageEvent_t bumpEvent, pageEvent_t holdEvent) {
-    this->eventQueue = eventQueue;
-    this->bumpEvent = bumpEvent;
-    this->holdEvent = holdEvent;
-  }
 };
 
 template <ButtonStatus& B>
@@ -40,15 +34,27 @@ void IRAM_ATTR buttonHandler() {
 
 template <byte P>
 struct Button {
+private:
+  ButtonStatus tempStatus;
+  
+public:
   static ButtonStatus status;
 
-  Button() {
-    status.pin = P;
+  Button(xQueueHandle eventQueue, pageEvent_t bumpEvent, pageEvent_t holdEvent) {
+    tempStatus.pin = P;
+    tempStatus.eventQueue = eventQueue;
+    tempStatus.bumpEvent = bumpEvent;
+    tempStatus.holdEvent = holdEvent;
   }
+
   void attach() {
+    status = tempStatus;
     pinMode(status.pin, INPUT_PULLUP);
     attachInterrupt(status.pin, buttonHandler<status>, CHANGE);
   }
 };
+
+template <byte P>
+ButtonStatus Button<P>::status {};
 
 #endif
