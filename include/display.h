@@ -2,6 +2,7 @@
 #define TFT_DISPLAY_H
 
 #include <TFT_eSPI.h>
+#include <stack>
 
 class Display {
     TFT_eSPI* tft;
@@ -28,16 +29,18 @@ public:
 // Types of events that can be sent to the active page
 enum class pageEvent_t : byte {ENTER, EXIT, NAV_UP, NAV_DOWN, NAV_SELECT, NAV_CANCEL};
 
+class DisplayManager;
+
 // DisplayPage class - base class for a full-screen display routine
 class DisplayPage {
 protected:
     Display* display;
-    xQueueHandle eventQueue;
+    DisplayManager* displayManager;
     const char* pageName;
     uint32_t frameCounter;
 
 public:
-    DisplayPage(Display* display, xQueueHandle eventQueue, const char* pageName);
+    DisplayPage(Display* display, DisplayManager* displayManager, const char* pageName);
     virtual ~DisplayPage();
 
     // Must be implemented by all pages
@@ -46,6 +49,8 @@ public:
     virtual void onEvent(pageEvent_t event) = 0;
 };
 
+
+
 // MenuPage class - holds a collection of Page classes and facilitates recursive menus
 class MenuPage : public DisplayPage {
     // Array of subpage classes - these are expected to implement certain methods, see below
@@ -53,23 +58,12 @@ class MenuPage : public DisplayPage {
     DisplayPage** memberPages;
 
     // Subpage management
-    bool subpageActive;
     byte subpageIdx;
 
 public:
     template <typename... Ts>
-    // MenuPage(Display* display, xQueueHandle eventQueue, const char* pageName, Ts*... pages);
-    MenuPage(Display* display, QueueHandle_t eventQueue, const char* pageName, Ts*... pages) : DisplayPage(display, eventQueue, pageName) {
-        this->numPages = sizeof...(Ts);
-        byte pageInit = 0;
-        this->memberPages = (DisplayPage**)malloc(sizeof...(Ts) * sizeof(DisplayPage*));
-        auto dummy = {(this->memberPages[pageInit++] = pages)...};
-        this->subpageActive = false;
-        this->subpageIdx = 0;
-    }
+    MenuPage(Display* display, DisplayManager* displayManager, const char* pageName, Ts*... pages);
     ~MenuPage();
-
-    inline bool isActive();    // Is the menu itself active, or is one of its subpages active?
 
     void draw();
     void onEvent(pageEvent_t event);
@@ -78,13 +72,40 @@ public:
 // HomePage class - displays when no menus are open
 class HomePage : public DisplayPage {
     MenuPage* mainMenu;
-    bool menuActive;
 
 public:
-    HomePage(Display* display, xQueueHandle eventQueue, const char* pageName, MenuPage* mainMenu);
+    HomePage(Display* display, DisplayManager* displayManager, const char* pageName, MenuPage* mainMenu);
 
     void draw();
     void onEvent(pageEvent_t event);
 };
+
+
+
+class DisplayManager {
+private:
+    Display* display;
+
+public:
+    xQueueHandle eventQueue;
+    std::stack<DisplayPage*> pageStack;
+
+    DisplayManager(Display* display);
+    void setHomepage(HomePage* homepage);
+    void draw();
+};
+
+////////////////////////////////////////////////////////////////////////////
+// Template functions
+////////////////////////////////////////////////////////////////////////////
+
+template <typename... Ts>
+MenuPage::MenuPage(Display* display, DisplayManager* displayManager, const char* pageName, Ts*... pages) : DisplayPage(display, displayManager, pageName) {
+    this->numPages = sizeof...(Ts);
+    byte pageInit = 0;
+    this->memberPages = (DisplayPage**)malloc(sizeof...(Ts) * sizeof(DisplayPage*));
+    auto dummy = {(this->memberPages[pageInit++] = pages)...};
+    this->subpageIdx = 0;
+}
 
 #endif

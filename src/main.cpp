@@ -16,26 +16,30 @@ TFT_eSprite bufferA = TFT_eSprite(&tft);
 TFT_eSprite bufferB = TFT_eSprite(&tft);
 Display display = Display(&tft, &bufferA, &bufferB);
 
+DisplayManager displayManager(&display);
+
 uint32_t frame = 0;
 
 // Button instantiation
-Button<0> upButton(navigationEvents, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT);
-Button<35> downButton(navigationEvents, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
+Button<0> upButton(displayManager.eventQueue, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT);
+Button<35> downButton(displayManager.eventQueue, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
 
 class BlankPage : public DisplayPage {
 public:
-  BlankPage(Display* display, xQueueHandle eventQueue, const char* pageName) : DisplayPage(display, eventQueue, pageName) {}
+  BlankPage(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
   void draw() {
     display->textFormat(2, TFT_WHITE);
     display->drawString(pageName, 30,30);
   };
-  void onEvent(pageEvent_t event) {};
+  void onEvent(pageEvent_t event) {
+    if (event == pageEvent_t::NAV_CANCEL) this->displayManager->pageStack.pop();
+  };
 };
 
-BlankPage myPlaceholderA(&display, navigationEvents, "Placeholder A");
-BlankPage myPlaceholderB(&display, navigationEvents, "Placeholder B");
-MenuPage mainMenuPage(&display, navigationEvents, "Main Menu", &myPlaceholderA, &myPlaceholderB);
-HomePage homepage(&display, navigationEvents, "Home Page", &mainMenuPage);
+BlankPage myPlaceholderA(&display, &displayManager, "Placeholder A");
+BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
+MenuPage mainMenuPage(&display, &displayManager, "Main Menu", &myPlaceholderA, &myPlaceholderB);
+HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 
 int16_t getBatteryPercentage() {
   digitalWrite(ADC_ENABLE_PIN, HIGH);
@@ -52,7 +56,7 @@ void drawTask (void * pvParameters) {
 
   while (true) {
     display.clear();
-    homepage.draw();
+    displayManager.draw();
 
     display.drawLine(210, 40, 210 + 10 * cos(frame / 10.0), 40 + 10 * sin(frame / 10.0));
 
@@ -67,6 +71,8 @@ void setup() {
   // put your setup code here, to run once:
   display.begin();
   display.setStroke(TFT_CYAN);
+
+  displayManager.setHomepage(&homepage);
 
   //starts Serial Monitor
   Serial.begin(115200);

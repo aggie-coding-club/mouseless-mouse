@@ -1,3 +1,4 @@
+#include <stack>
 #include <TFT_eSPI.h>
 #include "display.h"
 
@@ -83,9 +84,9 @@ void Display::pushChanges() {
 
 
 
-DisplayPage::DisplayPage(Display* display, xQueueHandle eventQueue, const char* pageName) {
+DisplayPage::DisplayPage(Display* display, DisplayManager* displayManager, const char* pageName) {
     this->display = display;
-    this->eventQueue = eventQueue;
+    this->displayManager = displayManager;
     this->pageName = pageName;
     this->frameCounter = 0;
 }
@@ -94,47 +95,23 @@ DisplayPage::~DisplayPage() {}
 
 
 
-/* TODO: Figure out correct syntax for parameter pack constructor outside class
-template <typename... Ts>
-MenuPage::MenuPage(Display* display, QueueHandle_t eventQueue, const char* pageName, Ts*... pages) : DisplayPage(display, eventQueue, pageName) {
-    this->numPages = sizeof...(Ts);
-    this->memberPages = new DisplayPage*[numPages];
-    *(this->memberPages) = {pages...};
-    this->subpageActive = false;
-    this->subpageIdx = 0;
-}
-*/
-
 MenuPage::~MenuPage() {
     delete[] this->memberPages;
 }
 
-// Check if the menu itself is the active page
-inline bool MenuPage::isActive() {
-    return !this->subpageActive;
-}
-
 // Draw the menu if no subpage is active; otherwise, draw the active subpage
 void MenuPage::draw() {
-    if (subpageActive) {
-        this->memberPages[subpageIdx]->draw();
-    }
-    else {
-        // Draw the menu, highlighting item # subpageIdx
-        display->textFormat(2, TFT_WHITE);
-        display->drawString(pageName, 30, 30);
-        display->drawString("Selection: " + String(subpageIdx), 30, 60);
-        display->drawString(String(millis()), 30, 90);
-        this->frameCounter++;
-    }
+    // Draw the menu, highlighting item # subpageIdx
+    display->textFormat(2, TFT_WHITE);
+    display->drawString(pageName, 30, 30);
+    display->drawString("Selection: " + String(subpageIdx), 30, 60);
+    display->drawString(String(millis()), 30, 90);
+    this->frameCounter++;
 }
 
 // Callback runs when an event appears in the event queue
 void MenuPage::onEvent(pageEvent_t event) {
-    if (subpageActive) {
-        this->memberPages[subpageIdx]->onEvent(event);
-    }
-    else switch (event) {
+    switch (event) {
         case pageEvent_t::ENTER:
             break;
         case pageEvent_t::EXIT:
@@ -148,51 +125,61 @@ void MenuPage::onEvent(pageEvent_t event) {
                 subpageIdx++;
             break;
         case pageEvent_t::NAV_SELECT: {
-            this->memberPages[subpageIdx]->onEvent(pageEvent_t::ENTER);
-            subpageActive = true;
+            memberPages[subpageIdx]->onEvent(pageEvent_t::ENTER);
+            displayManager->pageStack.push(memberPages[subpageIdx]);
         }   break;
         case pageEvent_t::NAV_CANCEL:
+            displayManager->pageStack.pop();
             break;
     }
 }
 
 
 
-HomePage::HomePage(Display* display, xQueueHandle eventQueue, const char* pageName, MenuPage* mainMenu) : DisplayPage(display, eventQueue, pageName) {
+HomePage::HomePage(Display* display, DisplayManager* displayManager, const char* pageName, MenuPage* mainMenu) : DisplayPage(display, displayManager, pageName) {
     this->mainMenu = mainMenu;
-    this->menuActive = false;
 }
 
 void HomePage::draw() {
-    // The status bar will always be drawn regardless of what page we're looking at
-    this->display->drawStatusBar();
-    if (uxQueueMessagesWaiting(eventQueue)) {
-        pageEvent_t event;
-        xQueueReceive(eventQueue, &event, 0);
-        this->onEvent(event);
-    }
-
-    if (menuActive) {
-        mainMenu->draw();
-    }
-    else {
-        display->textFormat(2, TFT_WHITE);
-        display->drawString("Battery Life:", 30,30);
-        display->textFormat(3, TFT_WHITE);
-        display->drawString(String(getBatteryPercentage()) + "%", 30, 50);
-        this->frameCounter++;
-    }
+    display->textFormat(2, TFT_WHITE);
+    display->drawString("Battery Life:", 30,30);
+    display->textFormat(3, TFT_WHITE);
+    display->drawString(String(getBatteryPercentage()) + "%", 30, 50);
+    frameCounter++;
 }
 
 void HomePage::onEvent(pageEvent_t event) {
-    if (menuActive) {
-        mainMenu->onEvent(event);
-    }
-    else switch (event) {
+    switch (event) {
         case pageEvent_t::NAV_SELECT:
-            menuActive = true;
+            displayManager->pageStack.push(mainMenu);
             break;
         default:
             break;
     }
+}
+
+
+
+DisplayManager::DisplayManager(Display* display) {
+    this->display = display;
+    this->eventQueue = xQueueCreate(4, sizeof(pageEvent_t));
+}
+
+void DisplayManager::setHomepage(HomePage* homepage) {
+    assert(this->pageStack.empty());
+    pageStack.push(homepage);
+}
+
+void DisplayManager::draw() {
+    // Forward any events to the active page
+    if (uxQueueMessagesWaiting(eventQueue)) {
+        pageEvent_t event;
+        xQueueReceive(eventQueue, &event, 0);
+        // Serial.printf("Event received: %i\n", event);
+        this->pageStack.top()->onEvent(event);
+    }
+
+    // Draw the status bar and the active page
+    display->drawStatusBar();
+    pageStack.top()->draw();
 }
