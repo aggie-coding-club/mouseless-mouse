@@ -8,9 +8,14 @@
 const uint8_t SBAR_HEIGHT = 15;         // Height of the status bar in pixels
 const uint16_t ACCENT_COLOR = 0x461F;   // TFT_eSPI::color565(64, 192, 255)
 const uint16_t TEXT_COLOR = TFT_WHITE;  // Color of menu text
+const uint16_t SEL_COLOR = ACCENT_COLOR >> 1 & ~0x0410; // Equivalent to lerp(ACCENT_COLOR, TFT_BLACK, 0.5)
 const uint16_t BGND_COLOR = TFT_BLACK;  // Color of background
 
 extern int16_t getBatteryPercentage();
+
+inline uint16_t wrapDegrees(int16_t degrees) {
+    return degrees % 360 + 360 * (degrees < 0);
+}
 
 Display::Display(TFT_eSPI* tft, TFT_eSprite* bufferA, TFT_eSprite* bufferB) {
     this->tft = tft;
@@ -54,6 +59,10 @@ void Display::setStroke(uint16_t color) {
     this->strokeColor = color;
 }
 
+int16_t Display::getStringWidth(const char* string) {
+    return activeBuffer->textWidth(string);
+}
+
 void Display::drawString(String string, uint16_t xPos, uint16_t yPos) {
     activeBuffer->drawString(string, xPos, yPos);
 }
@@ -62,11 +71,24 @@ void Display::drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
     activeBuffer->drawLine(x1, y1, x2, y2, strokeColor);
 }
 
+void Display::drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t ir, uint16_t startAngle, uint16_t endAngle, uint16_t fg_color, uint16_t bg_color) {
+    activeBuffer->drawArc(x, y, r, ir, startAngle, endAngle, fg_color, bg_color, false);
+}
+
+void Display::fillRect(uint16_t x1, uint16_t y1, uint16_t width, uint16_t height) {
+    activeBuffer->fillRect(x1, y1, width, height, fillColor);
+}
+
 void Display::textFormat(uint8_t size, uint16_t color) {
     bufferA->setTextSize(size);
     bufferB->setTextSize(size);
     bufferA->setTextColor(color);
     bufferB->setTextColor(color);
+}
+
+void Display::pushChanges() {
+    activeBuffer->pushSprite(0, 0);
+    activeBuffer = (activeBuffer == bufferA) ? bufferB : bufferA;
 }
 
 void Display::drawStatusBar() {
@@ -77,9 +99,41 @@ void Display::drawStatusBar() {
     activeBuffer->fillRoundRect(212, 4, 14 * (batPercentage / 100.0), 7, 2, TEXT_COLOR);
 }
 
-void Display::pushChanges() {
-    activeBuffer->pushSprite(0, 0);
-    activeBuffer = (activeBuffer == bufferA) ? bufferB : bufferA;
+void Display::drawNavArrow(uint16_t x, uint16_t y, bool direction, float progress, uint16_t stroke_color, uint16_t bg_color) {
+    int16_t flip = direction ? -1 : 1;
+    uint16_t arrowheadX;
+    uint16_t arrowheadY;
+    float arrowheadAngle;
+    float arrowTailAngle;
+    float arrowheadAngleRads;
+    uint16_t arrowheadLength = 5;
+    float arrowheadBreadth = 0.6;
+    if (progress < 0.5)
+        activeBuffer->drawLine(x, y + 10*flip, x, y - 5*flip, stroke_color);
+    else if (progress < 0.75)
+        activeBuffer->drawLine(x, y + (40 - 60 * progress)*flip, x, y - 5*flip, stroke_color);
+    arrowheadX = 5 - 5 * cos(6.28318 * 3 * min(float(0.25), progress));
+    arrowheadY = -5 - 5 * sin(6.28318 * 3 * min(float(0.25), progress));
+    if (progress > 0.25) {
+        activeBuffer->drawLine(x + 5*flip, y, x + max(float(-10), 20 - 60*progress)*flip, y, stroke_color);
+        arrowheadX += 15 - 60*min(float(0.5), progress);
+    }
+    arrowheadX = arrowheadX * flip + x;
+    arrowheadY = arrowheadY * flip + y;
+    arrowheadAngle = 180*!direction - 90 + 360 * 3 * min(float(0.25), progress); // TFT_eSPI defines 0 degrees as straight down and positive as clockwise
+    arrowTailAngle = 180*!direction - 90 + 360 * 3 * max(float(0), progress - float(0.75));
+    arrowheadAngleRads = 3.14159*(0.5 + direction) - 6.28318 * 3 * min(float(0.25), progress); // C++ uses real math
+    if (progress > 0 && progress < 1)
+        activeBuffer->drawArc(x + 5*flip, y - 5*flip, 5, 5, wrapDegrees(arrowTailAngle), wrapDegrees(arrowheadAngle), stroke_color, bg_color);
+    activeBuffer->fillTriangle(
+        arrowheadX,
+        arrowheadY,
+        arrowheadX - arrowheadLength*cos(arrowheadAngleRads - arrowheadBreadth),
+        arrowheadY + arrowheadLength*sin(arrowheadAngleRads - arrowheadBreadth),
+        arrowheadX - arrowheadLength*cos(arrowheadAngleRads + arrowheadBreadth),
+        arrowheadY + arrowheadLength*sin(arrowheadAngleRads + arrowheadBreadth),
+        stroke_color
+    );
 }
 
 
@@ -102,10 +156,20 @@ MenuPage::~MenuPage() {
 // Draw the menu if no subpage is active; otherwise, draw the active subpage
 void MenuPage::draw() {
     // Draw the menu, highlighting item # subpageIdx
+    display->textFormat(1, TFT_BLACK);
+    display->drawString(pageName, (240 - display->getStringWidth(pageName)) / 2, 4);
     display->textFormat(2, TFT_WHITE);
-    display->drawString(pageName, 30, 30);
-    display->drawString("Selection: " + String(subpageIdx), 30, 60);
-    display->drawString(String(millis()), 30, 90);
+    for (byte i = 0; i < numPages; i++) {
+        if (15 + i*30 + menuTlY > 135) break;   // No reason to draw things that are out of frame
+        if (i == subpageIdx) {
+            display->setFill(SEL_COLOR);
+            display->fillRect(0, 15 + i*30 + selectionTlY + menuTlY, 240, 30);
+        }
+        display->drawString(memberPages[i]->pageName, 30, 25 + i*30 + menuTlY);
+    }
+    int16_t targetMenuTlY = min(0, 40 - 30*subpageIdx);
+    menuTlY += 0.25 * (targetMenuTlY - menuTlY);
+    selectionTlY *= 0.75;
     this->frameCounter++;
 }
 
@@ -116,13 +180,20 @@ void MenuPage::onEvent(pageEvent_t event) {
             break;
         case pageEvent_t::EXIT:
             break;
+        case pageEvent_t::NAV_PRESS:
+            buttonPressed = true;
+            break;
         case pageEvent_t::NAV_UP:
-            if (subpageIdx > 0)
+            if (subpageIdx > 0) {
                 subpageIdx--;
+                selectionTlY += 30;
+            }
             break;
         case pageEvent_t::NAV_DOWN:
-            if (subpageIdx < numPages - 1)
+            if (subpageIdx < numPages - 1) {
                 subpageIdx++;
+                selectionTlY -= 30;
+            }
             break;
         case pageEvent_t::NAV_SELECT: {
             memberPages[subpageIdx]->onEvent(pageEvent_t::ENTER);
@@ -130,6 +201,15 @@ void MenuPage::onEvent(pageEvent_t event) {
         }   break;
         case pageEvent_t::NAV_CANCEL:
             displayManager->pageStack.pop();
+            break;
+    }
+    switch (event) {
+        case pageEvent_t::NAV_UP:
+        case pageEvent_t::NAV_DOWN:
+        case pageEvent_t::NAV_SELECT:
+        case pageEvent_t::NAV_CANCEL:
+            buttonPressed = false;
+        default:
             break;
     }
 }
@@ -175,11 +255,10 @@ void DisplayManager::draw() {
     if (uxQueueMessagesWaiting(eventQueue)) {
         pageEvent_t event;
         xQueueReceive(eventQueue, &event, 0);
-        // Serial.printf("Event received: %i\n", event);
         this->pageStack.top()->onEvent(event);
     }
 
     // Draw the status bar and the active page
-    display->drawStatusBar();
     pageStack.top()->draw();
+    display->drawStatusBar();
 }

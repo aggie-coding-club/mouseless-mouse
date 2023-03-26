@@ -11,18 +11,18 @@
 
 xQueueHandle navigationEvents = xQueueCreate(4, sizeof(pageEvent_t));
 
-TFT_eSPI tft = TFT_eSPI(); //initialize T-display
-TFT_eSprite bufferA = TFT_eSprite(&tft);
-TFT_eSprite bufferB = TFT_eSprite(&tft);
-Display display = Display(&tft, &bufferA, &bufferB);
+TFT_eSPI tftDisplay = TFT_eSPI(); //initialize T-display
+TFT_eSprite bufferA = TFT_eSprite(&tftDisplay);
+TFT_eSprite bufferB = TFT_eSprite(&tftDisplay);
+Display display(&tftDisplay, &bufferA, &bufferB);
 
 DisplayManager displayManager(&display);
 
 uint32_t frame = 0;
 
 // Button instantiation
-Button<0> upButton(displayManager.eventQueue, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT);
-Button<35> downButton(displayManager.eventQueue, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
+Button<0> upButton(displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT);
+Button<35> downButton(displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
 
 class BlankPage : public DisplayPage {
 public:
@@ -30,6 +30,8 @@ public:
   void draw() {
     display->textFormat(2, TFT_WHITE);
     display->drawString(pageName, 30,30);
+    display->drawNavArrow(120, 80, pageName[12]&1, 0.5 - 0.5*cos(6.28318*float(frameCounter%90)/90.0), 0x461F, TFT_BLACK);
+    frameCounter++;
   };
   void onEvent(pageEvent_t event) {
     if (event == pageEvent_t::NAV_CANCEL) this->displayManager->pageStack.pop();
@@ -38,7 +40,10 @@ public:
 
 BlankPage myPlaceholderA(&display, &displayManager, "Placeholder A");
 BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
-MenuPage mainMenuPage(&display, &displayManager, "Main Menu", &myPlaceholderA, &myPlaceholderB);
+BlankPage myPlaceholderC(&display, &displayManager, "Placeholder C");
+BlankPage myPlaceholderD(&display, &displayManager, "Placeholder D");
+BlankPage myPlaceholderE(&display, &displayManager, "Placeholder E");
+MenuPage mainMenuPage(&display, &displayManager, "Main Menu", &myPlaceholderA, &myPlaceholderB, &myPlaceholderC, &myPlaceholderD, &myPlaceholderE);
 HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 
 int16_t getBatteryPercentage() {
