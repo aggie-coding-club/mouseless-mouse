@@ -4,6 +4,20 @@
 #include <TFT_eSPI.h>
 #include <stack>
 
+#define PWM_CHANNEL 0
+#define BACKLIGHT_PIN 4
+
+const uint8_t BRIGHT_BRIGHTNESS = 120;
+const uint8_t DIM_BRIGHTNESS = 10;
+
+const uint8_t SBAR_HEIGHT = 15;         // Height of the status bar in pixels
+const uint16_t ACCENT_COLOR = 0x461F;   // TFT_eSPI::color565(64, 192, 255)
+const uint16_t TEXT_COLOR = TFT_WHITE;  // Color of menu text
+const uint16_t SEL_COLOR = ACCENT_COLOR >> 1 & ~0x0410; // Equivalent to lerp(ACCENT_COLOR, TFT_BLACK, 0.5)
+const uint16_t BGND_COLOR = TFT_BLACK;  // Color of background
+
+extern int16_t getBatteryPercentage();
+
 class Display {
     TFT_eSPI* tft;
     TFT_eSprite* bufferA;
@@ -12,6 +26,8 @@ class Display {
     uint16_t fillColor;
     uint16_t strokeColor;
 public:
+    uint8_t brightness;
+
     Display(TFT_eSPI* tft, TFT_eSprite* bufferA, TFT_eSprite* bufferB);
     ~Display();
     void begin();
@@ -97,6 +113,8 @@ public:
 class DisplayManager {
 private:
     Display* display;
+    uint32_t frameCtr;
+    uint32_t lastEventFrame;
 
 public:
     xQueueHandle eventQueue;

@@ -21,8 +21,10 @@ DisplayManager displayManager(&display);
 uint32_t frame = 0;
 
 // Button instantiation
-Button<0> upButton(displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT);
-Button<35> downButton(displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
+// Button<0> upButton(displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT);
+// Button<35> downButton(displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
+Button upButton(0, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT);
+Button downButton(35, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
 
 class BlankPage : public DisplayPage {
 public:
@@ -66,7 +68,6 @@ void drawTask (void * pvParameters) {
     display.drawLine(210, 40, 210 + 10 * cos(frame / 10.0), 40 + 10 * sin(frame / 10.0));
 
     display.pushChanges();
-    display.dim(127 + 127 * cos(frame / 30.0));
     frame++;
     vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(33));
   }

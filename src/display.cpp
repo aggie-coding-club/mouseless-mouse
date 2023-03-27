@@ -2,17 +2,6 @@
 #include <TFT_eSPI.h>
 #include "display.h"
 
-#define PWM_CHANNEL 0
-#define BACKLIGHT_PIN 4
-
-const uint8_t SBAR_HEIGHT = 15;         // Height of the status bar in pixels
-const uint16_t ACCENT_COLOR = 0x461F;   // TFT_eSPI::color565(64, 192, 255)
-const uint16_t TEXT_COLOR = TFT_WHITE;  // Color of menu text
-const uint16_t SEL_COLOR = ACCENT_COLOR >> 1 & ~0x0410; // Equivalent to lerp(ACCENT_COLOR, TFT_BLACK, 0.5)
-const uint16_t BGND_COLOR = TFT_BLACK;  // Color of background
-
-extern int16_t getBatteryPercentage();
-
 inline uint16_t wrapDegrees(int16_t degrees) {
     return degrees % 360 + 360 * (degrees < 0);
 }
@@ -36,7 +25,7 @@ Display::~Display() {
 void Display::begin() {
     ledcAttachPin(BACKLIGHT_PIN, PWM_CHANNEL);
     ledcSetup(PWM_CHANNEL, 20000, 8);
-    ledcWrite(PWM_CHANNEL, 255);
+    ledcWrite(PWM_CHANNEL, BRIGHT_BRIGHTNESS);
     tft->init();
     tft->initDMA();
     tft->setRotation(1);
@@ -44,6 +33,7 @@ void Display::begin() {
 }
 
 void Display::dim(uint8_t brightness) {
+    this->brightness = brightness;
     ledcWrite(PWM_CHANNEL, brightness);
 }
 
@@ -160,7 +150,8 @@ void MenuPage::draw() {
     display->drawString(pageName, (240 - display->getStringWidth(pageName)) / 2, 4);
     display->textFormat(2, TFT_WHITE);
     for (byte i = 0; i < numPages; i++) {
-        if (15 + i*30 + menuTlY > 135) break;   // No reason to draw things that are out of frame
+        if (15 + i*30 + menuTlY < -15) continue;    // No reason to draw things that are out of frame
+        if (15 + i*30 + menuTlY > 135) break;
         if (i == subpageIdx) {
             display->setFill(SEL_COLOR);
             display->fillRect(0, 15 + i*30 + selectionTlY + menuTlY, 240, 30);
@@ -255,10 +246,16 @@ void DisplayManager::draw() {
     if (uxQueueMessagesWaiting(eventQueue)) {
         pageEvent_t event;
         xQueueReceive(eventQueue, &event, 0);
+        lastEventFrame = frameCtr;
+        if (display->brightness < BRIGHT_BRIGHTNESS)
+            display->dim(BRIGHT_BRIGHTNESS);
         this->pageStack.top()->onEvent(event);
     }
+    else if (display->brightness > DIM_BRIGHTNESS && lastEventFrame + 900 < frameCtr)
+        display->dim(max((int)DIM_BRIGHTNESS, display->brightness - 5));
 
     // Draw the status bar and the active page
     pageStack.top()->draw();
     display->drawStatusBar();
+    frameCtr++;
 }
