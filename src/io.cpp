@@ -15,15 +15,15 @@ Button::Button(byte pin, xQueueHandle eventQueue, pageEvent_t pressEvent, pageEv
 
 void Button::buttonISR(void* instancePtr) {
     Button* instance = reinterpret_cast<Button*>(instancePtr);
-    
+
     pageEvent_t eventToSend;
-    BaseType_t ign; // Would be truthy if a higher-priority task was unblocked by queueing an event, but there's no blocking queue code
-    if (!digitalRead(instance->pin)) {    // Pin is pulled up, so pressing the button creates a falling edge
+    BaseType_t wokeTask = pdFALSE;      // Would be set to pdTRUE if a higher-priority task was unblocked by queueing an event, but there's no blocking queue code
+    if (!digitalRead(instance->pin)) {  // Pin is pulled up, so pressing the button creates a falling edge
     instance->pressTimestamp = millis();
     instance->isPressed = true;
     eventToSend = instance->pressEvent;
     if (millis() - instance->releaseTimestamp > DEBOUNCE_TIME)
-        xQueueSendFromISR(instance->eventQueue, &eventToSend, &ign);
+        xQueueSendFromISR(instance->eventQueue, &eventToSend, &wokeTask);
     }
     else {
     instance->releaseTimestamp = millis();
@@ -33,8 +33,9 @@ void Button::buttonISR(void* instancePtr) {
     else
         eventToSend = instance->bumpEvent;
     if (millis() - instance->pressTimestamp > DEBOUNCE_TIME)
-        xQueueSendFromISR(instance->eventQueue, &eventToSend, &ign);
+        xQueueSendFromISR(instance->eventQueue, &eventToSend, &wokeTask);
     }
+    portYIELD_FROM_ISR(wokeTask);
 }
 
 void Button::attach() {
