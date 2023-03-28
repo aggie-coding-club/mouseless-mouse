@@ -24,13 +24,23 @@ Display::~Display() {
 }
 
 void Display::begin() {
-    ledcAttachPin(BACKLIGHT_PIN, PWM_CHANNEL);
-    ledcSetup(PWM_CHANNEL, 20000, 8);
-    ledcWrite(PWM_CHANNEL, BRIGHT_BRIGHTNESS);
+    if (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_UNDEFINED) {   // We're waking up from sleep, not a full reset
+        tft->writecommand(0x11);    // Wake up TFT display
+        delay(120);                 // Required for TFT power supply to stabilize
+    }
     tft->init();
     tft->initDMA();
     tft->setRotation(1);
     tft->fillScreen(TFT_BLACK);
+    ledcAttachPin(BACKLIGHT_PIN, PWM_CHANNEL);
+    ledcSetup(PWM_CHANNEL, 20000, 8);
+    ledcWrite(PWM_CHANNEL, BRIGHT_BRIGHTNESS);
+}
+
+void Display::sleepMode() {
+    tft->writecommand(0x10);    // No official library support, but mentioned in GitHub (TFT_eSPI issue 497)
+    ledcWrite(PWM_CHANNEL, 0);
+    delay(5);
 }
 
 void Display::dim(uint8_t brightness) {

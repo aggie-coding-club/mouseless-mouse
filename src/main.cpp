@@ -2,35 +2,51 @@
 #include <Wire.h>
 #include <TFT_eSPI.h>
 #include <esp32/rom/spi_flash.h>
+#include <ulp_common.h>
 #include "display.h"
 #include "io.h"
 
+// Pin definitions
 #define ADC_ENABLE_PIN 14
 #define UP_BUTTON_PIN 35
 #define DOWN_BUTTON_PIN 0
+#define LMB_TOUCH_CHANNEL 7
+#define RMB_TOUCH_CHANNEL 5
 
+// Create event queues for inter-process/ISR communication
 xQueueHandle navigationEvents = xQueueCreate(4, sizeof(pageEvent_t));
+xQueueHandle mouseEvents = xQueueCreate(4, sizeof(mouseEvent_t));
 
-TFT_eSPI tftDisplay = TFT_eSPI(); //initialize T-display
+// Instantiate display module
+TFT_eSPI tftDisplay = TFT_eSPI();
+
+// Instantiate two sprites to be used as frame buffers
 TFT_eSprite bufferA = TFT_eSprite(&tftDisplay);
 TFT_eSprite bufferB = TFT_eSprite(&tftDisplay);
+
+// Wrap display module and frame buffers into Display class object
 Display display(&tftDisplay, &bufferA, &bufferB);
 
-uint32_t frame = 0;
-
+// Instantiate display page manager
 DisplayManager displayManager(&display);
 
 // Button instantiation
 Button upButton(0, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT);
 Button downButton(35, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
 
+// Touch button instantiation
+TouchPadInstance lMouseButton = TouchPad(LMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::LMB_PRESS, mouseEvent_t::LMB_RELEASE);
+TouchPadInstance rMouseButton = TouchPad(RMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::RMB_PRESS, mouseEvent_t::RMB_RELEASE);
+
+// Define a blank placeholder page
 class BlankPage : public DisplayPage {
 public:
   BlankPage(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
   void draw() {
     display->textFormat(2, TFT_WHITE);
-    display->drawString(pageName, 30,30);
-    display->drawNavArrow(120, 80, pageName[12]&1, 0.5 - 0.5*cos(6.28318*float(frameCounter%90)/90.0), 0x461F, TFT_BLACK);
+    display->drawString(pageName, 30, 30);
+    display->drawString(String(touchRead(T7)), 30, 60);
+    display->drawNavArrow(120, 110, pageName[12]&1, 0.5 - 0.5*cos(6.28318*float(frameCounter%90)/90.0), 0x461F, TFT_BLACK);
     frameCounter++;
   };
   void onEvent(pageEvent_t event) {
@@ -38,6 +54,7 @@ public:
   };
 };
 
+// Instantiate display page hierarchy
 BlankPage myPlaceholderA(&display, &displayManager, "Placeholder A");
 BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
 BlankPage myPlaceholderC(&display, &displayManager, "Placeholder C");
@@ -46,6 +63,7 @@ BlankPage myPlaceholderE(&display, &displayManager, "Placeholder E");
 MenuPage mainMenuPage(&display, &displayManager, "Main Menu", &myPlaceholderA, &myPlaceholderB, &myPlaceholderC, &myPlaceholderD, &myPlaceholderE);
 HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 
+// Use the ADC to read the battery voltage - convert result to a percentage
 int16_t getBatteryPercentage() {
   digitalWrite(ADC_ENABLE_PIN, HIGH);
   uint16_t v1 = analogRead(34);
@@ -55,9 +73,12 @@ int16_t getBatteryPercentage() {
   return max(0, min(100, int((battery_voltage-3.2) * 100)));
 }
 
+// Define the display drawing task and a place to store its handle
 TaskHandle_t drawTaskHandle;
 void drawTask (void * pvParameters) {
   TickType_t lastWakeTime = xTaskGetTickCount();
+
+  uint32_t frame = 0;
 
   while (true) {
     display.clear();
@@ -73,25 +94,34 @@ void drawTask (void * pvParameters) {
 
 void setup() {
   // put your setup code here, to run once:
-  display.begin();
-  display.setStroke(TFT_CYAN);
-
-  displayManager.setHomepage(&homepage);
-  displayManager.attachButtons(&upButton, &downButton);
-
-  //starts Serial Monitor
+  // Start UART transceiver
   Serial.begin(115200);
+
+  // Configure battery voltage reading pin
   pinMode(ADC_ENABLE_PIN, OUTPUT);
 
   // Attach button interrupts
   upButton.attach();
   downButton.attach();
 
+  // Attach touch pad interrupts
+  attachTouchPads();
+
+  // Initialize display
+  display.begin();
+  display.setStroke(TFT_CYAN);
+
+  // Set up display page manager
+  displayManager.setHomepage(&homepage);
+  displayManager.attachButtons(&upButton, &downButton);
+
+  // Get board flash size and print it to serial
   uint32_t id = g_rom_flashchip.device_id;
   id = ((id & 0xff) << 16) | ((id >> 16) & 0xff) | (id & 0xff00);
   id = (id >> 16) & 0xFF;
   Serial.printf("Flash size is %i\n", 2 << (id - 1));
 
+  // Dispatch the display drawing task
   xTaskCreatePinnedToCore(
     drawTask,         // Task code is in the drawTask() function
     "Draw Task",      // Descriptive task name
@@ -103,7 +133,23 @@ void setup() {
   );
 }
 
+// I'm lazy
+#define DO_CASE(c) case mouseEvent_t::c : Serial.println(#c); break
+
 void loop() {
   // put your main code here, to run repeatedly:
-  
+  // Relay test messages from touch pads to Serial
+  if (uxQueueMessagesWaiting(mouseEvents)) {
+    mouseEvent_t messageReceived;
+    xQueueReceive(mouseEvents, &messageReceived, 0);
+    switch (messageReceived) {
+      DO_CASE(LMB_PRESS);
+      DO_CASE(LMB_RELEASE);
+      DO_CASE(RMB_PRESS);
+      DO_CASE(RMB_RELEASE);
+      default:
+        Serial.println("I dunno man...");
+        break;
+    }
+  }
 }

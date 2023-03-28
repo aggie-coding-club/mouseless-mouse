@@ -32,6 +32,7 @@ public:
     Display(TFT_eSPI* tft, TFT_eSprite* bufferA, TFT_eSprite* bufferB);
     ~Display();
     void begin();
+    void sleepMode();
     void dim(uint8_t brightness);
     void pushChanges();
     void clear();
