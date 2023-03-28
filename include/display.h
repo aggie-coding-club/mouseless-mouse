@@ -17,6 +17,7 @@ const uint16_t SEL_COLOR = ACCENT_COLOR >> 1 & ~0x0410; // Equivalent to lerp(AC
 const uint16_t BGND_COLOR = TFT_BLACK;  // Color of background
 
 extern int16_t getBatteryPercentage();
+class Button;   // Forward declaration of class Button, which is in io.h
 
 class Display {
     TFT_eSPI* tft;
@@ -81,9 +82,6 @@ class MenuPage : public DisplayPage {
     // Subpage management
     byte subpageIdx;
 
-    // Button integration
-    bool buttonPressed;
-
     // Fun fun animation magic
     int16_t menuTlY;
     int16_t selectionTlY;
@@ -119,9 +117,12 @@ private:
 public:
     xQueueHandle eventQueue;
     std::stack<DisplayPage*> pageStack;
+    Button* upButton;
+    Button* downButton;
 
     DisplayManager(Display* display);
     void setHomepage(HomePage* homepage);
+    void attachButtons(Button* upButton, Button* downButton);
     void draw();
 };
 
@@ -136,7 +137,6 @@ MenuPage::MenuPage(Display* display, DisplayManager* displayManager, const char*
     this->memberPages = (DisplayPage**)malloc(sizeof...(Ts) * sizeof(DisplayPage*));
     auto dummy = {(this->memberPages[pageInit++] = pages)...};
     this->subpageIdx = 0;
-    this->buttonPressed = false;
     this->menuTlY = 0;
     this->selectionTlY = 0;
 }

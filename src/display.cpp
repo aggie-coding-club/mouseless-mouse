@@ -1,6 +1,7 @@
 #include <stack>
 #include <TFT_eSPI.h>
 #include "display.h"
+#include "io.h"
 
 inline uint16_t wrapDegrees(int16_t degrees) {
     return degrees % 360 + 360 * (degrees < 0);
@@ -90,6 +91,7 @@ void Display::drawStatusBar() {
 }
 
 void Display::drawNavArrow(uint16_t x, uint16_t y, bool direction, float progress, uint16_t stroke_color, uint16_t bg_color) {
+    progress = min(1.0F, progress);
     int16_t flip = direction ? -1 : 1;
     uint16_t arrowheadX;
     uint16_t arrowheadY;
@@ -155,6 +157,16 @@ void MenuPage::draw() {
         if (i == subpageIdx) {
             display->setFill(SEL_COLOR);
             display->fillRect(0, 15 + i*30 + selectionTlY + menuTlY, 240, 30);
+            if (displayManager->upButton->isPressed || displayManager->downButton->isPressed) {
+                Button* activeButton = displayManager->upButton->isPressed ? displayManager->upButton : displayManager->downButton;
+                display->drawNavArrow(
+                    220, 30 + i*30 + selectionTlY + menuTlY,
+                    displayManager->upButton->isPressed,
+                    pow(millis() - activeButton->pressTimestamp, 2) / pow(LONGPRESS_TIME, 2),
+                    ACCENT_COLOR,
+                    SEL_COLOR
+                );
+            }
         }
         display->drawString(memberPages[i]->pageName, 30, 25 + i*30 + menuTlY);
     }
@@ -172,7 +184,6 @@ void MenuPage::onEvent(pageEvent_t event) {
         case pageEvent_t::EXIT:
             break;
         case pageEvent_t::NAV_PRESS:
-            buttonPressed = true;
             break;
         case pageEvent_t::NAV_UP:
             if (subpageIdx > 0) {
@@ -192,15 +203,6 @@ void MenuPage::onEvent(pageEvent_t event) {
         }   break;
         case pageEvent_t::NAV_CANCEL:
             displayManager->pageStack.pop();
-            break;
-    }
-    switch (event) {
-        case pageEvent_t::NAV_UP:
-        case pageEvent_t::NAV_DOWN:
-        case pageEvent_t::NAV_SELECT:
-        case pageEvent_t::NAV_CANCEL:
-            buttonPressed = false;
-        default:
             break;
     }
 }
@@ -239,6 +241,11 @@ DisplayManager::DisplayManager(Display* display) {
 void DisplayManager::setHomepage(HomePage* homepage) {
     assert(this->pageStack.empty());
     pageStack.push(homepage);
+}
+
+void DisplayManager::attachButtons(Button* upButton, Button* downButton) {
+    this->upButton = upButton;
+    this->downButton = downButton;
 }
 
 void DisplayManager::draw() {

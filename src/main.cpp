@@ -16,9 +16,9 @@ TFT_eSprite bufferA = TFT_eSprite(&tftDisplay);
 TFT_eSprite bufferB = TFT_eSprite(&tftDisplay);
 Display display(&tftDisplay, &bufferA, &bufferB);
 
-DisplayManager displayManager(&display);
-
 uint32_t frame = 0;
+
+DisplayManager displayManager(&display);
 
 // Button instantiation
 Button upButton(0, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT);
@@ -77,6 +77,7 @@ void setup() {
   display.setStroke(TFT_CYAN);
 
   displayManager.setHomepage(&homepage);
+  displayManager.attachButtons(&upButton, &downButton);
 
   //starts Serial Monitor
   Serial.begin(115200);
@@ -104,5 +105,5 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-
- }
+  
+}
