@@ -18,7 +18,7 @@ Button::Button(byte pin, xQueueHandle eventQueue, pageEvent_t pressEvent, pageEv
         "Button Debounce Callback",     // Timer name
         pdMS_TO_TICKS(DEBOUNCE_TIME),   // Timer duration
         pdFALSE,                        // Don't auto-restart timer on expiry
-        this,
+        this,                           // Pointer to instance can be retrieved by static callback function
         &Button::finalDebounce
     );
 }
