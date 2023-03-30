@@ -7,8 +7,9 @@
 #define PWM_CHANNEL 0
 #define BACKLIGHT_PIN 4
 
-const uint8_t BRIGHT_BRIGHTNESS = 120;
-const uint8_t DIM_BRIGHTNESS = 10;
+const uint8_t BRIGHT_BRIGHTNESS = 120;  // Default display brightness
+const uint8_t DIM_BRIGHTNESS = 10;      // Brightness of the display after a period of inactivity
+const uint16_t INACTIVITY_TIME = 900;   // Time (in display frames, 30/sec) until display dimming begins
 
 const uint8_t SBAR_HEIGHT = 15;         // Height of the status bar in pixels
 const uint16_t ACCENT_COLOR = 0x461F;   // TFT_eSPI::color565(64, 192, 255)
@@ -19,6 +20,7 @@ const uint16_t BGND_COLOR = TFT_BLACK;  // Color of background
 extern int16_t getBatteryPercentage();
 class Button;   // Forward declaration of class Button, which is in io.h
 
+// Wrapper class for TFT_eSPI that handles double buffering
 class Display {
     TFT_eSPI* tft;
     TFT_eSprite* bufferA;
@@ -96,6 +98,8 @@ public:
     void onEvent(pageEvent_t event);
 };
 
+
+
 // HomePage class - displays when no menus are open
 class HomePage : public DisplayPage {
     MenuPage* mainMenu;
@@ -109,6 +113,7 @@ public:
 
 
 
+// DisplayManager class - oversees navigation and relays page events to active pages
 class DisplayManager {
 private:
     Display* display;

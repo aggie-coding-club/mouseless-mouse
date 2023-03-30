@@ -2,7 +2,9 @@
 #include <TFT_eSPI.h>
 #include "display.h"
 #include "io.h"
+#include "power.h"
 
+// Normalize extraneous degree values to 0 - 359
 inline uint16_t wrapDegrees(int16_t degrees) {
     return degrees % 360 + 360 * (degrees < 0);
 }
@@ -23,6 +25,7 @@ Display::~Display() {
     delete bufferB;
 }
 
+// Set up the TFT display
 void Display::begin() {
     if (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_UNDEFINED) {   // We're waking up from sleep, not a full reset
         tft->writecommand(0x11);    // Wake up TFT display
@@ -30,24 +33,27 @@ void Display::begin() {
     }
     tft->init();
     tft->initDMA();
-    tft->setRotation(1);
+    tft->setRotation(1);            // Landscape, buttons on the right
     tft->fillScreen(TFT_BLACK);
-    ledcAttachPin(BACKLIGHT_PIN, PWM_CHANNEL);
-    ledcSetup(PWM_CHANNEL, 20000, 8);
-    ledcWrite(PWM_CHANNEL, BRIGHT_BRIGHTNESS);
+    ledcAttachPin(BACKLIGHT_PIN, PWM_CHANNEL);  // Attach the display's backlight to an LED controller channel
+    ledcSetup(PWM_CHANNEL, 20000, 8);           // 20 kHz PWM, 8 bit resolution
+    ledcWrite(PWM_CHANNEL, BRIGHT_BRIGHTNESS);  // This little backlight of mine, I'm gonna let it shine
 }
 
+// Put the TFT display's controller to sleep
 void Display::sleepMode() {
     tft->writecommand(0x10);    // No official library support, but mentioned in GitHub (TFT_eSPI issue 497)
     ledcWrite(PWM_CHANNEL, 0);
     delay(5);
 }
 
+// Change the backlight power (does not modify image data)
 void Display::dim(uint8_t brightness) {
     this->brightness = brightness;
     ledcWrite(PWM_CHANNEL, brightness);
 }
 
+// Black screen
 void Display::clear() {
     activeBuffer->fillSprite(TFT_BLACK);
 }
@@ -60,6 +66,7 @@ void Display::setStroke(uint16_t color) {
     this->strokeColor = color;
 }
 
+// Get the width (in pixels) a string would occupy if it were displayed with the current text settings
 int16_t Display::getStringWidth(const char* string) {
     return activeBuffer->textWidth(string);
 }
@@ -80,6 +87,7 @@ void Display::fillRect(uint16_t x1, uint16_t y1, uint16_t width, uint16_t height
     activeBuffer->fillRect(x1, y1, width, height, fillColor);
 }
 
+// Apply new text formatting to both framebuffers
 void Display::textFormat(uint8_t size, uint16_t color) {
     bufferA->setTextSize(size);
     bufferB->setTextSize(size);
@@ -87,11 +95,13 @@ void Display::textFormat(uint8_t size, uint16_t color) {
     bufferB->setTextColor(color);
 }
 
+// Push the active framebuffer to the screen, then swap buffers
 void Display::pushChanges() {
     activeBuffer->pushSprite(0, 0);
     activeBuffer = (activeBuffer == bufferA) ? bufferB : bufferA;
 }
 
+// Draw the status bar
 void Display::drawStatusBar() {
     byte batPercentage = getBatteryPercentage();
     activeBuffer->fillRect(0, 0, 240, SBAR_HEIGHT, ACCENT_COLOR);
@@ -100,6 +110,7 @@ void Display::drawStatusBar() {
     activeBuffer->fillRoundRect(212, 4, 14 * (batPercentage / 100.0), 7, 2, TEXT_COLOR);
 }
 
+// Draw an animated navigation arrow that shows what a user's input will do
 void Display::drawNavArrow(uint16_t x, uint16_t y, bool direction, float progress, uint16_t stroke_color, uint16_t bg_color) {
     progress = min(1.0F, progress);
     int16_t flip = direction ? -1 : 1;
@@ -223,6 +234,7 @@ HomePage::HomePage(Display* display, DisplayManager* displayManager, const char*
     this->mainMenu = mainMenu;
 }
 
+// Draw a home page
 void HomePage::draw() {
     display->textFormat(2, TFT_WHITE);
     display->drawString("Battery Life:", 30,30);
@@ -231,10 +243,14 @@ void HomePage::draw() {
     frameCounter++;
 }
 
+// Callback runs when an event appears in the event queue
 void HomePage::onEvent(pageEvent_t event) {
     switch (event) {
         case pageEvent_t::NAV_SELECT:
             displayManager->pageStack.push(mainMenu);
+            break;
+        case pageEvent_t::NAV_CANCEL:
+            deepSleep();
             break;
         default:
             break;
@@ -246,18 +262,22 @@ void HomePage::onEvent(pageEvent_t event) {
 DisplayManager::DisplayManager(Display* display) {
     this->display = display;
     this->eventQueue = xQueueCreate(4, sizeof(pageEvent_t));
+    this->lastEventFrame = 0;
 }
 
+// Set the homepage (has to be done after instantiation because HomePage needs a DisplayManager)
 void DisplayManager::setHomepage(HomePage* homepage) {
     assert(this->pageStack.empty());
     pageStack.push(homepage);
 }
 
+// Pass Button instances to DisplayManager so the display pages can read the button statuses
 void DisplayManager::attachButtons(Button* upButton, Button* downButton) {
     this->upButton = upButton;
     this->downButton = downButton;
 }
 
+// Receive button events, handle display dimming, draw the active page, and draw the status bar
 void DisplayManager::draw() {
     // Forward any events to the active page
     if (uxQueueMessagesWaiting(eventQueue)) {
@@ -268,7 +288,8 @@ void DisplayManager::draw() {
             display->dim(BRIGHT_BRIGHTNESS);
         this->pageStack.top()->onEvent(event);
     }
-    else if (display->brightness > DIM_BRIGHTNESS && lastEventFrame + 900 < frameCtr)
+    // Dim the display after a period of inactivity
+    else if (display->brightness > DIM_BRIGHTNESS && lastEventFrame + INACTIVITY_TIME < frameCtr)
         display->dim(max((int)DIM_BRIGHTNESS, display->brightness - 5));
 
     // Draw the status bar and the active page

@@ -4,18 +4,7 @@
 #include <esp32/rom/spi_flash.h>
 #include "display.h"
 #include "io.h"
-
-#include "esp32/ulp.h"// Must have this!!!
-
-// include ulp header you will create
-#include "ulp_main.h"// Must have this!!!
-
-// Custom binary loader
-#include "ulptool.h"// Must have this!!!
-
-// Unlike the esp-idf always use these binary blob names
-extern const uint8_t ulp_main_bin_start[] asm("_binary_ulp_main_bin_start");
-extern const uint8_t ulp_main_bin_end[]   asm("_binary_ulp_main_bin_end");
+#include "power.h"
 
 // Pin definitions
 #define ADC_ENABLE_PIN 14
@@ -23,16 +12,6 @@ extern const uint8_t ulp_main_bin_end[]   asm("_binary_ulp_main_bin_end");
 #define DOWN_BUTTON_PIN 0
 #define LMB_TOUCH_CHANNEL 7
 #define RMB_TOUCH_CHANNEL 5
-
-static void init_run_ulp(uint32_t usec) {
-    // initialize ulp variable
-    ulp_count = 0;
-    ulp_set_wakeup_period(0, usec);
-    // use this binary loader instead
-    esp_err_t err = ulptool_load_binary(0, ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start) / sizeof(uint32_t));
-    // ulp coprocessor will run on its own now
-    err = ulp_run((&ulp_entry - RTC_SLOW_MEM) / sizeof(uint32_t));
-}
 
 // Create event queues for inter-process/ISR communication
 xQueueHandle navigationEvents = xQueueCreate(4, sizeof(pageEvent_t));
@@ -67,7 +46,6 @@ public:
     display->textFormat(2, TFT_WHITE);
     display->drawString(pageName, 30, 30);
     display->drawString(String(touchRead(T7)), 30, 60);
-    display->drawString(String(ulp_count), 30, 90);
     display->drawNavArrow(120, 110, pageName[12]&1, 0.5 - 0.5*cos(6.28318*float(frameCounter%90)/90.0), 0x461F, TFT_BLACK);
     frameCounter++;
   };
@@ -88,6 +66,7 @@ HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 // Use the ADC to read the battery voltage - convert result to a percentage
 int16_t getBatteryPercentage() {
   digitalWrite(ADC_ENABLE_PIN, HIGH);
+  vTaskDelay(pdMS_TO_TICKS(10));
   uint16_t v1 = analogRead(34);
   digitalWrite(ADC_ENABLE_PIN, LOW);
 
@@ -117,13 +96,9 @@ void setup() {
   // put your setup code here, to run once:
   // Start UART transceiver
   Serial.begin(115200);
-
+  
   // Configure battery voltage reading pin
   pinMode(ADC_ENABLE_PIN, OUTPUT);
-
-  // Attach button interrupts
-  upButton.attach();
-  downButton.attach();
 
   // Attach touch pad interrupts
   attachTouchPads();
@@ -142,8 +117,6 @@ void setup() {
   id = (id >> 16) & 0xFF;
   Serial.printf("Flash size is %i\n", 2 << (id - 1));
 
-  init_run_ulp(100 * 1000); // 100 msec
-
   // Dispatch the display drawing task
   xTaskCreatePinnedToCore(
     drawTask,         // Task code is in the drawTask() function
@@ -154,6 +127,17 @@ void setup() {
     &drawTaskHandle,  // Variable to hold new task handle
     1                 // Pin the task to the core that doesn't handle WiFi/Bluetooth
   );
+
+  // If we just woke up from deep sleep, don't attach the buttons until the user lets go
+  if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_ULP) {
+    stopULP();
+    pinMode(DOWN_BUTTON_PIN, INPUT_PULLUP);
+    while (!digitalRead(DOWN_BUTTON_PIN));
+  }
+
+  // Attach button interrupts
+  upButton.attach();
+  downButton.attach();
 }
 
 // I'm lazy

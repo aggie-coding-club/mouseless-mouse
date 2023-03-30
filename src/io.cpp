@@ -89,6 +89,14 @@ void Button::attach() {
     attachInterruptArg(pin, &Button::buttonISR, this, CHANGE);
 }
 
+// Detach a Button instance from its IO pin
+void Button::detach() {
+    detachInterrupt(pin);
+    pinMode(pin, INPUT);
+}
+
+
+
 // One timer to rule them all
 xTimerHandle TouchPadInstance::pollTimer = xTimerCreate(
     "Touch Polling",        // Timer name
@@ -149,7 +157,7 @@ void TouchPadInstance::touchISR(void* instancePtr) {
     portYIELD_FROM_ISR(taskWoken);
 }
 
-// Call regularly until no more
+// Called regularly until no touch pads are "pressed"
 void TouchPadInstance::touchPoll(xTimerHandle timer) {
     bool atLeastOnePressed = false;
     for (int i=0; i < 10; i++) {

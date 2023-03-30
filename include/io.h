@@ -17,13 +17,14 @@
  *     If not, set new button state and restart the timer
  */
 
-#define DEBOUNCE_TIME 50
-#define LONGPRESS_TIME 300
+#define DEBOUNCE_TIME 50            // Debouncing interval in milliseconds
+#define LONGPRESS_TIME 300          // Buttons held longer than LONGPRESS_TIME milliseconds will fire holdEvent rather than bumpEvent on release
 
 #define TOUCH_DEFAULT_THRESHOLD 40  // Threshold value below which touch counter values are interpreted as touches
 #define TOUCH_HYSTERESIS 20         // Once a touch pad is in the "pressed" state, it must go this far above the threshold to be "released"
 #define TOUCH_POLL_RATE 5           // When a touch is recorded, the pads will be polled every TOUCH_POLL_RATE ms
 
+// Button class - wrapper for I/O buttons with debouncing, timestamping, and event generation
 class Button {
 private:
   static void buttonISR(void* instancePtr);
@@ -43,6 +44,7 @@ public:
 
   Button(byte pin, xQueueHandle eventQueue, pageEvent_t pressEvent, pageEvent_t bumpEvent, pageEvent_t holdEvent);
   void attach();
+  void detach();
 };
 
 class TouchPadInstance;
@@ -78,7 +80,7 @@ public:
 
 void attachTouchPads();
 
-// Helper to allow expansion of n before token pasting
+// Helper to allow expansion of n before token pasting - use TouchPad instead
 #define INSTANTIATE_TOUCH_PAD(n, q, p, r) TouchPadInstance((n), q, p, r, (T##n))
 
 // Use this to instantiate touch pads because Arduino definitions are stupid

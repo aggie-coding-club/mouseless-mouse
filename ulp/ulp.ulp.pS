@@ -1,0 +1,16 @@
+       
+       
+       
+    .bss
+    .global ctr
+ctr:
+    .long 0
+    .text
+    .global entry
+entry:
+    REG_RD ((((0x3ff48400 + 0x24)) - 0x3ff48000) / 4), ((14) + (16) - 1), (14)
+    and r0, r0, 2048
+    jumpr nowake, 1, GE
+    wake
+nowake:
+    halt
