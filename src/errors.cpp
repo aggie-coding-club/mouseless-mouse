@@ -5,7 +5,6 @@
 
 namespace mlm::errors {
 [[noreturn]] void doFatalError(const char *message, flashpattern_t flashPattern) {
-  vTaskSuspendAll();
   Log.fatalln(message);
   pinMode(BUILTIN_LED, OUTPUT);
   for (;;) {
