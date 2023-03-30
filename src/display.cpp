@@ -2,6 +2,15 @@
 #include <TFT_eSPI.h>
 #include "display.h"
 #include "io.h"
+#include "imgs\hand.h"
+#include "imgs\pointer.h"
+#include "imgs\middle.h"
+#include "imgs\ring.h"
+#include "imgs\pinky.h"
+#include "imgs\thumb.h"
+#include "imgs\scrollUp.h"
+#include "imgs\scrollDown.h"
+
 
 inline uint16_t wrapDegrees(int16_t degrees) {
     return degrees % 360 + 360 * (degrees < 0);
@@ -66,6 +75,10 @@ int16_t Display::getStringWidth(const char* string) {
 
 void Display::drawString(String string, uint16_t xPos, uint16_t yPos) {
     activeBuffer->drawString(string, xPos, yPos);
+}
+
+void Display::pushImage(int32_t x,int32_t y,int32_t len,int32_t wid, const unsigned short *data) {
+    activeBuffer->pushImage(x,y,len,wid, data);
 }
 
 void Display::drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
@@ -136,6 +149,12 @@ void Display::drawNavArrow(uint16_t x, uint16_t y, bool direction, float progres
         arrowheadY + arrowheadLength*sin(arrowheadAngleRads + arrowheadBreadth),
         stroke_color
     );
+}
+
+
+
+TFT_eSPI* Display::directAccess() {
+    return tft;
 }
 
 
@@ -275,4 +294,68 @@ void DisplayManager::draw() {
     pageStack.top()->draw();
     display->drawStatusBar();
     frameCtr++;
+}
+
+
+
+// Define a blank placeholder page
+BlankPage::BlankPage(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
+void BlankPage::draw() {
+    display->textFormat(2, TFT_WHITE);
+    display->drawString(pageName, 30, 30);
+    display->drawString(String(touchRead(T7)), 30, 60);
+    display->drawNavArrow(120, 110, pageName[12]&1, 0.5 - 0.5*cos(6.28318*float(frameCounter%90)/90.0), 0x461F, TFT_BLACK);
+    frameCounter++;
+};
+void BlankPage::onEvent(pageEvent_t event) {
+    
+};
+
+inputDisplay::inputDisplay(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
+void inputDisplay::draw() {
+    display->textFormat(2, TFT_WHITE);
+    display->drawString(pageName, 30, 30);
+    display->pushImage(60,60, 64, 64, hand);
+};
+void inputDisplay::onEvent(pageEvent_t event) {
+    if (event == pageEvent_t::NAV_CANCEL) this->displayManager->pageStack.pop();
+}
+
+//declared on Mouse event that is relevant to the input display
+void inputDisplay::onMouseEvent(mouseEvent_t event) {
+    switch(event) {
+        case mouseEvent_t::LMB_PRESS:
+            lmb = true;
+            break;
+        case mouseEvent_t::LMB_RELEASE:
+            lmb = false;
+            break;
+        case mouseEvent_t::RMB_PRESS:
+            rmb = true;
+            break;
+        case mouseEvent_t::RMB_RELEASE:
+            lmb = false;
+            break;
+        case mouseEvent_t::SCROLL_UP:
+            scrollU = true;
+            break;
+        case mouseEvent_t::SCROLL_DOWN:
+            scrollD = true;
+            break;
+        default:
+            break;
+    }
+    if(lmb) {
+        display->pushImage(60,60,64,64, pointer);
+    }
+    if(rmb) {
+        display->pushImage(60,60,64,64, middle);
+    }
+    if(scrollUp) {
+        display->pushImage(60,60,64,64, scrollUp);
+    }
+    if(scrollDown) {
+        display->pushImage(60,60,64,64, scrollDown);
+    }
+    //configure the rest of the input here
 }

@@ -7,7 +7,9 @@
         "unordered_set": "cpp",
         "vector": "cpp",
         "string_view": "cpp",
-        "initializer_list": "cpp"
+        "initializer_list": "cpp",
+        "stack": "cpp",
+        "cmath": "cpp"
     },
     "cmake.sourceDirectory": "${workspaceFolder}/.pio/libdeps/ttgo-lora32-v1/TFT_eSPI"
 }

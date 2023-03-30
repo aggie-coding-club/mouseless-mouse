@@ -3,6 +3,7 @@
 
 #include <TFT_eSPI.h>
 #include <stack>
+#include <mouse.h>
 
 #define PWM_CHANNEL 0
 #define BACKLIGHT_PIN 4
@@ -18,6 +19,8 @@ const uint16_t BGND_COLOR = TFT_BLACK;  // Color of background
 
 extern int16_t getBatteryPercentage();
 class Button;   // Forward declaration of class Button, which is in io.h
+
+extern TFT_eSPI* tft;
 
 class Display {
     TFT_eSPI* tft;
@@ -42,10 +45,12 @@ public:
     void drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
     void drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t ir, uint16_t startAngle, uint16_t endAngle, uint16_t fg_color, uint16_t bg_color);
     void drawString(String string, uint16_t xPos, uint16_t yPos);
+    void pushImage(int32_t x,int32_t y,int32_t len,int32_t wid, const unsigned short *data);
     void fillRect(uint16_t x1, uint16_t y1, uint16_t width, uint16_t height);
     void textFormat(uint8_t size, uint16_t color);
     void drawStatusBar();
     void drawNavArrow(uint16_t x, uint16_t y, bool direction, float progress, uint16_t stroke_color, uint16_t bg_color);
+    TFT_eSPI* directAccess();
 };
 
 // Types of events that can be sent to the active page
@@ -125,6 +130,27 @@ public:
     void setHomepage(HomePage* homepage);
     void attachButtons(Button* upButton, Button* downButton);
     void draw();
+};
+
+class BlankPage : public DisplayPage {
+    public:
+    BlankPage(Display* display, DisplayManager* displayManager, const char* pageName);
+
+    void draw();
+    void onEvent(pageEvent_t event);
+};
+
+class inputDisplay : public DisplayPage {
+    bool lmb;
+    bool rmb;
+    bool scrollU;
+    bool scrollD;
+public:
+    inputDisplay(Display* display, DisplayManager* displayManager, const char* pageName);
+
+    void draw();
+    void onEvent(pageEvent_t event);
+    void onMouseEvent(mouseEvent_t event);
 };
 
 ////////////////////////////////////////////////////////////////////////////
