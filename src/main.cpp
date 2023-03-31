@@ -14,15 +14,15 @@ ICM_20948_I2C icm;
 BleMouse mouse("Mouseless Mouse", "Mouseless Team"); // Initialize Bluetooth mouse object to send mouse events
 
 /// @brief Convert a vector from mouse-space to world-space.
-/// @details In mouse-space, +x, +y, and +z are defined in accordance with the ICM 20948 datasheet. In world-space, +x
-/// is due east, +y is due north, and +z is straight up.
+/// @details In mouse-space, +x, +y, and +z are defined in accordance with the accelerometer axes defined in the ICM
+/// 20948 datasheet. In world-space, +x is due east, +y is due north, and +z is straight up.
 /// @param vec The vector in mouse-space.
 /// @param icm A reference to the ICM_20948_I2C object whose orientation data is being used.
 /// @return The equivalent of `vec` in world-space.
-Eigen::Vector3f mouseSpaceToWorldSpace(Eigen::Vector3f vec, ICM_20948_I2C &icm) {
+[[nodiscard]] Eigen::Vector3f mouseSpaceToWorldSpace(Eigen::Vector3f vec, ICM_20948_I2C &icm) noexcept {
   Eigen::Vector3f up = {icm.accX(), icm.accY(), icm.accZ()};
   up.normalize();
-  Eigen::Vector3f north = {icm.magX(), icm.magY(), icm.magZ()};
+  Eigen::Vector3f north = {icm.magX(), -icm.magY(), -icm.magZ()};
   north.normalize();
   north -= up * up.dot(north);
   north.normalize();
