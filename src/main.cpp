@@ -34,38 +34,6 @@ Eigen::Vector3f mouseSpaceToWorldSpace(Eigen::Vector3f vec, ICM_20948_I2C &icm) 
   };
 }
 
-/// @brief Represents the viewscreen that the mouse is being moved around on.
-class Screen {
-private:
-  Eigen::Vector3f mHorizontal;
-  Eigen::Vector3f mVertical;
-
-public:
-  /// @brief  Constructs the Screen object based on initial calibration data.
-  /// @param upperLeft A normalized vector going from the mouse's position to the upper left corner of the screen.
-  /// @param lowerLeft A normalized vector going from the mouse's position to the lower left corner of the screen.
-  /// @param lowerRight A normalized vector going from the mouse's position to the lower right corner of the screen.
-  Screen(Eigen::Vector3f upperLeft, Eigen::Vector3f lowerLeft, Eigen::Vector3f lowerRight) noexcept
-      : mHorizontal((lowerRight - lowerLeft).normalized()), mVertical((upperLeft - lowerLeft).normalized()) {}
-
-  /// @brief Adjusts the Screen object based on new calibration data.
-  /// @param upperLeft A normalized vector going from the mouse's position to the upper left corner of the screen.
-  /// @param lowerLeft A normalized vector going from the mouse's position to the lower left corner of the screen.
-  /// @param lowerRight A normalized vector going from the mouse's position to the lower right corner of the screen.
-  void recalibrate(Eigen::Vector3f upperLeft, Eigen::Vector3f lowerLeft, Eigen::Vector3f lowerRight) noexcept {
-    mHorizontal = (lowerRight - lowerLeft).normalized();
-    mVertical = (upperLeft - lowerLeft).normalized();
-  }
-
-  /// @brief Finds the projection of a vector onto the screen.
-  /// @param vec A normalized vector with its origin at the mouse.
-  /// @return A 2-dimensional vector. The x-axis ranges from 0 at the left of the screen to 1 at the right; similarly,
-  /// the y-axis ranges from 0 at the bottom of the screen to 1 at the top.
-  [[nodiscard]] Eigen::Vector2f project(Eigen::Vector3f vec) const noexcept {
-    return Eigen::Vector2f{vec.dot(mHorizontal) + 0.5f, vec.dot(mVertical) + 0.5f};
-  }
-};
-
 void setup() {
   Serial.begin(115200); // Start the serial console
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
@@ -85,9 +53,41 @@ void setup() {
   }
 }
 
+bool hasCalibrated = false;
+Eigen::Vector3f calibratedPosX;
+Eigen::Vector3f calibratedPosZ;
+signed char sensitivity;
+
 void loop() {
+  if (!hasCalibrated) {
+    while (Serial.available() > 0) {
+      Serial.read();
+    }
+    Serial.println("Place mouse into resting position, then press any key to continue.");
+    while (Serial.available() == 0) {
+      // do nothing
+    }
+    icm.getAGMT();
+    calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
+    calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
+    while (Serial.available() > 0) {
+      Serial.read();
+    }
+    Serial.print("Now enter a sensitivity value (integer, 1-127): ");
+    long accumulator = Serial.parseInt();
+    while (accumulator < 1 || accumulator > 127) {
+      Serial.print("Invalid or no input. Please enter an integer from 1-127 inclusive: ");
+      accumulator = Serial.parseInt();
+    }
+    sensitivity = static_cast<signed char>(accumulator);
+    hasCalibrated = true;
+  }
   if (icm.dataReady()) {
     icm.getAGMT();
+    Eigen::Vector3f posY = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 1.0f, 0.0f}, icm);
+    signed char xMovement = posY.dot(calibratedPosX) * sensitivity;
+    signed char zMovement = posY.dot(calibratedPosZ) * sensitivity;
+    mouse.move(xMovement, zMovement);
     delay(30);
   } else {
     Log.noticeln("Waiting for data");
