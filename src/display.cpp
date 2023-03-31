@@ -9,13 +9,15 @@ inline uint16_t wrapDegrees(int16_t degrees) {
     return degrees % 360 + 360 * (degrees < 0);
 }
 
-Display::Display(TFT_eSPI* tft, TFT_eSprite* bufferA, TFT_eSprite* bufferB) {
-    this->tft = tft;
-    this->bufferA = bufferA;
-    this->bufferB = bufferB;
-    this->activeBuffer = bufferA;
-    this->fillColor = TFT_WHITE;
-    this->strokeColor = TFT_WHITE;
+Display::Display(TFT_eSPI* tft, TFT_eSprite* bufferA, TFT_eSprite* bufferB) :
+    tft(tft),
+    bufferA(bufferA),
+    bufferB(bufferB),
+    activeBuffer(bufferA),
+    fillColor(TFT_WHITE),
+    strokeColor(TFT_WHITE),
+    brightness(0)
+{
     bufferA->createSprite(240, 135);
     bufferB->createSprite(240, 135);
 }
@@ -38,6 +40,7 @@ void Display::begin() {
     ledcAttachPin(BACKLIGHT_PIN, PWM_CHANNEL);  // Attach the display's backlight to an LED controller channel
     ledcSetup(PWM_CHANNEL, 20000, 8);           // 20 kHz PWM, 8 bit resolution
     ledcWrite(PWM_CHANNEL, BRIGHT_BRIGHTNESS);  // This little backlight of mine, I'm gonna let it shine
+    brightness = BRIGHT_BRIGHTNESS;             // Update brightness tracker
 }
 
 // Put the TFT display's controller to sleep
@@ -151,12 +154,12 @@ void Display::drawNavArrow(uint16_t x, uint16_t y, bool direction, float progres
 
 
 
-DisplayPage::DisplayPage(Display* display, DisplayManager* displayManager, const char* pageName) {
-    this->display = display;
-    this->displayManager = displayManager;
-    this->pageName = pageName;
-    this->frameCounter = 0;
-}
+DisplayPage::DisplayPage(Display* display, DisplayManager* displayManager, const char* pageName) :
+    display(display),
+    displayManager(displayManager),
+    pageName(pageName),
+    frameCounter(0)
+{}
 
 DisplayPage::~DisplayPage() {}
 
@@ -230,14 +233,17 @@ void MenuPage::onEvent(pageEvent_t event) {
 
 
 
-HomePage::HomePage(Display* display, DisplayManager* displayManager, const char* pageName, MenuPage* mainMenu) : DisplayPage(display, displayManager, pageName) {
-    this->mainMenu = mainMenu;
-}
+HomePage::HomePage(Display* display, DisplayManager* displayManager, const char* pageName, MenuPage* mainMenu) :
+    DisplayPage(display, displayManager, pageName),
+    mainMenu(mainMenu)
+{}
 
+extern uint32_t ulp_ctr;
 // Draw a home page
 void HomePage::draw() {
     display->textFormat(2, TFT_WHITE);
     display->drawString("Battery Life:", 30,30);
+    display->drawString(String(ulp_ctr & 65535), 30, 90);
     display->textFormat(3, TFT_WHITE);
     display->drawString(String(getBatteryPercentage()) + "%", 30, 50);
     frameCounter++;
@@ -259,10 +265,11 @@ void HomePage::onEvent(pageEvent_t event) {
 
 
 
-DisplayManager::DisplayManager(Display* display) {
-    this->display = display;
-    this->eventQueue = xQueueCreate(4, sizeof(pageEvent_t));
-    this->lastEventFrame = 0;
+DisplayManager::DisplayManager(Display* display) :
+    display(display),
+    lastEventFrame(0)
+{
+    eventQueue = xQueueCreate(4, sizeof(pageEvent_t));
 }
 
 // Set the homepage (has to be done after instantiation because HomePage needs a DisplayManager)

@@ -8,27 +8,27 @@ ram              0x00000000         0x00000200         rw
 Linker script and memory map
 
 
-.text           0x00000000       0x14 load address 0x0000000c
+.text           0x00000000       0x8c load address 0x0000000c
  *(.text)
- .text          0x00000000       0x14 ulp.ulp.o
+ .text          0x00000000       0x8c ulp.ulp.o
                 0x00000000                entry
 
-.data           0x00000014        0x0 load address 0x00000020
-                0x00000014                . = ALIGN (0x4)
+.data           0x0000008c        0x0 load address 0x00000098
+                0x0000008c                . = ALIGN (0x4)
  *(.data)
- .data          0x00000014        0x0 ulp.ulp.o
+ .data          0x0000008c        0x0 ulp.ulp.o
 
-.bss            0x00000014        0x4 load address 0x00000020
-                0x00000014                . = ALIGN (0x4)
+.bss            0x0000008c        0x4 load address 0x00000098
+                0x0000008c                . = ALIGN (0x4)
  *(.bss)
- .bss           0x00000014        0x4 ulp.ulp.o
-                0x00000014                ctr
+ .bss           0x0000008c        0x4 ulp.ulp.o
+                0x0000008c                ctr
 
-.header         0x00000018        0xc load address 0x00000000
-                0x00000018        0x4 LONG 0x706c75
-                0x0000001c        0x2 SHORT 0xc LOADADDR (.text)
-                0x0000001e        0x2 SHORT 0x14 SIZEOF (.text)
-                0x00000020        0x2 SHORT 0x0 SIZEOF (.data)
-                0x00000022        0x2 SHORT 0x4 SIZEOF (.bss)
+.header         0x00000090        0xc load address 0x00000000
+                0x00000090        0x4 LONG 0x706c75
+                0x00000094        0x2 SHORT 0xc LOADADDR (.text)
+                0x00000096        0x2 SHORT 0x8c SIZEOF (.text)
+                0x00000098        0x2 SHORT 0x0 SIZEOF (.data)
+                0x0000009a        0x2 SHORT 0x4 SIZEOF (.bss)
 LOAD ulp.ulp.o
 OUTPUT(ulp_main.elf elf32-esp32ulp)

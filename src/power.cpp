@@ -4,6 +4,7 @@
 #include "soc/rtc_cntl_reg.h"
 #include "soc/rtc.h"
 #include "driver/rtc_io.h"
+#include "driver/adc.h"
 // ULP header in ./ulp - links ULP entry points and variables to main program
 #include "ulp_main.h"
 // Need to include custom binary loader
@@ -19,7 +20,10 @@ void deepSleep() {
     display.sleepMode();                // Put the display driver to sleep
     ulp_ctr = 0;                        // Initialize global ulp variable
     rtc_gpio_hold_en(GPIO_NUM_0);       // Keep the pullup resistor on pin 0 powered during deep sleep
-    ulp_set_wakeup_period(0, 1000000);  // Run ULP every 1 second
+    adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_DB_11);
+    adc1_config_width(ADC_WIDTH_BIT_12);
+    adc1_ulp_enable();                  // Configure ADC 1 for use with the ULP coprocessor
+    ulp_set_wakeup_period(0, 1000000);   // Run the ULP coprocessor's routine once per second
     esp_err_t err = ulptool_load_binary(0, ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start) / sizeof(uint32_t));
     err = ulp_run((&ulp_entry - RTC_SLOW_MEM) / sizeof(uint32_t));
     esp_sleep_enable_ulp_wakeup();  // Allow the ULP to wake the system
