@@ -488,7 +488,7 @@
                 "ARDUINO=10812",
                 "ARDUINO_VARIANT=\"ttgo-lora32-v1\"",
                 "ARDUINO_BOARD=\"TTGO LoRa32-OLED V1\"",
-                "ARDUINO_PARTITION_default",
+                "ARDUINO_PARTITION_no_ota",
                 ""
             ],
             "cStandard": "c99",

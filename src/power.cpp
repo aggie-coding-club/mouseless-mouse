@@ -17,6 +17,8 @@ extern Display display;
 
 // Put the whole T-Display board into a deep sleep state
 void deepSleep() {
+    display.flush();                    // Clear the display
+    vTaskDelay(pdMS_TO_TICKS(100));     // Give the display driver a little time
     display.sleepMode();                // Put the display driver to sleep
     ulp_ctr = 0;                        // Initialize global ulp variable
     rtc_gpio_hold_en(GPIO_NUM_0);       // Keep the pullup resistor on pin 0 powered during deep sleep

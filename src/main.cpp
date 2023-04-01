@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <LittleFS.h>
+#include <FS.h>
 #include <Wire.h>
 #include <TFT_eSPI.h>
 #include <esp32/rom/spi_flash.h>
@@ -77,6 +79,11 @@ int16_t getBatteryPercentage() {
 // Define the display drawing task and a place to store its handle
 TaskHandle_t drawTaskHandle;
 void drawTask (void * pvParameters) {
+  display.drawBitmapSPIFFS("/splash.bmp", 80, 15);  // Splash screen on startup
+  display.pushChanges();                            // Definitely don't forget how your own wrapper class works
+
+  vTaskDelay(pdMS_TO_TICKS(2000));                  // Keep splishin' and splashin' for 2 seconds
+
   TickType_t lastWakeTime = xTaskGetTickCount();
   uint32_t frame = 0;
 
@@ -96,6 +103,22 @@ void setup() {
   // put your setup code here, to run once:
   // Start UART transceiver
   Serial.begin(115200);
+
+  // Initialize LittleFS
+  if (!LittleFS.begin()) {
+    LittleFS.begin(true);                                                       // Format the filesystem if it failed to mount
+    Serial.println("SPIFFS had to be formatted before mounting - data lost.");  // This can happen on the first upload or when the partition scheme is changed
+  }                                                                             // Just reupload the filesystem image - this is different from uploading the program
+  else {
+    Serial.println("LittleFS Tree");  // Directory listing
+    File root = LittleFS.open("/");
+    File file = root.openNextFile();
+    while (file) {
+      Serial.println(file.name());
+      file.close();
+      file = root.openNextFile();
+    }
+  }
   
   // Configure battery voltage reading pin
   pinMode(ADC_ENABLE_PIN, OUTPUT);

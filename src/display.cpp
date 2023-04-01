@@ -1,4 +1,6 @@
 #include <stack>
+#include <LittleFS.h>
+#include <FS.h>
 #include <TFT_eSPI.h>
 #include "display.h"
 #include "io.h"
@@ -25,6 +27,24 @@ Display::Display(TFT_eSPI* tft, TFT_eSprite* bufferA, TFT_eSprite* bufferB) :
 Display::~Display() {
     delete bufferA;
     delete bufferB;
+}
+
+// Read words of image data from SPIFFS
+uint16_t Display::read16(fs::File &f) {
+  uint16_t result;
+  ((uint8_t *)&result)[0] = f.read(); // LSB
+  ((uint8_t *)&result)[1] = f.read(); // MSB
+  return result;
+}
+
+// Read dwords of image data from SPIFFS
+uint32_t Display::read32(fs::File &f) {
+  uint32_t result;
+  ((uint8_t *)&result)[0] = f.read(); // LSB
+  ((uint8_t *)&result)[1] = f.read();
+  ((uint8_t *)&result)[2] = f.read();
+  ((uint8_t *)&result)[3] = f.read(); // MSB
+  return result;
 }
 
 // Set up the TFT display
@@ -61,6 +81,14 @@ void Display::clear() {
     activeBuffer->fillSprite(TFT_BLACK);
 }
 
+// Clear display and flush both buffers
+void Display::flush() {
+    clear();
+    pushChanges();
+    clear();
+    pushChanges();
+}
+
 void Display::setFill(uint16_t color) {
     this->fillColor = color;
 }
@@ -84,6 +112,67 @@ void Display::drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
 
 void Display::drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t ir, uint16_t startAngle, uint16_t endAngle, uint16_t fg_color, uint16_t bg_color) {
     activeBuffer->drawArc(x, y, r, ir, startAngle, endAngle, fg_color, bg_color, false);
+}
+
+// Adapted from a TFT_eSPI example sketch
+void Display::drawBitmapSPIFFS(const char* filename, uint16_t x, uint16_t y) {
+  if ((x >= tft->width()) || (y >= tft->height())) return;
+  fs::File bmpFS;
+
+  // Open requested file on SD card
+  bmpFS = LittleFS.open(filename, FILE_READ);
+
+  if (!bmpFS) {
+    Serial.println("File not found");
+    return;
+  }
+
+  uint32_t seekOffset;
+  uint16_t w, h, row, col;
+  uint8_t  r, g, b;
+  uint16_t header = read16(bmpFS);
+  if (header == 0x4D42) {
+    read32(bmpFS);
+    read32(bmpFS);
+    seekOffset = read32(bmpFS);
+    read32(bmpFS);
+    w = read32(bmpFS);
+    h = read32(bmpFS);
+    Serial.printf("Logo size: %i x %i", w, h);
+
+    if ((read16(bmpFS) == 1) && (read16(bmpFS) == 24) && (read32(bmpFS) == 0)) {
+      y += h - 1;
+
+      bool oldSwapBytes = activeBuffer->getSwapBytes();
+      activeBuffer->setSwapBytes(true);
+      bmpFS.seek(seekOffset);
+
+      uint16_t padding = (4 - ((w * 3) & 3)) & 3;
+      uint8_t lineBuffer[w * 3 + padding];
+
+      for (row = 0; row < h; row++) {
+        bmpFS.read(lineBuffer, sizeof(lineBuffer));
+        uint8_t*  bptr = lineBuffer;
+        uint16_t* tptr = (uint16_t*)lineBuffer;
+        // Convert 24 to 16 bit colours
+        for (uint16_t col = 0; col < w; col++)
+        {
+          b = *bptr++;
+          g = *bptr++;
+          r = *bptr++;
+          *tptr++ = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+        }
+        Serial.println();
+        // Push the pixel row to screen, pushImage will crop the line if needed
+        // y is decremented as the BMP image is drawn bottom up
+        activeBuffer->pushImage(x, y--, w, 1, (uint16_t*)lineBuffer);
+      }
+      activeBuffer->setSwapBytes(oldSwapBytes);
+    }
+    else Serial.println("BMP format not recognized.");
+  }
+  else Serial.printf("Could not read BMP file \"%s\" (Size: %i). Header: %X\n", filename, bmpFS.size(), header);
+  bmpFS.close();
 }
 
 void Display::fillRect(uint16_t x1, uint16_t y1, uint16_t width, uint16_t height) {

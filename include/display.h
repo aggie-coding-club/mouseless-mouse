@@ -1,6 +1,8 @@
 #ifndef TFT_DISPLAY_H
 #define TFT_DISPLAY_H
 
+#include <SPIFFS.h>
+#include <FS.h>
 #include <TFT_eSPI.h>
 #include <stack>
 
@@ -28,6 +30,10 @@ class Display {
     TFT_eSprite* activeBuffer;
     uint16_t fillColor;
     uint16_t strokeColor;
+
+    uint16_t read16(fs::File &f);
+    uint32_t read32(fs::File &f);
+
 public:
     uint8_t brightness;
 
@@ -38,12 +44,14 @@ public:
     void dim(uint8_t brightness);
     void pushChanges();
     void clear();
+    void flush();
     void setFill(uint16_t color);
     void setStroke(uint16_t color);
     int16_t getStringWidth(const char* string);
     void drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
     void drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t ir, uint16_t startAngle, uint16_t endAngle, uint16_t fg_color, uint16_t bg_color);
     void drawString(String string, uint16_t xPos, uint16_t yPos);
+    void drawBitmapSPIFFS(const char* filename, uint16_t x, uint16_t y);
     void fillRect(uint16_t x1, uint16_t y1, uint16_t width, uint16_t height);
     void textFormat(uint8_t size, uint16_t color);
     void drawStatusBar();
