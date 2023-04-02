@@ -3,13 +3,8 @@
 #include <FS.h>
 #include <TFT_eSPI.h>
 #include "display.h"
+#include "helpers.h"
 #include "io.h"
-#include "power.h"
-
-// Normalize extraneous degree values to 0 - 359
-inline uint16_t wrapDegrees(int16_t degrees) {
-    return degrees % 360 + 360 * (degrees < 0);
-}
 
 Display::Display(TFT_eSPI* tft, TFT_eSprite* bufferA, TFT_eSprite* bufferB) :
     tft(tft),
@@ -138,7 +133,6 @@ void Display::drawBitmapSPIFFS(const char* filename, uint16_t x, uint16_t y) {
     read32(bmpFS);
     w = read32(bmpFS);
     h = read32(bmpFS);
-    Serial.printf("Logo size: %i x %i", w, h);
 
     if ((read16(bmpFS) == 1) && (read16(bmpFS) == 24) && (read32(bmpFS) == 0)) {
       y += h - 1;
@@ -162,7 +156,6 @@ void Display::drawBitmapSPIFFS(const char* filename, uint16_t x, uint16_t y) {
           r = *bptr++;
           *tptr++ = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
         }
-        Serial.println();
         // Push the pixel row to screen, pushImage will crop the line if needed
         // y is decremented as the BMP image is drawn bottom up
         activeBuffer->pushImage(x, y--, w, 1, (uint16_t*)lineBuffer);
@@ -229,7 +222,7 @@ void Display::drawNavArrow(uint16_t x, uint16_t y, bool direction, float progres
     arrowTailAngle = 180*!direction - 90 + 360 * 3 * max(float(0), progress - float(0.75));
     arrowheadAngleRads = 3.14159*(0.5 + direction) - 6.28318 * 3 * min(float(0.25), progress); // C++ uses real math
     if (progress > 0 && progress < 1)
-        activeBuffer->drawArc(x + 5*flip, y - 5*flip, 5, 5, wrapDegrees(arrowTailAngle), wrapDegrees(arrowheadAngle), stroke_color, bg_color);
+        activeBuffer->drawArc(x + 5*flip, y - 5*flip, 5, 5, arrowTailAngle % 360_pm, arrowheadAngle % 360_pm, stroke_color, bg_color);
     activeBuffer->fillTriangle(
         arrowheadX,
         arrowheadY,
@@ -261,8 +254,6 @@ MenuPage::~MenuPage() {
 // Draw the menu if no subpage is active; otherwise, draw the active subpage
 void MenuPage::draw() {
     // Draw the menu, highlighting item # subpageIdx
-    display->textFormat(1, TFT_BLACK);
-    display->drawString(pageName, (240 - display->getStringWidth(pageName)) / 2, 4);
     display->textFormat(2, TFT_WHITE);
     for (byte i = 0; i < numPages; i++) {
         if (15 + i*30 + menuTlY < -15) continue;    // No reason to draw things that are out of frame
@@ -344,9 +335,6 @@ void HomePage::onEvent(pageEvent_t event) {
         case pageEvent_t::NAV_SELECT:
             displayManager->pageStack.push(mainMenu);
             break;
-        case pageEvent_t::NAV_CANCEL:
-            deepSleep();
-            break;
         default:
             break;
     }
@@ -391,5 +379,7 @@ void DisplayManager::draw() {
     // Draw the status bar and the active page
     pageStack.top()->draw();
     display->drawStatusBar();
+    display->textFormat(1, TFT_BLACK);
+    display->drawString(pageStack.top()->pageName, (240 - display->getStringWidth(pageStack.top()->pageName)) / 2, 4);
     frameCtr++;
 }

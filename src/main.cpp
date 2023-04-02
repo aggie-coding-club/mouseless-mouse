@@ -6,6 +6,7 @@
 #include <esp32/rom/spi_flash.h>
 #include "display.h"
 #include "io.h"
+#include "pages.h"
 #include "power.h"
 
 // Pin definitions
@@ -40,29 +41,19 @@ Button downButton(35, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEve
 TouchPadInstance lMouseButton = TouchPad(LMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::LMB_PRESS, mouseEvent_t::LMB_RELEASE);
 TouchPadInstance rMouseButton = TouchPad(RMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::RMB_PRESS, mouseEvent_t::RMB_RELEASE);
 
-// Define a blank placeholder page
-class BlankPage : public DisplayPage {
-public:
-  BlankPage(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
-  void draw() {
-    display->textFormat(2, TFT_WHITE);
-    display->drawString(pageName, 30, 30);
-    display->drawString(String(touchRead(T7)), 30, 60);
-    display->drawNavArrow(120, 110, pageName[12]&1, 0.5 - 0.5*cos(6.28318*float(frameCounter%90)/90.0), 0x461F, TFT_BLACK);
-    frameCounter++;
-  };
-  void onEvent(pageEvent_t event) {
-    if (event == pageEvent_t::NAV_CANCEL) this->displayManager->pageStack.pop();
-  };
-};
+char* dummyField = new char[32];
 
 // Instantiate display page hierarchy
 BlankPage myPlaceholderA(&display, &displayManager, "Placeholder A");
 BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
-BlankPage myPlaceholderC(&display, &displayManager, "Placeholder C");
-BlankPage myPlaceholderD(&display, &displayManager, "Placeholder D");
-BlankPage myPlaceholderE(&display, &displayManager, "Placeholder E");
-MenuPage mainMenuPage(&display, &displayManager, "Main Menu", &myPlaceholderA, &myPlaceholderB, &myPlaceholderC, &myPlaceholderD, &myPlaceholderE);
+KeyboardPage keyboard(&display, &displayManager, "Keyboard");
+ConfirmationPage confirm(&display, &displayManager, "Power Off");
+MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
+  &myPlaceholderA,
+  &myPlaceholderB,
+  keyboard(dummyField),
+  confirm("Are you sure?", deepSleep)
+);
 HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 
 // Use the ADC to read the battery voltage - convert result to a percentage
@@ -91,6 +82,7 @@ void drawTask (void * pvParameters) {
     display.clear();
     displayManager.draw();
 
+    display.setStroke(TFT_CYAN);
     display.drawLine(210, 40, 210 + 10 * cos(frame / 10.0), 40 + 10 * sin(frame / 10.0));
 
     display.pushChanges();
