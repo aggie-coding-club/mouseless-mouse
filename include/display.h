@@ -1,6 +1,8 @@
 #ifndef TFT_DISPLAY_H
 #define TFT_DISPLAY_H
 
+#include <SPIFFS.h>
+#include <FS.h>
 #include <TFT_eSPI.h>
 #include <stack>
 #include <mouse.h>
@@ -8,8 +10,9 @@
 #define PWM_CHANNEL 0
 #define BACKLIGHT_PIN 4
 
-const uint8_t BRIGHT_BRIGHTNESS = 120;
-const uint8_t DIM_BRIGHTNESS = 10;
+const uint8_t BRIGHT_BRIGHTNESS = 120;  // Default display brightness
+const uint8_t DIM_BRIGHTNESS = 10;      // Brightness of the display after a period of inactivity
+const uint16_t INACTIVITY_TIME = 900;   // Time (in display frames, 30/sec) until display dimming begins
 
 const uint8_t SBAR_HEIGHT = 15;         // Height of the status bar in pixels
 const uint16_t ACCENT_COLOR = 0x461F;   // TFT_eSPI::color565(64, 192, 255)
@@ -22,6 +25,7 @@ class Button;   // Forward declaration of class Button, which is in io.h
 
 extern TFT_eSPI* tft;
 
+// Wrapper class for TFT_eSPI that handles double buffering
 class Display {
     TFT_eSPI* tft;
     TFT_eSprite* bufferA;
@@ -29,6 +33,10 @@ class Display {
     TFT_eSprite* activeBuffer;
     uint16_t fillColor;
     uint16_t strokeColor;
+
+    uint16_t read16(fs::File &f);
+    uint32_t read32(fs::File &f);
+
 public:
     uint8_t brightness;
 
@@ -39,13 +47,14 @@ public:
     void dim(uint8_t brightness);
     void pushChanges();
     void clear();
+    void flush();
     void setFill(uint16_t color);
     void setStroke(uint16_t color);
     int16_t getStringWidth(const char* string);
     void drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
     void drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t ir, uint16_t startAngle, uint16_t endAngle, uint16_t fg_color, uint16_t bg_color);
     void drawString(String string, uint16_t xPos, uint16_t yPos);
-    void pushImage(int32_t x,int32_t y,int32_t len,int32_t wid, const unsigned short *data);
+    void drawBitmapSPIFFS(const char* filename, uint16_t x, uint16_t y);
     void fillRect(uint16_t x1, uint16_t y1, uint16_t width, uint16_t height);
     void textFormat(uint8_t size, uint16_t color);
     void drawStatusBar();
@@ -103,6 +112,8 @@ public:
     void onEvent(pageEvent_t event);
 };
 
+
+
 // HomePage class - displays when no menus are open
 class HomePage : public DisplayPage {
     MenuPage* mainMenu;
@@ -116,6 +127,7 @@ public:
 
 
 
+// DisplayManager class - oversees navigation and relays page events to active pages
 class DisplayManager {
 private:
     Display* display;

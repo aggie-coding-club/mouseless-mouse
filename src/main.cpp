@@ -1,18 +1,13 @@
 #include <Arduino.h>
+#include <LittleFS.h>
+#include <FS.h>
 #include <Wire.h>
 #include <TFT_eSPI.h>
 #include <esp32/rom/spi_flash.h>
-#include <ulp_common.h>
 #include "display.h"
 #include "io.h"
-#include "imgs\hand.h"
-#include "imgs\pointer.h"
-#include "imgs\middle.h"
-#include "imgs\ring.h"
-#include "imgs\pinky.h"
-#include "imgs\thumb.h"
-#include "imgs\scrollUp.h"
-#include "imgs\scrollDown.h"
+#include "pages.h"
+#include "power.h"
 
 // Pin definitions
 #define ADC_ENABLE_PIN 14
@@ -48,14 +43,6 @@ Button downButton(35, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEve
 TouchPadInstance lMouseButton = TouchPad(LMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::LMB_PRESS, mouseEvent_t::LMB_RELEASE);
 TouchPadInstance rMouseButton = TouchPad(RMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::RMB_PRESS, mouseEvent_t::RMB_RELEASE);
 
-class BlankPage : public DisplayPage {
-    public:
-    BlankPage(Display* display, DisplayManager* displayManager, const char* pageName);
-
-    void draw();
-    void onEvent(pageEvent_t event);
-};
-
 class inputDisplay : public DisplayPage {
     bool lmb;
     bool rmb;
@@ -69,18 +56,7 @@ public:
     void onMouseEvent(mouseEvent_t event);
 };
 
-// Define a blank placeholder page
-BlankPage::BlankPage(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
-void BlankPage::draw() {
-    display->textFormat(2, TFT_WHITE);
-    display->drawString(pageName, 30, 30);
-    display->drawString(String(touchRead(T7)), 30, 60);
-    display->drawNavArrow(120, 110, pageName[12]&1, 0.5 - 0.5*cos(6.28318*float(frameCounter%90)/90.0), 0x461F, TFT_BLACK);
-    frameCounter++;
-};
-void BlankPage::onEvent(pageEvent_t event) {
-    if (event == pageEvent_t::NAV_CANCEL) this->displayManager->pageStack.pop();
-};
+char* dummyField = new char[32];
 
 inputDisplay::inputDisplay(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
 void inputDisplay::draw() {\
@@ -140,15 +116,20 @@ void inputDisplay::onMouseEvent(mouseEvent_t event) {
 // Instantiate display page hierarchy
 inputDisplay myPlaceholderA(&display, &displayManager, "input");
 BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
-BlankPage myPlaceholderC(&display, &displayManager, "Placeholder C");
-BlankPage myPlaceholderD(&display, &displayManager, "Placeholder D");
-BlankPage myPlaceholderE(&display, &displayManager, "Placeholder E");
-MenuPage mainMenuPage(&display, &displayManager, "Main Menu", &myPlaceholderA, &myPlaceholderB, &myPlaceholderC, &myPlaceholderD, &myPlaceholderE);
+KeyboardPage keyboard(&display, &displayManager, "Keyboard");
+ConfirmationPage confirm(&display, &displayManager, "Power Off");
+MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
+  &myPlaceholderA,
+  &myPlaceholderB,
+  keyboard(dummyField),
+  confirm("Are you sure?", deepSleep)
+);
 HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 
 // Use the ADC to read the battery voltage - convert result to a percentage
 int16_t getBatteryPercentage() {
   digitalWrite(ADC_ENABLE_PIN, HIGH);
+  vTaskDelay(pdMS_TO_TICKS(10));
   uint16_t v1 = analogRead(34);
   digitalWrite(ADC_ENABLE_PIN, LOW);
 
@@ -159,14 +140,19 @@ int16_t getBatteryPercentage() {
 // Define the display drawing task and a place to store its handle
 TaskHandle_t drawTaskHandle;
 void drawTask (void * pvParameters) {
-  TickType_t lastWakeTime = xTaskGetTickCount();
+  display.drawBitmapSPIFFS("/splash.bmp", 80, 15);  // Splash screen on startup
+  display.pushChanges();                            // Definitely don't forget how your own wrapper class works
 
+  vTaskDelay(pdMS_TO_TICKS(2000));                  // Keep splishin' and splashin' for 2 seconds
+
+  TickType_t lastWakeTime = xTaskGetTickCount();
   uint32_t frame = 0;
 
   while (true) {
     display.clear();
     displayManager.draw();
 
+    display.setStroke(TFT_CYAN);
     display.drawLine(210, 40, 210 + 10 * cos(frame / 10.0), 40 + 10 * sin(frame / 10.0));
 
     display.pushChanges();
@@ -180,12 +166,24 @@ void setup() {
   // Start UART transceiver
   Serial.begin(115200);
 
+  // Initialize LittleFS
+  if (!LittleFS.begin()) {
+    LittleFS.begin(true);                                                       // Format the filesystem if it failed to mount
+    Serial.println("SPIFFS had to be formatted before mounting - data lost.");  // This can happen on the first upload or when the partition scheme is changed
+  }                                                                             // Just reupload the filesystem image - this is different from uploading the program
+  else {
+    Serial.println("LittleFS Tree");  // Directory listing
+    File root = LittleFS.open("/");
+    File file = root.openNextFile();
+    while (file) {
+      Serial.println(file.name());
+      file.close();
+      file = root.openNextFile();
+    }
+  }
+  
   // Configure battery voltage reading pin
   pinMode(ADC_ENABLE_PIN, OUTPUT);
-
-  // Attach button interrupts
-  upButton.attach();
-  downButton.attach();
 
   // Attach touch pad interrupts
   attachTouchPads();
@@ -214,7 +212,18 @@ void setup() {
     &drawTaskHandle,  // Variable to hold new task handle
     1                 // Pin the task to the core that doesn't handle WiFi/Bluetooth
   );
-}e
+
+  // If we just woke up from deep sleep, don't attach the buttons until the user lets go
+  if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_ULP) {
+    stopULP();
+    pinMode(DOWN_BUTTON_PIN, INPUT_PULLUP);
+    while (!digitalRead(DOWN_BUTTON_PIN));
+  }
+
+  // Attach button interrupts
+  upButton.attach();
+  downButton.attach();
+}
 
 // I'm lazy
 #define DO_CASE(c) case mouseEvent_t::c : Serial.println(#c); break
