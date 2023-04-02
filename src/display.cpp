@@ -2,14 +2,7 @@
 #include <TFT_eSPI.h>
 #include "display.h"
 #include "io.h"
-#include "imgs\hand.h"
-#include "imgs\pointer.h"
-#include "imgs\middle.h"
-#include "imgs\ring.h"
-#include "imgs\pinky.h"
-#include "imgs\thumb.h"
-#include "imgs\scrollUp.h"
-#include "imgs\scrollDown.h"
+
 
 
 inline uint16_t wrapDegrees(int16_t degrees) {
@@ -297,65 +290,3 @@ void DisplayManager::draw() {
 }
 
 
-
-// Define a blank placeholder page
-BlankPage::BlankPage(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
-void BlankPage::draw() {
-    display->textFormat(2, TFT_WHITE);
-    display->drawString(pageName, 30, 30);
-    display->drawString(String(touchRead(T7)), 30, 60);
-    display->drawNavArrow(120, 110, pageName[12]&1, 0.5 - 0.5*cos(6.28318*float(frameCounter%90)/90.0), 0x461F, TFT_BLACK);
-    frameCounter++;
-};
-void BlankPage::onEvent(pageEvent_t event) {
-    
-};
-
-inputDisplay::inputDisplay(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
-void inputDisplay::draw() {
-    display->textFormat(2, TFT_WHITE);
-    display->drawString(pageName, 30, 30);
-    display->pushImage(60,60, 64, 64, hand);
-};
-void inputDisplay::onEvent(pageEvent_t event) {
-    if (event == pageEvent_t::NAV_CANCEL) this->displayManager->pageStack.pop();
-}
-
-//declared on Mouse event that is relevant to the input display
-void inputDisplay::onMouseEvent(mouseEvent_t event) {
-    switch(event) {
-        case mouseEvent_t::LMB_PRESS:
-            lmb = true;
-            break;
-        case mouseEvent_t::LMB_RELEASE:
-            lmb = false;
-            break;
-        case mouseEvent_t::RMB_PRESS:
-            rmb = true;
-            break;
-        case mouseEvent_t::RMB_RELEASE:
-            lmb = false;
-            break;
-        case mouseEvent_t::SCROLL_UP:
-            scrollU = true;
-            break;
-        case mouseEvent_t::SCROLL_DOWN:
-            scrollD = true;
-            break;
-        default:
-            break;
-    }
-    if(lmb) {
-        display->pushImage(60,60,64,64, pointer);
-    }
-    if(rmb) {
-        display->pushImage(60,60,64,64, middle);
-    }
-    if(scrollUp) {
-        display->pushImage(60,60,64,64, scrollUp);
-    }
-    if(scrollDown) {
-        display->pushImage(60,60,64,64, scrollDown);
-    }
-    //configure the rest of the input here
-}

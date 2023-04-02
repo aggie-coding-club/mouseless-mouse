@@ -132,27 +132,6 @@ public:
     void draw();
 };
 
-class BlankPage : public DisplayPage {
-    public:
-    BlankPage(Display* display, DisplayManager* displayManager, const char* pageName);
-
-    void draw();
-    void onEvent(pageEvent_t event);
-};
-
-class inputDisplay : public DisplayPage {
-    bool lmb;
-    bool rmb;
-    bool scrollU;
-    bool scrollD;
-public:
-    inputDisplay(Display* display, DisplayManager* displayManager, const char* pageName);
-
-    void draw();
-    void onEvent(pageEvent_t event);
-    void onMouseEvent(mouseEvent_t event);
-};
-
 ////////////////////////////////////////////////////////////////////////////
 // Template functions
 ////////////////////////////////////////////////////////////////////////////

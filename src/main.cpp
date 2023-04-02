@@ -5,6 +5,14 @@
 #include <ulp_common.h>
 #include "display.h"
 #include "io.h"
+#include "imgs\hand.h"
+#include "imgs\pointer.h"
+#include "imgs\middle.h"
+#include "imgs\ring.h"
+#include "imgs\pinky.h"
+#include "imgs\thumb.h"
+#include "imgs\scrollUp.h"
+#include "imgs\scrollDown.h"
 
 // Pin definitions
 #define ADC_ENABLE_PIN 14
@@ -38,8 +46,92 @@ Button downButton(35, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEve
 TouchPadInstance lMouseButton = TouchPad(LMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::LMB_PRESS, mouseEvent_t::LMB_RELEASE);
 TouchPadInstance rMouseButton = TouchPad(RMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::RMB_PRESS, mouseEvent_t::RMB_RELEASE);
 
+class BlankPage : public DisplayPage {
+    public:
+    BlankPage(Display* display, DisplayManager* displayManager, const char* pageName);
+
+    void draw();
+    void onEvent(pageEvent_t event);
+};
+
+class inputDisplay : public DisplayPage {
+    bool lmb;
+    bool rmb;
+    bool scrollU;
+    bool scrollD;
+public:
+    inputDisplay(Display* display, DisplayManager* displayManager, const char* pageName);
+
+    void draw();
+    void onEvent(pageEvent_t event);
+    void onMouseEvent(mouseEvent_t event);
+};
+
+// Define a blank placeholder page
+BlankPage::BlankPage(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
+void BlankPage::draw() {
+    display->textFormat(2, TFT_WHITE);
+    display->drawString(pageName, 30, 30);
+    display->drawString(String(touchRead(T7)), 30, 60);
+    display->drawNavArrow(120, 110, pageName[12]&1, 0.5 - 0.5*cos(6.28318*float(frameCounter%90)/90.0), 0x461F, TFT_BLACK);
+    frameCounter++;
+};
+void BlankPage::onEvent(pageEvent_t event) {
+    if (event == pageEvent_t::NAV_CANCEL) this->displayManager->pageStack.pop();
+};
+
+inputDisplay::inputDisplay(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
+void inputDisplay::draw() {
+    display->textFormat(2, TFT_WHITE);
+    display->drawString(pageName, 30, 30);
+    display->pushImage(60,60, 64, 64, hand);
+};
+void inputDisplay::onEvent(pageEvent_t event) {
+    if (event == pageEvent_t::NAV_CANCEL) this->displayManager->pageStack.pop();
+}
+
+//declared on Mouse event that is relevant to the input display
+void inputDisplay::onMouseEvent(mouseEvent_t event) {
+    switch(event) {
+        case mouseEvent_t::LMB_PRESS:
+            lmb = true;
+            break;
+        case mouseEvent_t::LMB_RELEASE:
+            lmb = false;
+            break;
+        case mouseEvent_t::RMB_PRESS:
+            rmb = true;
+            break;
+        case mouseEvent_t::RMB_RELEASE:
+            lmb = false;
+            break;
+        case mouseEvent_t::SCROLL_UP:
+            scrollU = true;
+            break;
+        case mouseEvent_t::SCROLL_DOWN:
+            scrollD = true;
+            break;
+        default:
+            break;
+    }
+    if(lmb) {
+        display->pushImage(60,60,64,64, pointer);
+    }
+    if(rmb) {
+        display->pushImage(60,60,64,64, middle);
+    }
+    if(scrollUp) {
+        display->pushImage(60,60,64,64, scrollUp);
+    }
+    if(scrollDown) {
+        display->pushImage(60,60,64,64, scrollDown);
+    }
+    //configure the rest of the input here
+}
+
+
 // Instantiate display page hierarchy
-BlankPage myPlaceholderA(&display, &displayManager, "Placeholder A");
+inputDisplay myPlaceholderA(&display, &displayManager, "input");
 BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
 BlankPage myPlaceholderC(&display, &displayManager, "Placeholder C");
 BlankPage myPlaceholderD(&display, &displayManager, "Placeholder D");
