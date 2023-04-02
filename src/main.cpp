@@ -24,6 +24,7 @@
 // Create event queues for inter-process/ISR communication
 xQueueHandle navigationEvents = xQueueCreate(4, sizeof(pageEvent_t));
 xQueueHandle mouseEvents = xQueueCreate(4, sizeof(mouseEvent_t));
+xQueueHandle mouseQueue = xQueueCreate(4, sizeof(mouseEvent_t));
 
 // Instantiate display module
 TFT_eSPI tftDisplay = TFT_eSPI();
@@ -36,7 +37,8 @@ TFT_eSprite bufferB = TFT_eSprite(&tftDisplay);
 Display display(&tftDisplay, &bufferA, &bufferB);
 
 // Instantiate display page manager
-DisplayManager displayManager(&display);
+DisplayManager displayManager(&display);\
+
 
 // Button instantiation
 Button upButton(0, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT);
@@ -81,7 +83,12 @@ void BlankPage::onEvent(pageEvent_t event) {
 };
 
 inputDisplay::inputDisplay(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
-void inputDisplay::draw() {
+void inputDisplay::draw() {\
+    if (uxQueueMessagesWaiting(mouseQueue)) {
+        mouseEvent_t event;
+        xQueueReceive(mouseQueue, &event, 0);
+        
+    }
     display->textFormat(2, TFT_WHITE);
     display->drawString(pageName, 30, 30);
     display->pushImage(60,60, 64, 64, hand);
@@ -207,13 +214,13 @@ void setup() {
     &drawTaskHandle,  // Variable to hold new task handle
     1                 // Pin the task to the core that doesn't handle WiFi/Bluetooth
   );
-}
+}e
 
 // I'm lazy
 #define DO_CASE(c) case mouseEvent_t::c : Serial.println(#c); break
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  // put your main code here, to run repeatedly:dr
   // Relay test messages from touch pads to Serial
   if (uxQueueMessagesWaiting(mouseEvents)) {
     mouseEvent_t messageReceived;
@@ -227,5 +234,6 @@ void loop() {
         Serial.println("I dunno man...");
         break;
     }
+    xQueueSend(mouseQueue, &messageReceived, 0);
   }
 }

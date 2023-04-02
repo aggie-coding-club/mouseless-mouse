@@ -75,6 +75,8 @@ public:
     virtual void draw() = 0;
     // Must be implemented by all pages
     virtual void onEvent(pageEvent_t event) = 0;
+
+    virtual void onMouseEvent(mouseEvent_t event) = 0;
 };
 
 
@@ -122,6 +124,7 @@ private:
 
 public:
     xQueueHandle eventQueue;
+    xQueueHandle mouseQueue;
     std::stack<DisplayPage*> pageStack;
     Button* upButton;
     Button* downButton;
