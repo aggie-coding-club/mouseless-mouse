@@ -43,78 +43,13 @@ Button downButton(35, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEve
 TouchPadInstance lMouseButton = TouchPad(LMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::LMB_PRESS, mouseEvent_t::LMB_RELEASE);
 TouchPadInstance rMouseButton = TouchPad(RMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::RMB_PRESS, mouseEvent_t::RMB_RELEASE);
 
-class inputDisplay : public DisplayPage {
-    bool lmb;
-    bool rmb;
-    bool scrollU;
-    bool scrollD;
-public:
-    inputDisplay(Display* display, DisplayManager* displayManager, const char* pageName);
-
-    void draw();
-    void onEvent(pageEvent_t event);
-    void onMouseEvent(mouseEvent_t event);
-};
-
 char* dummyField = new char[32];
 
-inputDisplay::inputDisplay(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
-void inputDisplay::draw() {\
-    if (uxQueueMessagesWaiting(mouseQueue)) {
-        mouseEvent_t event;
-        xQueueReceive(mouseQueue, &event, 0);
-        
-    }
-    display->textFormat(2, TFT_WHITE);
-    display->drawString(pageName, 30, 30);
-    display->pushImage(60,60, 64, 64, hand);
-};
-void inputDisplay::onEvent(pageEvent_t event) {
-    if (event == pageEvent_t::NAV_CANCEL) this->displayManager->pageStack.pop();
-}
 
-//declared on Mouse event that is relevant to the input display
-void inputDisplay::onMouseEvent(mouseEvent_t event) {
-    switch(event) {
-        case mouseEvent_t::LMB_PRESS:
-            lmb = true;
-            break;
-        case mouseEvent_t::LMB_RELEASE:
-            lmb = false;
-            break;
-        case mouseEvent_t::RMB_PRESS:
-            rmb = true;
-            break;
-        case mouseEvent_t::RMB_RELEASE:
-            lmb = false;
-            break;
-        case mouseEvent_t::SCROLL_UP:
-            scrollU = true;
-            break;
-        case mouseEvent_t::SCROLL_DOWN:
-            scrollD = true;
-            break;
-        default:
-            break;
-    }
-    if(lmb) {
-        display->pushImage(60,60,64,64, pointer);
-    }
-    if(rmb) {
-        display->pushImage(60,60,64,64, middle);
-    }
-    if(scrollUp) {
-        display->pushImage(60,60,64,64, scrollUp);
-    }
-    if(scrollDown) {
-        display->pushImage(60,60,64,64, scrollDown);
-    }
-    //configure the rest of the input here
-}
 
 
 // Instantiate display page hierarchy
-inputDisplay myPlaceholderA(&display, &displayManager, "input");
+InputDisplay myPlaceholderA(&display, &displayManager, "input");
 BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");

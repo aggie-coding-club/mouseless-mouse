@@ -1,9 +1,10 @@
 #include "display.h"
 #include "helpers.h"
 #include "pages.h"
+#include "mouse.h"
 
 
-
+extern xQueueHandle mouseQueue;
 // Not much to do for a blank page
 BlankPage::BlankPage(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
 
@@ -161,4 +162,54 @@ void ConfirmationPage::onEvent(pageEvent_t event) {
         default:
             break;
     }
+}
+
+
+
+InputDisplay::InputDisplay(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
+void InputDisplay::draw() {
+    if (uxQueueMessagesWaiting(mouseQueue)) {
+        mouseEvent_t event;
+        xQueueReceive(mouseQueue, &event, 0);
+        switch(event) {
+        case mouseEvent_t::LMB_PRESS:
+            lmb = true;
+            break;
+        case mouseEvent_t::LMB_RELEASE:
+            lmb = false;
+            break;
+        case mouseEvent_t::RMB_PRESS:
+            rmb = true;
+            break;
+        case mouseEvent_t::RMB_RELEASE:
+            lmb = false;
+            break;
+        case mouseEvent_t::SCROLL_UP:
+            scrollU = true;
+            break;
+        case mouseEvent_t::SCROLL_DOWN:
+            scrollD = true;
+            break;
+        default:
+            break;
+    }
+    if(lmb) {
+        display->drawBitmapSPIFFS("/pointer.bmp",60,60);
+    }
+    if(rmb) {
+        display->drawBitmapSPIFFS("/middle.bmp",60,60);
+    }
+    if(scrollU) {
+        display->drawBitmapSPIFFS("/scrollUp.bmp",60,60);
+    }
+    if(scrollD) {
+        display->drawBitmapSPIFFS("/scrollDown.bmp",60,60);
+    }
+    }
+    display->textFormat(2, TFT_WHITE);
+    display->drawString(pageName, 30, 30);
+    display->drawBitmapSPIFFS("/hand.bmp",60,60);;
+}
+void InputDisplay::onEvent(pageEvent_t event) {
+    if (event == pageEvent_t::NAV_CANCEL) this->displayManager->pageStack.pop();
 }

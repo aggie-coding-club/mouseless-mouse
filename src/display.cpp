@@ -101,10 +101,6 @@ void Display::drawString(String string, uint16_t xPos, uint16_t yPos) {
     activeBuffer->drawString(string, xPos, yPos);
 }
 
-void Display::pushImage(int32_t x,int32_t y,int32_t len,int32_t wid, const unsigned short *data) {
-    activeBuffer->pushImage(x,y,len,wid, data);
-}
-
 void Display::drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
     activeBuffer->drawLine(x1, y1, x2, y2, strokeColor);
 }
@@ -387,6 +383,3 @@ void DisplayManager::draw() {
     display->drawString(pageStack.top()->pageName, (240 - display->getStringWidth(pageStack.top()->pageName)) / 2, 4);
     frameCtr++;
 }
-
-
-e
