@@ -55,6 +55,7 @@ public:
     void drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t ir, uint16_t startAngle, uint16_t endAngle, uint16_t fg_color, uint16_t bg_color);
     void drawString(String string, uint16_t xPos, uint16_t yPos);
     void drawBitmapSPIFFS(const char* filename, uint16_t x, uint16_t y);
+    void pushImage(int x,int y,int width,int height, const unsigned short* data);
     void fillRect(uint16_t x1, uint16_t y1, uint16_t width, uint16_t height);
     void textFormat(uint8_t size, uint16_t color);
     void drawStatusBar();
