@@ -1,4 +1,5 @@
 #include <Adafruit_LIS3MDL.h>
+#undef B1
 #include <ArduinoEigen/Eigen/Dense>
 #include <ArduinoEigen/Eigen/Geometry>
 #include <ArduinoLog.h>
