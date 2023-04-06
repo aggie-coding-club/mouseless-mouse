@@ -76,8 +76,11 @@ void setup() {
   Wire.setClock(400000);
   mouse.begin();
   lis3mdlI2C.begin(15, 13);
-  if (!lis3mdl.begin_I2C(28U, &lis3mdlI2C)) {
+  if (!lis3mdl.begin_I2C(30U, &lis3mdlI2C)) {
     Log.errorln("IT DIDN'T FUCKIMG START");
+    for (;;) {
+      // do nothing
+    }
   }
   lis3mdl.setPerformanceMode(LIS3MDL_MEDIUMMODE);
   lis3mdl.setOperationMode(LIS3MDL_CONTINUOUSMODE);
