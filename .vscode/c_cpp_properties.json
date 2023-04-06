@@ -10,6 +10,8 @@
             "includePath": [
                 "c:/Users/MattM/Documents/GitHub/mouseless-mouse/include",
                 "c:/Users/MattM/Documents/GitHub/mouseless-mouse/src",
+                "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/ttgo-lora32-v1/Adafruit LIS3MDL",
+                "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/ttgo-lora32-v1/Adafruit Unified Sensor",
                 "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/ttgo-lora32-v1/ArduinoEigen",
                 "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/ttgo-lora32-v1/Adafruit BusIO",
                 "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/ttgo-lora32-v1/SparkFun 9DoF IMU Breakout - ICM 20948 - Arduino Library/src",
@@ -246,6 +248,8 @@
                 "path": [
                     "c:/Users/MattM/Documents/GitHub/mouseless-mouse/include",
                     "c:/Users/MattM/Documents/GitHub/mouseless-mouse/src",
+                    "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/ttgo-lora32-v1/Adafruit LIS3MDL",
+                    "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/ttgo-lora32-v1/Adafruit Unified Sensor",
                     "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/ttgo-lora32-v1/ArduinoEigen",
                     "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/ttgo-lora32-v1/Adafruit BusIO",
                     "c:/Users/MattM/Documents/GitHub/mouseless-mouse/.pio/libdeps/ttgo-lora32-v1/SparkFun 9DoF IMU Breakout - ICM 20948 - Arduino Library/src",
