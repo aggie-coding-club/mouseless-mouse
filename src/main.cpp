@@ -198,10 +198,10 @@ void setup() {
   // Initialize LittleFS
   if (!LittleFS.begin()) {
     LittleFS.begin(true); // Format the filesystem if it failed to mount
-    Serial.println("SPIFFS had to be formatted before mounting - data lost."); // This can happen on the first upload or
-                                                                               // when the partition scheme is changed
-  } // Just reupload the filesystem image - this is different from uploading the program
-  else {
+    Log.warningln("SPIFFS had to be formatted before mounting - data lost."); // This can happen on the first upload or
+                                                                              // when the partition scheme is changed
+  } else {
+    // Just reupload the filesystem image - this is different from uploading the program
     Serial.println("LittleFS Tree"); // Directory listing
     File root = LittleFS.open("/");
     File file = root.openNextFile();
