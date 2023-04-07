@@ -1,5 +1,3 @@
-#include <Adafruit_LIS3MDL.h>
-#undef B1
 #include <ArduinoEigen/Eigen/Dense>
 #include <ArduinoEigen/Eigen/Geometry>
 #include <ArduinoLog.h>
@@ -13,7 +11,6 @@
 constexpr unsigned long AD0_VAL = 1;
 
 ICM_20948_I2C icm;
-Adafruit_LIS3MDL lis3mdl;
 BleMouse mouse("Mouseless Mouse", "Mouseless Team"); // Initialize Bluetooth mouse object to send mouse events
 
 template <typename T, std::size_t bufferLength> class RollingAverage {
@@ -49,13 +46,10 @@ public:
 /// @param vec The vector in mouse-space.
 /// @param icm A reference to the ICM_20948_I2C object whose orientation data is being used.
 /// @return The equivalent of `vec` in world-space.
-[[nodiscard]] Eigen::Vector3f mouseSpaceToWorldSpace(Eigen::Vector3f vec, ICM_20948_I2C &icm,
-                                                     Adafruit_LIS3MDL &lis3mdl) noexcept {
+[[nodiscard]] Eigen::Vector3f mouseSpaceToWorldSpace(Eigen::Vector3f vec, ICM_20948_I2C &icm) noexcept {
   static RollingAverage<Eigen::Vector3f, 12U> up;
   static RollingAverage<Eigen::Vector3f, 12U> north;
   up.update(Eigen::Vector3f(icm.accX(), icm.accY(), icm.accZ()).normalized());
-  float magX, magY, magZ;
-  lis3mdl.readMagneticField(magX, magY, magZ);
   north.update(Eigen::Vector3f(icm.magX(), icm.magY(), icm.magZ()).normalized());
   Eigen::Vector3f adjusted_north = north.get() - (up.get() * up.get().dot(north.get()));
   adjusted_north.normalize();
@@ -74,18 +68,6 @@ void setup() {
   Wire.begin();
   Wire.setClock(400000);
   mouse.begin();
-  if (!lis3mdl.begin_I2C()) {
-    Log.errorln("IT DIDN'T FUCKIMG START");
-    for (;;) {
-      // do nothing
-    }
-  }
-  lis3mdl.setPerformanceMode(LIS3MDL_MEDIUMMODE);
-  lis3mdl.setOperationMode(LIS3MDL_CONTINUOUSMODE);
-  lis3mdl.setDataRate(LIS3MDL_DATARATE_155_HZ);
-  lis3mdl.setRange(LIS3MDL_RANGE_4_GAUSS);
-  lis3mdl.setIntThreshold(500);
-  lis3mdl.configInterrupt(false, false, true, true, false, true);
   for (;;) {
     icm.begin(Wire, AD0_VAL);
     if (icm.status != ICM_20948_Stat_Ok) {
@@ -114,8 +96,8 @@ void loop() {
     }
     Serial.println("Mouse calibrated!");
     icm.getAGMT();
-    calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm, lis3mdl);
-    calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm, lis3mdl);
+    calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
+    calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
     while (Serial.available() > 0) {
       Serial.read();
     }
@@ -130,7 +112,7 @@ void loop() {
   }
   if (icm.dataReady()) {
     icm.getAGMT();
-    Eigen::Vector3f posY = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 1.0f, 0.0f}, icm, lis3mdl);
+    Eigen::Vector3f posY = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 1.0f, 0.0f}, icm);
     signed char xMovement = posY.dot(calibratedPosX) * sensitivity;
     signed char zMovement = posY.dot(calibratedPosZ) * sensitivity;
     mouse.move(xMovement, zMovement);
