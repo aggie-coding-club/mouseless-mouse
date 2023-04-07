@@ -14,7 +14,6 @@ constexpr unsigned long AD0_VAL = 1;
 
 ICM_20948_I2C icm;
 Adafruit_LIS3MDL lis3mdl;
-TwoWire lis3mdlI2C(1);
 BleMouse mouse("Mouseless Mouse", "Mouseless Team"); // Initialize Bluetooth mouse object to send mouse events
 
 template <typename T, std::size_t bufferLength> class RollingAverage {
@@ -57,7 +56,7 @@ public:
   up.update(Eigen::Vector3f(icm.accX(), icm.accY(), icm.accZ()).normalized());
   float magX, magY, magZ;
   lis3mdl.readMagneticField(magX, magY, magZ);
-  north.update(Eigen::Vector3f(magX, magY, magZ).normalized());
+  north.update(Eigen::Vector3f(icm.magX(), icm.magY(), icm.magZ()).normalized());
   Eigen::Vector3f adjusted_north = north.get() - (up.get() * up.get().dot(north.get()));
   adjusted_north.normalize();
   Eigen::Vector3f east = adjusted_north.cross(up.get());
@@ -75,8 +74,7 @@ void setup() {
   Wire.begin();
   Wire.setClock(400000);
   mouse.begin();
-  lis3mdlI2C.begin(15, 13);
-  if (!lis3mdl.begin_I2C(30U, &lis3mdlI2C)) {
+  if (!lis3mdl.begin_I2C()) {
     Log.errorln("IT DIDN'T FUCKIMG START");
     for (;;) {
       // do nothing
