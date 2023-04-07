@@ -101,12 +101,6 @@ void loop() {
     while (Serial.available() > 0) {
       Serial.read();
     }
-    // Serial.print("Now enter a sensitivity value (integer, 1-127): ");
-    // long accumulator = Serial.parseInt();
-    // while (accumulator < 1 || accumulator > 127) {
-    //   Serial.print("Invalid or no input. Please enter an integer from 1-127 inclusive: ");
-    //   accumulator = Serial.parseInt();
-    // }
     sensitivity = 8;
     hasCalibrated = true;
   }
