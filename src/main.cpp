@@ -11,7 +11,7 @@
 constexpr unsigned long AD0_VAL = 1;
 
 ICM_20948_I2C icm;
-BleMouse mouse("Mouseless Mouse", "Mouseless Team"); // Initialize Bluetooth mouse object to send mouse events
+BleMouse mouse("Mouseless Mouse", "Mouseless Team");
 
 template <typename T, std::size_t bufferLength> class RollingAverage {
 private:
@@ -66,7 +66,7 @@ Eigen::Vector3f calibratedPosZ;
 constexpr signed char sensitivity = 8;
 
 void setup() {
-  Serial.begin(115200); // Start the serial console
+  Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
   delay(100);
   Wire.begin();
@@ -83,12 +83,12 @@ void setup() {
     }
   }
   while (!icm.dataReady()) {
-    // busy wait
+    // do nothing
   }
   while (Serial.available() > 0) {
     Serial.read();
   }
-  Serial.println("Place mouse into resting position, then press any key to continue.");
+  Serial.println("Place mouse flat on the table, facing the screen, then press any key to continue.");
   while (Serial.available() == 0) {
     // do nothing
   }
