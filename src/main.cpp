@@ -6,13 +6,12 @@
 
 #include "ICM_20948.h"
 
-// The value of the last bit of the I2C address.
-// On the SparkFun 9DoF IMU breakout the default is 1, and when the ADR jumper is closed the value becomes 0
-constexpr unsigned long AD0_VAL = 1;
-
 ICM_20948_I2C icm;
 BleMouse mouse("Mouseless Mouse", "Mouseless Team");
 
+/// @brief Filter to smooth values using a rolling average.
+/// @tparam T The type of the values to be smoothed.
+/// @tparam bufferLength The number of samples to average over.
 template <typename T, std::size_t bufferLength> class RollingAverage {
 private:
   std::array<T, bufferLength> mBuffer;
@@ -23,6 +22,8 @@ private:
 public:
   static_assert(bufferLength != 0);
 
+  /// @brief Pass another value into the rolling average.
+  /// @param next The new value.
   void update(T next) noexcept {
     if (mContentLength < bufferLength) {
       mContentLength++;
@@ -37,6 +38,8 @@ public:
       mCursor = 0;
     }
   }
+  /// @brief Get the latest value in the rolling average buffer.
+  /// @return The rolling average of the last bufferLength values inserted.
   [[nodiscard]] T get() const noexcept { return mAverage; }
 };
 
@@ -47,8 +50,9 @@ public:
 /// @param icm A reference to the ICM_20948_I2C object whose orientation data is being used.
 /// @return The equivalent of `vec` in world-space.
 [[nodiscard]] Eigen::Vector3f mouseSpaceToWorldSpace(Eigen::Vector3f vec, ICM_20948_I2C &icm) noexcept {
-  static RollingAverage<Eigen::Vector3f, 12U> up;
-  static RollingAverage<Eigen::Vector3f, 12U> north;
+  constexpr std::size_t ROLLING_AVG_BUFFER_DEPTH = 12U;
+  static RollingAverage<Eigen::Vector3f, ROLLING_AVG_BUFFER_DEPTH> up;
+  static RollingAverage<Eigen::Vector3f, ROLLING_AVG_BUFFER_DEPTH> north;
   up.update(Eigen::Vector3f(icm.accX(), icm.accY(), icm.accZ()).normalized());
   north.update(Eigen::Vector3f(icm.magX(), icm.magY(), icm.magZ()).normalized());
   Eigen::Vector3f adjusted_north = north.get() - (up.get() * up.get().dot(north.get()));
@@ -73,7 +77,7 @@ void setup() {
   Wire.setClock(400000);
   mouse.begin();
   for (;;) {
-    icm.begin(Wire, AD0_VAL);
+    icm.begin();
     if (icm.status != ICM_20948_Stat_Ok) {
       Log.noticeln("ICM initialization failed with error status \"%s\", retrying", icm.statusString());
       delay(500);
