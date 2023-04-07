@@ -61,6 +61,10 @@ public:
   };
 }
 
+Eigen::Vector3f calibratedPosX;
+Eigen::Vector3f calibratedPosZ;
+constexpr signed char sensitivity = 8;
+
 void setup() {
   Serial.begin(115200); // Start the serial console
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
@@ -78,32 +82,23 @@ void setup() {
       break;
     }
   }
+  while (!icm.dataReady()) {
+    // busy wait
+  }
+  while (Serial.available() > 0) {
+    Serial.read();
+  }
+  Serial.println("Place mouse into resting position, then press any key to continue.");
+  while (Serial.available() == 0) {
+    // do nothing
+  }
+  icm.getAGMT();
+  calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
+  calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
+  Serial.println("Mouse calibrated!");
 }
 
-bool hasCalibrated = false;
-Eigen::Vector3f calibratedPosX;
-Eigen::Vector3f calibratedPosZ;
-signed char sensitivity;
-
 void loop() {
-  if (!hasCalibrated) {
-    while (Serial.available() > 0) {
-      Serial.read();
-    }
-    Serial.println("Place mouse into resting position, then press any key to continue.");
-    while (Serial.available() == 0) {
-      // do nothing
-    }
-    Serial.println("Mouse calibrated!");
-    icm.getAGMT();
-    calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
-    calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
-    while (Serial.available() > 0) {
-      Serial.read();
-    }
-    sensitivity = 8;
-    hasCalibrated = true;
-  }
   if (icm.dataReady()) {
     icm.getAGMT();
     Eigen::Vector3f posY = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 1.0f, 0.0f}, icm);
