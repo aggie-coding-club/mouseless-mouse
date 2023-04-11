@@ -1,6 +1,7 @@
-#include <Arduino.h>
 #include <ArduinoEigen/Eigen/Dense>
 #include <ArduinoEigen/Eigen/Geometry>
+
+#include <Arduino.h>
 #include <ArduinoLog.h>
 #include <BleMouse.h>
 #include <FS.h>
@@ -18,11 +19,11 @@
 #include "ICM_20948.h"
 
 // Constants
-constexpr std::size_t ADC_ENABLE_PIN = 14;
-constexpr std::size_t UP_BUTTON_PIN = 35;
-constexpr std::size_t DOWN_BUTTON_PIN = 0;
-constexpr std::size_t LMB_TOUCH_CHANNEL = 7;
-constexpr std::size_t RMB_TOUCH_CHANNEL = 5;
+#define ADC_ENABLE_PIN 14
+#define UP_BUTTON_PIN 35
+#define DOWN_BUTTON_PIN 0
+#define LMB_TOUCH_CHANNEL 7
+#define RMB_TOUCH_CHANNEL 5
 constexpr signed char SENSITIVITY = 8;
 
 // Mouse logic globals
