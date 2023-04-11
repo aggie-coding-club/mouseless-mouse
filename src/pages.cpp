@@ -204,7 +204,7 @@ void InputDisplay::draw() {
                 break;
         }
         if(lmb) {
-            display->pushImage(60,60,64,64, pointer);
+            display->pushImage(60+20,60+11,6,16, pointer);
         }
         if(rmb) {
             display->pushImage(60,60,64,64, middle);
@@ -216,8 +216,6 @@ void InputDisplay::draw() {
             display->pushImage(60,60,64,64, pinky);
         }
     }
-    display->pushImage(60+20,60+11,6,16, pointer);
-
 }
 void InputDisplay::onEvent(pageEvent_t event) {
     if (event == pageEvent_t::NAV_CANCEL) this->displayManager->pageStack.pop();
