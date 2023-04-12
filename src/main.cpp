@@ -264,15 +264,19 @@ void loop() {
     switch (messageReceived) {
     case mouseEvent_t::LMB_PRESS:
       Serial.println("LMB_PRESS");
+      mouse.press(MOUSE_LEFT);
       break;
     case mouseEvent_t::LMB_RELEASE:
       Serial.println("LMB_RELEASE");
+      mouse.release(MOUSE_RIGHT);
       break;
     case mouseEvent_t::RMB_PRESS:
       Serial.println("RMB_PRESS");
+      mouse.press(MOUSE_LEFT);
       break;
     case mouseEvent_t::RMB_RELEASE:
       Serial.println("RMB_RELEASE");
+      mouse.release(MOUSE_RIGHT);
       break;
     default:
       break;
