@@ -8,6 +8,8 @@
 #include "imgs/thumb.h"
 #include "imgs/pinky.h"
 #include "imgs/middle.h"
+#include "imgs/scrollDown.h"
+#include "imgs/scrollUp.h"
 
 
 
@@ -204,16 +206,16 @@ void InputDisplay::draw() {
                 break;
         }
         if(lmb) {
-            display->pushImage(60+20,60+11,6,16, pointer);
+            display->pushImage(60+1,60+23,8,23, thumb);
         }
         if(rmb) {
-            display->pushImage(60,60,64,64, middle);
+            display->pushImage(60+20,60+11,6,16, pointer);
         }
         if(scrollU) {
-            display->pushImage(60,60,64,64, ring);
+            display->pushImage(60+29,60+33,5,3, scrollUp);
         }
         if(scrollD) {
-            display->pushImage(60,60,64,64, pinky);
+            display->pushImage(60+29,60+40,5,3, scrollDown);
         }
     }
 }
