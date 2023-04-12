@@ -35,6 +35,7 @@ Eigen::Vector3f calibratedPosZ;
 // Create event queues for inter-process/ISR communication
 xQueueHandle navigationEvents = xQueueCreate(4, sizeof(pageEvent_t));
 xQueueHandle mouseEvents = xQueueCreate(4, sizeof(mouseEvent_t));
+xQueueHandle mouseQueue = xQueueCreate(4, sizeof(mouseEvent_t));
 
 // Instantiate display module
 TFT_eSPI tftDisplay = TFT_eSPI();
@@ -47,7 +48,8 @@ TFT_eSprite bufferB = TFT_eSprite(&tftDisplay);
 Display display(&tftDisplay, &bufferA, &bufferB);
 
 // Instantiate display page manager
-DisplayManager displayManager(&display);
+DisplayManager displayManager(&display);\
+
 
 // Button instantiation
 Button upButton(0, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT);
@@ -61,8 +63,11 @@ TouchPadInstance rMouseButton =
 
 char *dummyField = new char[32];
 
+
+
+
 // Instantiate display page hierarchy
-BlankPage myPlaceholderA(&display, &displayManager, "Placeholder A");
+InputDisplay myPlaceholderA(&display, &displayManager, "input");
 BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
@@ -281,6 +286,7 @@ void loop() {
     default:
       break;
     }
+    xQueueSend(mouseQueue, &messageReceived, 0);
   }
   if (icm.dataReady()) {
     icm.getAGMT();

@@ -1,7 +1,20 @@
 #include "pages.h"
 #include "display.h"
 #include "helpers.h"
+#include "pages.h"
+#include "mouse.h"
+#include "imgs/hand.h"
+#include "imgs/pointer.h"
+#include "imgs/ring.h"
+#include "imgs/thumb.h"
+#include "imgs/pinky.h"
+#include "imgs/middle.h"
+#include "imgs/scrollDown.h"
+#include "imgs/scrollUp.h"
 
+
+
+extern xQueueHandle mouseQueue;
 // Not much to do for a blank page
 BlankPage::BlankPage(Display *display, DisplayManager *displayManager, const char *pageName)
     : DisplayPage(display, displayManager, pageName) {}
@@ -146,14 +159,64 @@ void ConfirmationPage::draw() {
 
 // Event handling for the confirmation page
 void ConfirmationPage::onEvent(pageEvent_t event) {
-  switch (event) {
-  case pageEvent_t::NAV_CANCEL:
-    displayManager->pageStack.pop();
-    break;
-  case pageEvent_t::NAV_SELECT:
-    callback();
-    break;
-  default:
-    break;
-  }
+    switch (event) {
+        case pageEvent_t::NAV_CANCEL:
+            displayManager->pageStack.pop();
+            break;
+        case pageEvent_t::NAV_SELECT:
+            callback();
+            break;
+        default:
+            break;
+    }
+}
+
+
+
+InputDisplay::InputDisplay(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
+void InputDisplay::draw() {
+    display->textFormat(2, TFT_WHITE);
+    display->drawString(pageName, 30, 30);
+    display->pushImage(60,60,64,64, hand);
+    if (uxQueueMessagesWaiting(mouseQueue)) {
+        mouseEvent_t event;
+        xQueueReceive(mouseQueue, &event, 0);
+        switch(event) {
+            case mouseEvent_t::LMB_PRESS:
+                lmb = true;
+                break;
+            case mouseEvent_t::LMB_RELEASE:
+                lmb = false;
+                break;
+            case mouseEvent_t::RMB_PRESS:
+                rmb = true;
+                break;
+            case mouseEvent_t::RMB_RELEASE:
+                lmb = false;
+                break;
+            case mouseEvent_t::SCROLL_UP:
+                scrollU = true;
+                break;
+            case mouseEvent_t::SCROLL_DOWN:
+                scrollD = true;
+                break;
+            default:
+                break;
+        }
+        if(lmb) {
+            display->pushImage(60+1,60+23,8,23, thumb);
+        }
+        if(rmb) {
+            display->pushImage(60+20,60+11,6,16, pointer);
+        }
+        if(scrollU) {
+            display->pushImage(60+29,60+33,5,3, scrollUp);
+        }
+        if(scrollD) {
+            display->pushImage(60+29,60+40,5,3, scrollDown);
+        }
+    }
+}
+void InputDisplay::onEvent(pageEvent_t event) {
+    if (event == pageEvent_t::NAV_CANCEL) this->displayManager->pageStack.pop();
 }

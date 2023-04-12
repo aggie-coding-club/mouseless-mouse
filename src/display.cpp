@@ -153,6 +153,11 @@ void Display::drawBitmapSPIFFS(const char *filename, uint16_t x, uint16_t y) {
   bmpFS.close();
 }
 
+//pushes an image from RAM directly to the active buffer. faster than drawBitMap but requires RAM usage
+void Display::pushImage(int x,int y,int width,int height, const unsigned short* data) {
+    activeBuffer->pushImage(x,y,width,height, data);
+}
+
 void Display::fillRect(uint16_t x1, uint16_t y1, uint16_t width, uint16_t height) {
   activeBuffer->fillRect(x1, y1, width, height, fillColor);
 }
