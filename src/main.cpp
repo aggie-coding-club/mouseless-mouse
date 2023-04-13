@@ -204,10 +204,6 @@ void setup() {
   while (Serial.available() > 0) {
     Serial.read();
   }
-  Serial.println("Place mouse flat on the table, facing the screen, then press any key to continue.");
-  while (Serial.available() == 0) {
-    // do nothing
-  }
   icm.getAGMT();
   calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
   calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
