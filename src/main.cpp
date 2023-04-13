@@ -132,6 +132,7 @@ public:
   north.update(Eigen::Vector3f(icm.magX(), -icm.magY(), -icm.magZ()).normalized());
   Eigen::Vector3f adjusted_north = north.get() - (up.get() * up.get().dot(north.get()));
   adjusted_north.normalize();
+  Serial.printf("%g\tx\t%g\tx\t%g\n", adjusted_north.x(), adjusted_north.y(), adjusted_north.z());
   Eigen::Vector3f east = adjusted_north.cross(up.get());
   return Eigen::Vector3f{
       east.dot(vec),
@@ -342,7 +343,7 @@ void loop() {
     icm.getAGMT();
     Eigen::Vector3f posY = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 1.0f, 0.0f}, icm);
     signed char xMovement = normalizeMouseMovement(posY.dot(calibratedPosX)) * SENSITIVITY;
-    Serial.printf("%i\n", xMovement);
+    // Serial.printf("%i\n", xMovement);
     signed char zMovement = normalizeMouseMovement(posY.dot(calibratedPosZ)) * SENSITIVITY;
     if (!scrollEnableState) {
       mouse.move(xMovement, zMovement);
