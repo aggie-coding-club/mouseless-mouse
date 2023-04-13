@@ -175,7 +175,7 @@ void drawTask(void *pvParameters) {
   }
 }
 
-float normalizeMouseMovement(float axisValue) { return 1.0f / expf(-10.0f * (axisValue - 0.5f)); }
+float normalizeMouseMovement(float axisValue) { return 1.0f / expf(-10.0f * (axisValue - 0.65f)); }
 
 void setup() {
   // Begin serial and logging
