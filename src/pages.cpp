@@ -6,7 +6,8 @@
 #include "imgs/hand.h"
 #include "imgs/pointer.h"
 #include "imgs/ring.h"
-#include "imgs/thumb.h"
+#include "imgs/thumb1.h"
+#include "imgs/Thumb2.h"
 #include "imgs/pinky.h"
 #include "imgs/middle.h"
 #include "imgs/scrollDown.h"
@@ -194,26 +195,43 @@ void InputDisplay::draw() {
             case mouseEvent_t::RMB_RELEASE:
                 lmb = false;
                 break;
-            case mouseEvent_t::SCROLL_UP:
+            case mouseEvent_t::SCROLL_PRESS:
                 scrollU = true;
-                break;
-            case mouseEvent_t::SCROLL_DOWN:
                 scrollD = true;
                 break;
+            case mouseEvent_t::SCROLL_RELEASE:
+                scrollU = false;
+                scrollD = false;
+                break;
+            case mouseEvent_t::LOCK_PRESS:
+              lock = true;
+            case mouseEvent_t::LOCK_RELEASE:
+              lock = false;
+            case mouseEvent_t::CALIBRATE_PRESS:
+              calibrate = true;
+            case mouseEvent_t::CALIBRATE_RELEASE:
+              calibrate = false;
             default:
                 break;
         }
         if(lmb) {
-            display->pushImage(60+1,60+23,8,23, thumb);
+            display->pushImage(60+12,60+24,7,11, Thumb1);
         }
         if(rmb) {
-            display->pushImage(60+20,60+11,6,16, pointer);
+            display->pushImage(60+12,60+35,7,11, Thumb2);
         }
         if(scrollU) {
             display->pushImage(60+29,60+33,5,3, scrollUp);
+            display->pushImage(60+27, 60+6, 9, 19, middle);
         }
         if(scrollD) {
             display->pushImage(60+29,60+40,5,3, scrollDown);
+        }
+        if(lock) {
+          display->pushImage(60+37,60+9,7,17,ring);
+        }
+        if(calibrate) {
+          display->pushImage(60+45,60+20,5,15, pinky);
         }
     }
 }

@@ -24,6 +24,9 @@
 #define DOWN_BUTTON_PIN 0
 #define LMB_TOUCH_CHANNEL 7
 #define RMB_TOUCH_CHANNEL 5
+#define SCROLL_TOUCH_CHANNEL 4
+#define LOCK_TOUCH_CHANNEL 3
+#define CALIBRATE_TOUCH_CHANNEL 2
 constexpr signed char SENSITIVITY = 8;
 
 // Mouse logic globals
@@ -60,6 +63,12 @@ TouchPadInstance lMouseButton =
     TouchPad(LMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::LMB_PRESS, mouseEvent_t::LMB_RELEASE);
 TouchPadInstance rMouseButton =
     TouchPad(RMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::RMB_PRESS, mouseEvent_t::RMB_RELEASE);
+TouchPadInstance scrollButton =
+    TouchPad(RMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::SCROLL_PRESS, mouseEvent_t::SCROLL_RELEASE);
+TouchPadInstance lockButton =
+    TouchPad(RMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::LOCK_PRESS, mouseEvent_t::LOCK_RELEASE);
+TouchPadInstance calibrateButton =
+    TouchPad(CALIBRATE_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::CALIBRATE_PRESS, mouseEvent_t::CALIBRATE_RELEASE);
 
 char *dummyField = new char[32];
 
@@ -74,6 +83,9 @@ ConfirmationPage confirm(&display, &displayManager, "Power Off");
 MenuPage mainMenuPage(&display, &displayManager, "Main Menu", &myPlaceholderA, &myPlaceholderB, keyboard(dummyField),
                       confirm("Are you sure?", deepSleep));
 HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
+
+bool mouseEnableState = true;
+bool scrollEnableState = true;
 
 /// @brief Filter to smooth values using a rolling average.
 /// @tparam T The type of the values to be smoothed.
@@ -266,34 +278,62 @@ void loop() {
   if (uxQueueMessagesWaiting(mouseEvents)) {
     mouseEvent_t messageReceived;
     xQueueReceive(mouseEvents, &messageReceived, 0);
-    switch (messageReceived) {
-    case mouseEvent_t::LMB_PRESS:
-      Serial.println("LMB_PRESS");
-      mouse.press(MOUSE_LEFT);
-      break;
-    case mouseEvent_t::LMB_RELEASE:
-      Serial.println("LMB_RELEASE");
-      mouse.release(MOUSE_RIGHT);
-      break;
-    case mouseEvent_t::RMB_PRESS:
-      Serial.println("RMB_PRESS");
-      mouse.press(MOUSE_LEFT);
-      break;
-    case mouseEvent_t::RMB_RELEASE:
-      Serial.println("RMB_RELEASE");
-      mouse.release(MOUSE_RIGHT);
-      break;
-    default:
-      break;
+    if(mouseEnableState) {
+        switch (messageReceived) {
+      case mouseEvent_t::LMB_PRESS:
+        Serial.println("LMB_PRESS");
+        mouse.press(MOUSE_LEFT);
+        break;
+      case mouseEvent_t::LMB_RELEASE:
+        Serial.println("LMB_RELEASE");
+        mouse.release(MOUSE_LEFT);
+        break;
+      case mouseEvent_t::RMB_PRESS:
+        Serial.println("RMB_PRESS");
+        mouse.press(MOUSE_RIGHT);
+        break;
+      case mouseEvent_t::RMB_RELEASE:
+        Serial.println("RMB_RELEASE");
+        mouse.release(MOUSE_RIGHT);
+        break;
+      case mouseEvent_t::LOCK_PRESS:
+        Serial.println("DISABLED");
+        mouseEnableState = !mouseEnableState;
+        break;
+      case mouseEvent_t::SCROLL_PRESS:
+        Serial.println("SCROLL ENBALED");
+        scrollEnableState = true;
+      case mouseEvent_t::SCROLL_RELEASE:
+        Serial.println("SCROLL DISBALED");
+        scrollEnableState = false;
+      case mouseEvent_t::CALIBRATE_PRESS:
+        Serial.println("CALIBRATING...");
+          icm.getAGMT();
+          calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
+          calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
+          Serial.println("Mouse calibrated!");
+      default:
+        break;
+      }
+    } else {
+      if(messageReceived == mouseEvent_t::LOCK_PRESS) {
+        Serial.println("ENABLED");
+        mouseEnableState = !mouseEnableState;
+      }
     }
+    
     xQueueSend(mouseQueue, &messageReceived, 0);
   }
-  if (icm.dataReady()) {
+  if (icm.dataReady() && mouseEnableState) {
     icm.getAGMT();
     Eigen::Vector3f posY = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 1.0f, 0.0f}, icm);
     signed char xMovement = posY.dot(calibratedPosX) * SENSITIVITY;
     signed char zMovement = posY.dot(calibratedPosZ) * SENSITIVITY;
-    mouse.move(xMovement, zMovement);
+    if(!scrollEnableState) {
+        mouse.move(xMovement, zMovement);
+    } else {
+      mouse.move(0,0, xMovement, zMovement);
+    }
     delay(30);
   } else {
     Log.noticeln("Waiting for data");

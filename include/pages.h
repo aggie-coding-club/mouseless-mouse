@@ -54,7 +54,7 @@ class InputDisplay : public DisplayPage {
     void onEvent(pageEvent_t event);
     void draw();
 
-    bool lmb, rmb, scrollU, scrollD;
+    bool lmb, rmb, scrollU, scrollD, lock, calibrate;
 };
 
 #endif
