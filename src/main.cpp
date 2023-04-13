@@ -176,10 +176,16 @@ void drawTask(void *pvParameters) {
 }
 
 float normalizeMouseMovement(float axisValue) {
-  if (axisValue < 0) {
-    return -1.0f / (1.0f + expf(-10.0f * (-axisValue - 0.65f)));
+  if (axisValue < -1.0f) {
+    return -1.0f;
+  } else if (axisValue < -0.8f) {
+    return 0.1f * axisValue - 0.9f;
+  } else if (axisValue < -0.2f) {
+    return 1.5f * axisValue + 0.32f;
+  } else if (axisValue < 0.0f) {
+    return 0.4f * axisValue;
   } else {
-    return 1.0f / (1.0f + expf(-10.0f * (axisValue - 0.65f)));
+    return -normalizeMouseMovement(-axisValue);
   }
 }
 
