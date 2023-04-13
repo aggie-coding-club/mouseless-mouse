@@ -125,7 +125,7 @@ public:
 /// @param icm A reference to the ICM_20948_I2C object whose orientation data is being used.
 /// @return The equivalent of `vec` in world-space.
 [[nodiscard]] Eigen::Vector3f mouseSpaceToWorldSpace(Eigen::Vector3f vec, ICM_20948_I2C &icm) noexcept {
-  constexpr std::size_t ROLLING_AVG_BUFFER_DEPTH = 12U;
+  constexpr std::size_t ROLLING_AVG_BUFFER_DEPTH = 8U;
   static RollingAverage<Eigen::Vector3f, ROLLING_AVG_BUFFER_DEPTH> up;
   static RollingAverage<Eigen::Vector3f, ROLLING_AVG_BUFFER_DEPTH> north;
   up.update(Eigen::Vector3f(icm.accX(), icm.accY(), icm.accZ()).normalized());
