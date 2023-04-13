@@ -336,6 +336,7 @@ void loop() {
     icm.getAGMT();
     Eigen::Vector3f posY = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 1.0f, 0.0f}, icm);
     signed char xMovement = normalizeMouseMovement(posY.dot(calibratedPosX)) * SENSITIVITY;
+    Serial.printf("%i\n", xMovement);
     signed char zMovement = normalizeMouseMovement(posY.dot(calibratedPosZ)) * SENSITIVITY;
     if (!scrollEnableState) {
       mouse.move(xMovement, zMovement);
@@ -343,8 +344,5 @@ void loop() {
       mouse.move(0, 0, xMovement, zMovement);
     }
     delay(30);
-  } else {
-    Log.noticeln("Waiting for data");
-    delay(500);
   }
 }
