@@ -28,7 +28,7 @@
 #define SCROLL_TOUCH_CHANNEL 3
 #define LOCK_TOUCH_CHANNEL 4
 #define CALIBRATE_TOUCH_CHANNEL 2
-constexpr signed char SENSITIVITY = 4;
+constexpr signed char SENSITIVITY = 8;
 
 // Mouse logic globals
 ICM_20948_I2C icm;
