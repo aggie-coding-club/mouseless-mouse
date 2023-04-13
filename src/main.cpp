@@ -24,8 +24,8 @@
 #define DOWN_BUTTON_PIN 0
 #define LMB_TOUCH_CHANNEL 7
 #define RMB_TOUCH_CHANNEL 5
-#define SCROLL_TOUCH_CHANNEL 4
-#define LOCK_TOUCH_CHANNEL 3
+#define SCROLL_TOUCH_CHANNEL 3
+#define LOCK_TOUCH_CHANNEL 4
 #define CALIBRATE_TOUCH_CHANNEL 2
 constexpr signed char SENSITIVITY = 8;
 
@@ -64,9 +64,9 @@ TouchPadInstance lMouseButton =
 TouchPadInstance rMouseButton =
     TouchPad(RMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::RMB_PRESS, mouseEvent_t::RMB_RELEASE);
 TouchPadInstance scrollButton =
-    TouchPad(RMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::SCROLL_PRESS, mouseEvent_t::SCROLL_RELEASE);
+    TouchPad(SCROLL_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::SCROLL_PRESS, mouseEvent_t::SCROLL_RELEASE);
 TouchPadInstance lockButton =
-    TouchPad(RMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::LOCK_PRESS, mouseEvent_t::LOCK_RELEASE);
+    TouchPad(LOCK_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::LOCK_PRESS, mouseEvent_t::LOCK_RELEASE);
 TouchPadInstance calibrateButton =
     TouchPad(CALIBRATE_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::CALIBRATE_PRESS, mouseEvent_t::CALIBRATE_RELEASE);
 
@@ -85,7 +85,7 @@ MenuPage mainMenuPage(&display, &displayManager, "Main Menu", &myPlaceholderA, &
 HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 
 bool mouseEnableState = true;
-bool scrollEnableState = true;
+bool scrollEnableState = false;
 
 /// @brief Filter to smooth values using a rolling average.
 /// @tparam T The type of the values to be smoothed.
@@ -303,15 +303,18 @@ void loop() {
       case mouseEvent_t::SCROLL_PRESS:
         Serial.println("SCROLL ENBALED");
         scrollEnableState = true;
+        break;
       case mouseEvent_t::SCROLL_RELEASE:
         Serial.println("SCROLL DISBALED");
         scrollEnableState = false;
+        break;
       case mouseEvent_t::CALIBRATE_PRESS:
         Serial.println("CALIBRATING...");
           icm.getAGMT();
           calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
           calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
           Serial.println("Mouse calibrated!");
+          break;
       default:
         break;
       }
