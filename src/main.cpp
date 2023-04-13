@@ -129,7 +129,7 @@ public:
   static RollingAverage<Eigen::Vector3f, ROLLING_AVG_BUFFER_DEPTH> up;
   static RollingAverage<Eigen::Vector3f, ROLLING_AVG_BUFFER_DEPTH> north;
   up.update(Eigen::Vector3f(icm.accX(), icm.accY(), icm.accZ()).normalized());
-  north.update(Eigen::Vector3f(icm.magX(), icm.magY(), icm.magZ()).normalized());
+  north.update(Eigen::Vector3f(icm.magX(), -icm.magY(), -icm.magZ()).normalized());
   Eigen::Vector3f adjusted_north = north.get() - (up.get() * up.get().dot(north.get()));
   adjusted_north.normalize();
   Eigen::Vector3f east = adjusted_north.cross(up.get());
