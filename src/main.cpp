@@ -8,6 +8,7 @@
 #include <LittleFS.h>
 #include <TFT_eSPI.h>
 #include <Wire.h>
+#include <cmath>
 #include <cstdint>
 #include <esp32/rom/spi_flash.h>
 
@@ -51,8 +52,7 @@ TFT_eSprite bufferB = TFT_eSprite(&tftDisplay);
 Display display(&tftDisplay, &bufferA, &bufferB);
 
 // Instantiate display page manager
-DisplayManager displayManager(&display);\
-
+DisplayManager displayManager(&display);
 
 // Button instantiation
 Button upButton(0, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT);
@@ -71,9 +71,6 @@ TouchPadInstance calibrateButton =
     TouchPad(CALIBRATE_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::CALIBRATE_PRESS, mouseEvent_t::CALIBRATE_RELEASE);
 
 char *dummyField = new char[32];
-
-
-
 
 // Instantiate display page hierarchy
 InputDisplay myPlaceholderA(&display, &displayManager, "input");
@@ -178,6 +175,8 @@ void drawTask(void *pvParameters) {
   }
 }
 
+float normalizeMouseMovement(float axisValue) { return 1.0f / expf(-10.0f * (axisValue - 0.5f)); }
+
 void setup() {
   // Begin serial and logging
   Serial.begin(115200);
@@ -274,8 +273,8 @@ void loop() {
   if (uxQueueMessagesWaiting(mouseEvents)) {
     mouseEvent_t messageReceived;
     xQueueReceive(mouseEvents, &messageReceived, 0);
-    if(mouseEnableState) {
-        switch (messageReceived) {
+    if (mouseEnableState) {
+      switch (messageReceived) {
       case mouseEvent_t::LMB_PRESS:
         Serial.println("LMB_PRESS");
         mouse.press(MOUSE_LEFT);
@@ -306,32 +305,32 @@ void loop() {
         break;
       case mouseEvent_t::CALIBRATE_PRESS:
         Serial.println("CALIBRATING...");
-          icm.getAGMT();
-          calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
-          calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
-          Serial.println("Mouse calibrated!");
-          break;
+        icm.getAGMT();
+        calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
+        calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
+        Serial.println("Mouse calibrated!");
+        break;
       default:
         break;
       }
     } else {
-      if(messageReceived == mouseEvent_t::LOCK_PRESS) {
+      if (messageReceived == mouseEvent_t::LOCK_PRESS) {
         Serial.println("ENABLED");
         mouseEnableState = !mouseEnableState;
       }
     }
-    
+
     xQueueSend(mouseQueue, &messageReceived, 0);
   }
   if (icm.dataReady() && mouseEnableState) {
     icm.getAGMT();
     Eigen::Vector3f posY = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 1.0f, 0.0f}, icm);
-    signed char xMovement = posY.dot(calibratedPosX) * SENSITIVITY;
-    signed char zMovement = posY.dot(calibratedPosZ) * SENSITIVITY;
-    if(!scrollEnableState) {
-        mouse.move(xMovement, zMovement);
+    signed char xMovement = normalizeMouseMovement(posY.dot(calibratedPosX)) * SENSITIVITY;
+    signed char zMovement = normalizeMouseMovement(posY.dot(calibratedPosZ)) * SENSITIVITY;
+    if (!scrollEnableState) {
+      mouse.move(xMovement, zMovement);
     } else {
-      mouse.move(0,0, xMovement, zMovement);
+      mouse.move(0, 0, xMovement, zMovement);
     }
     delay(30);
   } else {
