@@ -28,7 +28,7 @@
 #define SCROLL_TOUCH_CHANNEL 3
 #define LOCK_TOUCH_CHANNEL 4
 #define CALIBRATE_TOUCH_CHANNEL 2
-constexpr signed char SENSITIVITY = 8;
+constexpr signed char SENSITIVITY = 24;
 
 // Mouse logic globals
 ICM_20948_I2C icm;
@@ -337,8 +337,7 @@ void loop() {
   if (icm.dataReady() && mouseEnableState) {
     icm.getAGMT();
     Eigen::Vector3f posY = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 1.0f, 0.0f}, icm);
-    signed char xMovement = normalizeMouseMovement(posY.dot(calibratedPosX)) * SENSITIVITY;
-    Serial.printf("%i\n", xMovement);
+    signed char xMovement = normalizeMouseMovement(posY.dot(calibratedPosX)) * 3.0f * SENSITIVITY;
     signed char zMovement = normalizeMouseMovement(posY.dot(calibratedPosZ)) * SENSITIVITY;
     if (!scrollEnableState) {
       mouse.move(xMovement, zMovement);

@@ -21,6 +21,8 @@ void deepSleep() {
   vTaskDelay(pdMS_TO_TICKS(100)); // Give the display driver a little time
   display.sleepMode();            // Put the display driver to sleep
   ulp_ctr = 0;                    // Initialize global ulp variable
+  digitalWrite(14, HIGH);
+  rtc_gpio_hold_en(GPIO_NUM_14);
   rtc_gpio_hold_en(GPIO_NUM_0);   // Keep the pullup resistor on pin 0 powered during deep sleep
   adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_DB_11);
   adc1_config_width(ADC_WIDTH_BIT_12);
