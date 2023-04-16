@@ -73,7 +73,7 @@ TouchPadInstance calibrateButton =
 char *dummyField = new char[32];
 
 // Instantiate display page hierarchy
-InputDisplay myPlaceholderA(&display, &displayManager, "input");
+InputDisplay myPlaceholderA(&display, &displayManager, "Input Display");
 BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
