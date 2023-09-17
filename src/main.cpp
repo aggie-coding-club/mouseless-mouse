@@ -84,6 +84,12 @@ HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 bool mouseEnableState = true;
 bool scrollEnableState = false;
 
+
+
+//Start of Orientation detection
+
+
+
 /// @brief Filter to smooth values using a rolling average.
 /// @tparam T The type of the values to be smoothed.
 /// @tparam bufferLength The number of samples to average over.
@@ -140,6 +146,14 @@ public:
   };
 }
 
+
+//End of Mouse orientation detection
+
+
+
+
+
+
 // Use the ADC to read the battery voltage - convert result to a percentage
 int16_t getBatteryPercentage() {
   digitalWrite(ADC_ENABLE_PIN, HIGH);
@@ -189,6 +203,9 @@ float normalizeMouseMovement(float axisValue) {
   }
 }
 
+
+//Code to run once on start up
+
 void setup() {
   // Begin serial and logging
   Serial.begin(115200);
@@ -215,6 +232,7 @@ void setup() {
   while (Serial.available() > 0) {
     Serial.read();
   }
+  //Initialize Mouse orientation detection
   icm.getAGMT();
   calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
   calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
@@ -280,12 +298,15 @@ void setup() {
   downButton.attach();
 }
 
+
+//Code to constantly run
+
 void loop() {
   // Relay test messages from touch pads to Serial
   if (uxQueueMessagesWaiting(mouseEvents)) {
     mouseEvent_t messageReceived;
     xQueueReceive(mouseEvents, &messageReceived, 0);
-    if (mouseEnableState) {
+    if (mouseEnableState) {//If there is a button event
       switch (messageReceived) {
       case mouseEvent_t::LMB_PRESS:
         Serial.println("LMB_PRESS");
