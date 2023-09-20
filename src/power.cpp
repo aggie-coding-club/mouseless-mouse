@@ -29,6 +29,7 @@ void deepSleep() {
   esp_err_t err =
       ulptool_load_binary(0, ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start) / sizeof(uint32_t));
   err = ulp_run((&ulp_entry - RTC_SLOW_MEM) / sizeof(uint32_t));
+  (void) err; // Warning hotfix - might implement error checking later
   esp_sleep_enable_ulp_wakeup(); // Allow the ULP to wake the system
   esp_deep_sleep_start();        // Nighty-night
 }

@@ -146,11 +146,13 @@ public:
 
 template <typename... Ts>
 MenuPage::MenuPage(Display *display, DisplayManager *displayManager, const char *pageName, Ts *...pages)
-    : DisplayPage(display, displayManager, pageName) {
+  : DisplayPage(display, displayManager, pageName)
+{
   this->numPages = sizeof...(Ts);
   byte pageInit = 0;
   this->memberPages = (DisplayPage **)malloc(sizeof...(Ts) * sizeof(DisplayPage *));
   auto dummy = {(this->memberPages[pageInit++] = pages)...};
+  (void) dummy; // Prevent unused variable warning
   this->subpageIdx = 0;
   this->menuTlY = 0;
   this->selectionTlY = 0;

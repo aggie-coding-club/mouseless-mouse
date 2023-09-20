@@ -77,8 +77,12 @@ InputDisplay myPlaceholderA(&display, &displayManager, "input");
 BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
-MenuPage mainMenuPage(&display, &displayManager, "Main Menu", &myPlaceholderA, &myPlaceholderB, keyboard(dummyField),
-                      confirm("Are you sure?", deepSleep));
+MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
+    &myPlaceholderA,
+    &myPlaceholderB,
+    keyboard(dummyField),
+    confirm("Are you sure?", deepSleep)
+);
 HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 
 bool mouseEnableState = true;

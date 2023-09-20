@@ -84,6 +84,10 @@ void Button::detach() {
   pinMode(pin, INPUT);
 }
 
+// By default, no TouchPadInstance instances have been defined
+static TouchPadInstance *touchInstanceMap[10] = {nullptr, nullptr, nullptr, nullptr, nullptr,
+                                                 nullptr, nullptr, nullptr, nullptr, nullptr};
+
 // One timer to rule them all
 xTimerHandle TouchPadInstance::pollTimer =
     xTimerCreate("Touch Polling",  // Timer name
@@ -95,8 +99,12 @@ xTimerHandle TouchPadInstance::pollTimer =
 // Don't call this directly - use the TouchPad(n, q, p, r) macro
 TouchPadInstance::TouchPadInstance(byte touchPadNum, xQueueHandle eventQueue, mouseEvent_t pressEvent,
                                    mouseEvent_t releaseEvent, byte pin)
-    : pin(pin), touchThreshold(TOUCH_DEFAULT_THRESHOLD), eventQueue(eventQueue), pressEvent(pressEvent),
-      releaseEvent(releaseEvent) {
+  : pin(pin)
+  , eventQueue(eventQueue)
+  , pressEvent(pressEvent)
+  , releaseEvent(releaseEvent)
+  , touchThreshold(TOUCH_DEFAULT_THRESHOLD)
+{
   touchInstanceMap[touchPadNum] = this;
 }
 
