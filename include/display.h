@@ -151,6 +151,7 @@ MenuPage::MenuPage(Display *display, DisplayManager *displayManager, const char 
   byte pageInit = 0;
   this->memberPages = (DisplayPage **)malloc(sizeof...(Ts) * sizeof(DisplayPage *));
   auto dummy = {(this->memberPages[pageInit++] = pages)...};
+  (void) dummy; // Fix unused variable warning
   this->subpageIdx = 0;
   this->menuTlY = 0;
   this->selectionTlY = 0;

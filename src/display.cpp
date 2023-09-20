@@ -139,7 +139,7 @@ void Display::drawBitmapSPIFFS(const char *filename, uint16_t x, uint16_t y) {
         uint8_t *bptr = lineBuffer;
         uint16_t *tptr = (uint16_t *)lineBuffer;
         // Convert 24 to 16 bit colours
-        for (uint16_t col = 0; col < w; col++) {
+        for (col = 0; col < w; col++) {
           b = *bptr++;
           g = *bptr++;
           r = *bptr++;
@@ -229,7 +229,11 @@ void Display::drawNavArrow(uint16_t x, uint16_t y, bool direction, float progres
 }
 
 DisplayPage::DisplayPage(Display *display, DisplayManager *displayManager, const char *pageName)
-    : display(display), displayManager(displayManager), pageName(pageName), frameCounter(0) {}
+    : display(display)
+    , displayManager(displayManager)
+    , frameCounter(0)
+    , pageName(pageName)
+{}
 
 DisplayPage::~DisplayPage() {}
 

@@ -38,8 +38,17 @@ void BlankPage::onEvent(pageEvent_t event) {
 
 // Create a keyboard page attached to a display and manager
 KeyboardPage::KeyboardPage(Display *display, DisplayManager *displayManager, const char *pageName)
-    : DisplayPage(display, displayManager, pageName), textBuffer(new char[32]), bufferIdx(0), colIdx(1), letterIdx(0),
-      numberIdx(0), letterTlY(0), numberTlY(0) {
+    : DisplayPage(display, displayManager, pageName)
+    , textBuffer(new char[32])
+    , bufferIdx(0)
+    , specialIdx(0)
+    , letterIdx(0)
+    , numberIdx(0)
+    , colIdx(1)
+    , specialTlY(0)
+    , letterTlY(0)
+    , numberTlY(0)
+{
   for (byte i = 0; i < 32; i++)
     textBuffer[i] = '\0';
 }

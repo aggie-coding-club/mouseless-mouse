@@ -51,10 +51,6 @@ public:
 
 class TouchPadInstance;
 
-// By default, no TouchPadInstance instances have been defined
-static TouchPadInstance *touchInstanceMap[10] = {nullptr, nullptr, nullptr, nullptr, nullptr,
-                                                 nullptr, nullptr, nullptr, nullptr, nullptr};
-
 class TouchPadInstance {
 private:
   static void touchISR(void *instancePtr);
