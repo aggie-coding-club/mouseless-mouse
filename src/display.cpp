@@ -351,5 +351,7 @@ void DisplayManager::draw() {
   display->drawStatusBar();
   display->textFormat(1, TFT_BLACK);
   display->drawString(pageStack.top()->pageName, (240 - display->getStringWidth(pageStack.top()->pageName)) / 2, 4);
+  
+  display->drawString("ENABLED", 20, 4);
   frameCtr++;
 }

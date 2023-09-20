@@ -28,7 +28,7 @@
 #define SCROLL_TOUCH_CHANNEL 3
 #define LOCK_TOUCH_CHANNEL 4
 #define CALIBRATE_TOUCH_CHANNEL 2
-constexpr signed char SENSITIVITY = 8;
+constexpr signed char SENSITIVITY = 24;
 
 // Mouse logic globals
 ICM_20948_I2C icm;
@@ -73,7 +73,7 @@ TouchPadInstance calibrateButton =
 char *dummyField = new char[32];
 
 // Instantiate display page hierarchy
-InputDisplay myPlaceholderA(&display, &displayManager, "input");
+InputDisplay myPlaceholderA(&display, &displayManager, "Input Display");
 BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
@@ -180,10 +180,16 @@ void drawTask(void *pvParameters) {
 }
 
 float normalizeMouseMovement(float axisValue) {
-  if (axisValue < 0) {
-    return -1.0f / (1.0f + expf(-10.0f * (-axisValue - 0.65f)));
+  if (axisValue < -1.0f) {
+    return -1.0f;
+  } else if (axisValue < -0.8f) {
+    return 0.1f * axisValue - 0.9f;
+  } else if (axisValue < -0.2f) {
+    return 1.5f * axisValue + 0.32f;
+  } else if (axisValue < 0.0f) {
+    return 0.4f * axisValue;
   } else {
-    return 1.0f / (1.0f + expf(-10.0f * (axisValue - 0.65f)));
+    return -normalizeMouseMovement(-axisValue);
   }
 }
 
@@ -212,10 +218,6 @@ void setup() {
   }
   while (Serial.available() > 0) {
     Serial.read();
-  }
-  Serial.println("Place mouse flat on the table, facing the screen, then press any key to continue.");
-  while (Serial.available() == 0) {
-    // do nothing
   }
   icm.getAGMT();
   calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
@@ -339,8 +341,7 @@ void loop() {
   if (icm.dataReady() && mouseEnableState) {
     icm.getAGMT();
     Eigen::Vector3f posY = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 1.0f, 0.0f}, icm);
-    signed char xMovement = normalizeMouseMovement(posY.dot(calibratedPosX)) * SENSITIVITY;
-    Serial.printf("%i\n", xMovement);
+    signed char xMovement = normalizeMouseMovement(posY.dot(calibratedPosX)) * 3.0f * SENSITIVITY;
     signed char zMovement = normalizeMouseMovement(posY.dot(calibratedPosZ)) * SENSITIVITY;
     if (!scrollEnableState) {
       mouse.move(xMovement, zMovement);

@@ -41,9 +41,9 @@ fast:
     st      r0, r3, 0       // Store the updated counter value to the counter variable's location in memory
     halt                    // Halt the ULP until it's time for the next iteration
 btnheld:                    // Execution will jump here when the button has been held long enough to initiate the wakeup sequence
-    WRITE_RTC_REG(RTC_GPIO_ENABLE_W1TS_REG, RTC_GPIO_ENABLE_W1TS_S + 16, 1, 1) // Enable output on pin GPIO 14
-    WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG, RTC_GPIO_OUT_DATA_W1TS_S + 16, 1, 1)  // Set pin GPIO 14 high
-    wait    8000            // 8MHz / 8000 = 1 ms delay for analog signals to propagate
+    ; WRITE_RTC_REG(RTC_GPIO_ENABLE_W1TS_REG, RTC_GPIO_ENABLE_W1TS_S + 16, 1, 1) // Enable output on pin GPIO 14 THIS WAS CHANGED ASSEMBLY CODE
+    ; WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG, RTC_GPIO_OUT_DATA_W1TS_S + 16, 1, 1)  // Set pin GPIO 14 high THIS WAS CHANGED ASSEMBLY CODE
+    ; wait    8000            // 8MHz / 8000 = 1 ms delay for analog signals to propagate THIS WAS CHANGED ASSEMBLY CODE
     adc     r0, 0, 7        // Read ADC 1 (zero-based) channel 6 (one-based) into register 0 (what were the devs smoking?)
     st      r0, r3, 0       // We don't need the counter variable anymore, so store the ADC reading into it just for funzies
     jumpr   lowbat, 1805, LT    // If the battery is low, don't wake up
