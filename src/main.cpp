@@ -19,6 +19,9 @@
 
 #include "ICM_20948.h"
 
+// Define this if you want to test functionality without an IMU connected
+#define NO_SENSOR
+
 // Constants
 #define ADC_ENABLE_PIN 14
 #define UP_BUTTON_PIN 35
@@ -31,7 +34,10 @@
 constexpr signed char SENSITIVITY = 24;
 
 // Mouse logic globals
+#ifndef NO_SENSOR
 ICM_20948_I2C icm;
+#endif
+
 BleMouse mouse("Mouseless Mouse", "Mouseless Team");
 Eigen::Vector3f calibratedPosX;
 Eigen::Vector3f calibratedPosZ;
@@ -73,12 +79,16 @@ TouchPadInstance calibrateButton =
 char *dummyField = new char[32];
 
 // Instantiate display page hierarchy
-InputDisplay myPlaceholderA(&display, &displayManager, "input");
+InputDisplay myPlaceholderA(&display, &displayManager, "Input");
 BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
-MenuPage mainMenuPage(&display, &displayManager, "Main Menu", &myPlaceholderA, &myPlaceholderB, keyboard(dummyField),
-                      confirm("Are you sure?", deepSleep));
+MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
+    &myPlaceholderA,
+    &myPlaceholderB,
+    keyboard(dummyField),
+    confirm("Are you sure?", deepSleep)
+);
 HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 
 bool mouseEnableState = true;
@@ -180,8 +190,7 @@ void drawTask(void *pvParameters) {
     display.clear();
     displayManager.draw();
 
-    display.setStroke(TFT_CYAN);
-    display.drawLine(210, 40, 210 + 10 * cos(frame / 10.0), 40 + 10 * sin(frame / 10.0));
+    display.buffer->drawLine(210, 40, 210 + 10 * cos(frame / 10.0), 40 + 10 * sin(frame / 10.0), TFT_CYAN);
 
     display.pushChanges();
     frame++;
@@ -216,6 +225,8 @@ void setup() {
   Wire.begin();
   Wire.setClock(400000);
   mouse.begin();
+
+#ifndef NO_SENSOR
   for (;;) {
     icm.begin();
     if (icm.status != ICM_20948_Stat_Ok) {
@@ -229,14 +240,17 @@ void setup() {
   while (!icm.dataReady()) {
     // do nothing
   }
+
   while (Serial.available() > 0) {
     Serial.read();
   }
+
   //Initialize Mouse orientation detection
   icm.getAGMT();
   calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
   calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
   Serial.println("Mouse calibrated!");
+#endif
 
   // Initialize LittleFS
   if (!LittleFS.begin()) {
@@ -263,7 +277,6 @@ void setup() {
 
   // Initialize display
   display.begin();
-  display.setStroke(TFT_CYAN);
 
   // Set up display page manager
   displayManager.setHomepage(&homepage);
@@ -338,10 +351,12 @@ void loop() {
         break;
       case mouseEvent_t::CALIBRATE_PRESS:
         Serial.println("CALIBRATING...");
+#ifndef NO_SENSOR
         icm.getAGMT();
         calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
         calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
         Serial.println("Mouse calibrated!");
+#endif
         break;
       default:
         break;
@@ -355,6 +370,7 @@ void loop() {
 
     xQueueSend(mouseQueue, &messageReceived, 0);
   }
+#ifndef NO_SENSOR
   if (icm.dataReady() && mouseEnableState) {
     icm.getAGMT();
     Eigen::Vector3f posY = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 1.0f, 0.0f}, icm);
@@ -367,4 +383,5 @@ void loop() {
     }
     delay(30);
   }
+#endif
 }

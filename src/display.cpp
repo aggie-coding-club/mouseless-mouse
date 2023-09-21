@@ -11,8 +11,14 @@
 
 
 Display::Display(TFT_eSPI *tft, TFT_eSprite *bufferA, TFT_eSprite *bufferB)
-    : tft(tft), bufferA(bufferA), bufferB(bufferB), activeBuffer(bufferA), fillColor(TFT_WHITE), strokeColor(TFT_WHITE),
-      brightness(0) {
+    : tft(tft)
+    , bufferA(bufferA)
+    , bufferB(bufferB)
+    , fillColor(TFT_WHITE)
+    , strokeColor(TFT_WHITE)
+    , brightness(0)
+    , buffer(bufferA)
+{
   bufferA->createSprite(240, 135);
   bufferB->createSprite(240, 135);
 }
@@ -70,7 +76,7 @@ void Display::dim(uint8_t brightness) {
 }
 
 // Black screen
-void Display::clear() { activeBuffer->fillSprite(TFT_BLACK); }
+void Display::clear() { buffer->fillSprite(TFT_BLACK); }
 
 // Clear display and flush both buffers
 void Display::flush() {
@@ -80,23 +86,23 @@ void Display::flush() {
   pushChanges();
 }
 
-void Display::setFill(uint16_t color) { this->fillColor = color; }
+// void Display::setFill(uint16_t color) { this->fillColor = color; }
 
-void Display::setStroke(uint16_t color) { this->strokeColor = color; }
+// void Display::setStroke(uint16_t color) { this->strokeColor = color; }
 
 // Get the width (in pixels) a string would occupy if it were displayed with the current text settings
-int16_t Display::getStringWidth(const char *string) { return activeBuffer->textWidth(string); }
+// int16_t Display::getStringWidth(const char *string) { return buffer->textWidth(string); }
 
-void Display::drawString(String string, uint16_t xPos, uint16_t yPos) { activeBuffer->drawString(string, xPos, yPos); }
+// void Display::drawString(String string, uint16_t xPos, uint16_t yPos) { buffer->drawString(string, xPos, yPos); }
 
-void Display::drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
-  activeBuffer->drawLine(x1, y1, x2, y2, strokeColor);
-}
+// void Display::drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
+//   buffer->drawLine(x1, y1, x2, y2, strokeColor);
+// }
 
-void Display::drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t ir, uint16_t startAngle, uint16_t endAngle,
-                      uint16_t fg_color, uint16_t bg_color) {
-  activeBuffer->drawArc(x, y, r, ir, startAngle, endAngle, fg_color, bg_color, false);
-}
+// void Display::drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t ir, uint16_t startAngle, uint16_t endAngle,
+//                       uint16_t fg_color, uint16_t bg_color) {
+//   buffer->drawArc(x, y, r, ir, startAngle, endAngle, fg_color, bg_color, false);
+// }
 
 // Adapted from a TFT_eSPI example sketch
 void Display::drawBitmapSPIFFS(const char *filename, uint16_t x, uint16_t y) {
@@ -127,8 +133,8 @@ void Display::drawBitmapSPIFFS(const char *filename, uint16_t x, uint16_t y) {
     if ((read16(bmpFS) == 1) && (read16(bmpFS) == 24) && (read32(bmpFS) == 0)) {
       y += h - 1;
 
-      bool oldSwapBytes = activeBuffer->getSwapBytes();
-      activeBuffer->setSwapBytes(true);
+      bool oldSwapBytes = buffer->getSwapBytes();
+      buffer->setSwapBytes(true);
       bmpFS.seek(seekOffset);
 
       uint16_t padding = (4 - ((w * 3) & 3)) & 3;
@@ -147,9 +153,9 @@ void Display::drawBitmapSPIFFS(const char *filename, uint16_t x, uint16_t y) {
         }
         // Push the pixel row to screen, pushImage will crop the line if needed
         // y is decremented as the BMP image is drawn bottom up
-        activeBuffer->pushImage(x, y--, w, 1, (uint16_t *)lineBuffer);
+        buffer->pushImage(x, y--, w, 1, (uint16_t *)lineBuffer);
       }
-      activeBuffer->setSwapBytes(oldSwapBytes);
+      buffer->setSwapBytes(oldSwapBytes);
     } else
       Serial.println("BMP format not recognized.");
   } else
@@ -158,13 +164,13 @@ void Display::drawBitmapSPIFFS(const char *filename, uint16_t x, uint16_t y) {
 }
 
 //pushes an image from RAM directly to the active buffer. faster than drawBitMap but requires RAM usage
-void Display::pushImage(int x,int y,int width,int height, const unsigned short* data) {
-    activeBuffer->pushImage(x,y,width,height, data);
-}
+// void Display::pushImage(int x,int y,int width,int height, const unsigned short* data) {
+//     buffer->pushImage(x,y,width,height, data);
+// }
 
-void Display::fillRect(uint16_t x1, uint16_t y1, uint16_t width, uint16_t height) {
-  activeBuffer->fillRect(x1, y1, width, height, fillColor);
-}
+// void Display::fillRect(uint16_t x1, uint16_t y1, uint16_t width, uint16_t height) {
+//   buffer->fillRect(x1, y1, width, height, fillColor);
+// }
 
 // Apply new text formatting to both framebuffers
 void Display::textFormat(uint8_t size, uint16_t color) {
@@ -176,17 +182,17 @@ void Display::textFormat(uint8_t size, uint16_t color) {
 
 // Push the active framebuffer to the screen, then swap buffers
 void Display::pushChanges() {
-  activeBuffer->pushSprite(0, 0);
-  activeBuffer = (activeBuffer == bufferA) ? bufferB : bufferA;
+  buffer->pushSprite(0, 0);
+  buffer = (buffer == bufferA) ? bufferB : bufferA;
 }
 
 // Draw the status bar
 void Display::drawStatusBar() {
   byte batPercentage = getBatteryPercentage();
-  activeBuffer->fillRect(0, 0, 240, SBAR_HEIGHT, ACCENT_COLOR);
-  activeBuffer->fillRoundRect(210, 2, 18, 11, 2, BGND_COLOR);
-  activeBuffer->fillRoundRect(226, 5, 5, 5, 2, BGND_COLOR);
-  activeBuffer->fillRoundRect(212, 4, 14 * (batPercentage / 100.0), 7, 2, TEXT_COLOR);
+  buffer->fillRect(0, 0, 240, SBAR_HEIGHT, ACCENT_COLOR);
+  buffer->fillRoundRect(210, 2, 18, 11, 2, BGND_COLOR);
+  buffer->fillRoundRect(226, 5, 5, 5, 2, BGND_COLOR);
+  buffer->fillRoundRect(212, 4, 14 * (batPercentage / 100.0), 7, 2, TEXT_COLOR);
 }
 
 // Draw an animated navigation arrow that shows what a user's input will do
@@ -202,13 +208,13 @@ void Display::drawNavArrow(uint16_t x, uint16_t y, bool direction, float progres
   uint16_t arrowheadLength = 5;
   float arrowheadBreadth = 0.6;
   if (progress < 0.5)
-    activeBuffer->drawLine(x, y + 10 * flip, x, y - 5 * flip, stroke_color);
+    buffer->drawLine(x, y + 10 * flip, x, y - 5 * flip, stroke_color);
   else if (progress < 0.75)
-    activeBuffer->drawLine(x, y + (40 - 60 * progress) * flip, x, y - 5 * flip, stroke_color);
+    buffer->drawLine(x, y + (40 - 60 * progress) * flip, x, y - 5 * flip, stroke_color);
   arrowheadX = 5 - 5 * cos(6.28318 * 3 * min(float(0.25), progress));
   arrowheadY = -5 - 5 * sin(6.28318 * 3 * min(float(0.25), progress));
   if (progress > 0.25) {
-    activeBuffer->drawLine(x + 5 * flip, y, x + max(float(-10), 20 - 60 * progress) * flip, y, stroke_color);
+    buffer->drawLine(x + 5 * flip, y, x + max(float(-10), 20 - 60 * progress) * flip, y, stroke_color);
     arrowheadX += 15 - 60 * min(float(0.5), progress);
   }
   arrowheadX = arrowheadX * flip + x;
@@ -219,9 +225,9 @@ void Display::drawNavArrow(uint16_t x, uint16_t y, bool direction, float progres
   arrowTailAngle = 180 * !direction - 90 + 360 * 3 * max(float(0), progress - float(0.75));
   arrowheadAngleRads = 3.14159 * (0.5 + direction) - 6.28318 * 3 * min(float(0.25), progress); // C++ uses real math
   if (progress > 0 && progress < 1)
-    activeBuffer->drawArc(x + 5 * flip, y - 5 * flip, 5, 5, arrowTailAngle % 360_pm, arrowheadAngle % 360_pm,
+    buffer->drawArc(x + 5 * flip, y - 5 * flip, 5, 5, arrowTailAngle % 360_pm, arrowheadAngle % 360_pm,
                           stroke_color, bg_color);
-  activeBuffer->fillTriangle(arrowheadX, arrowheadY,
+  buffer->fillTriangle(arrowheadX, arrowheadY,
                              arrowheadX - arrowheadLength * cos(arrowheadAngleRads - arrowheadBreadth),
                              arrowheadY + arrowheadLength * sin(arrowheadAngleRads - arrowheadBreadth),
                              arrowheadX - arrowheadLength * cos(arrowheadAngleRads + arrowheadBreadth),
@@ -249,8 +255,7 @@ void MenuPage::draw() {
     if (15 + i * 30 + menuTlY > 135)
       break;
     if (i == subpageIdx) {
-      display->setFill(SEL_COLOR);
-      display->fillRect(0, 15 + i * 30 + selectionTlY + menuTlY, 240, 30);
+      display->buffer->fillRect(0, 15 + i * 30 + selectionTlY + menuTlY, 240, 30, SEL_COLOR);
       if (displayManager->upButton->isPressed || displayManager->downButton->isPressed) {
         Button *activeButton =
             displayManager->upButton->isPressed ? displayManager->upButton : displayManager->downButton;
@@ -259,7 +264,7 @@ void MenuPage::draw() {
                               SEL_COLOR);
       }
     }
-    display->drawString(memberPages[i]->pageName, 30, 25 + i * 30 + menuTlY);
+    display->buffer->drawString(memberPages[i]->pageName, 30, 25 + i * 30 + menuTlY);
   }
   int16_t targetMenuTlY = min(0, 40 - 30 * subpageIdx);
   menuTlY += 0.25 * (targetMenuTlY - menuTlY);
@@ -305,10 +310,10 @@ extern uint32_t ulp_ctr;
 // Draw a home page
 void HomePage::draw() {
   display->textFormat(2, TFT_WHITE);
-  display->drawString("Battery Life:", 30, 30);
-  display->drawString(String(ulp_ctr & 65535), 30, 90);
+  display->buffer->drawString("Battery Life:", 30, 30);
+  display->buffer->drawString(String(ulp_ctr & 65535), 30, 90);
   display->textFormat(3, TFT_WHITE);
-  display->drawString(String(getBatteryPercentage()) + "%", 30, 50);
+  display->buffer->drawString(String(getBatteryPercentage()) + "%", 30, 50);
   frameCounter++;
 }
 
@@ -358,6 +363,6 @@ void DisplayManager::draw() {
   pageStack.top()->draw();
   display->drawStatusBar();
   display->textFormat(1, TFT_BLACK);
-  display->drawString(pageStack.top()->pageName, (240 - display->getStringWidth(pageStack.top()->pageName)) / 2, 4);
+  display->buffer->drawString(pageStack.top()->pageName, (240 - display->buffer->textWidth(pageStack.top()->pageName)) / 2, 4);
   frameCtr++;
 }

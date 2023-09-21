@@ -23,8 +23,8 @@ BlankPage::BlankPage(Display *display, DisplayManager *displayManager, const cha
 // Great place for debug stuff
 void BlankPage::draw() {
   display->textFormat(2, TFT_WHITE);
-  display->drawString(pageName, 30, 30);
-  display->drawString(String(touchRead(T7)), 30, 60);
+  display->buffer->drawString(pageName, 30, 30);
+  display->buffer->drawString(String(touchRead(T7)), 30, 60);
   display->drawNavArrow(120, 110, pageName[12] & 1, 0.5 - 0.5 * cos(6.28318 * float(frameCounter % 90) / 90.0), 0x461F,
                         TFT_BLACK);
   frameCounter++;
@@ -62,31 +62,31 @@ KeyboardPage *KeyboardPage::operator()(char *field) {
 // Draw the keyboard page
 void KeyboardPage::draw() {
   display->textFormat(2, TFT_WHITE);
-  display->setFill(SEL_COLOR);
-  display->setStroke(TFT_WHITE);
-  display->drawString(textBuffer, 20, 30);
-  display->fillRect(130 + 30 * colIdx, 78, 30, 30);
+  // display->setFill(SEL_COLOR);
+  // display->setStroke(TFT_WHITE);
+  display->buffer->drawString(textBuffer, 20, 30);
+  display->buffer->fillRect(130 + 30 * colIdx, 78, 30, 30, SEL_COLOR);
   for (int16_t i = -1; i < 2; i++) {
     if ((i + specialIdx) % 3_pm == 0) {
-      display->drawLine(140, 85 + 30 * i + specialTlY, 154, 85 + 30 * i + specialTlY);
-      display->drawLine(154, 85 + 30 * i + specialTlY, 154, 99 + 30 * i + specialTlY);
-      display->drawLine(154, 99 + 30 * i + specialTlY, 140, 99 + 30 * i + specialTlY);
-      display->drawLine(140, 99 + 30 * i + specialTlY, 134, 92 + 30 * i + specialTlY);
-      display->drawLine(134, 92 + 30 * i + specialTlY, 140, 85 + 30 * i + specialTlY);
+      display->buffer->drawLine(140, 85 + 30 * i + specialTlY, 154, 85 + 30 * i + specialTlY, TFT_WHITE);
+      display->buffer->drawLine(154, 85 + 30 * i + specialTlY, 154, 99 + 30 * i + specialTlY, TFT_WHITE);
+      display->buffer->drawLine(154, 99 + 30 * i + specialTlY, 140, 99 + 30 * i + specialTlY, TFT_WHITE);
+      display->buffer->drawLine(140, 99 + 30 * i + specialTlY, 134, 92 + 30 * i + specialTlY, TFT_WHITE);
+      display->buffer->drawLine(134, 92 + 30 * i + specialTlY, 140, 85 + 30 * i + specialTlY, TFT_WHITE);
     } else if ((i + specialIdx) % 3_pm == 1) {
-      display->drawLine(140, 99 + 30 * i + specialTlY, 148, 99 + 30 * i + specialTlY);
-      display->drawLine(140, 96 + 30 * i + specialTlY, 140, 99 + 30 * i + specialTlY);
-      display->drawLine(148, 96 + 30 * i + specialTlY, 148, 99 + 30 * i + specialTlY);
+      display->buffer->drawLine(140, 99 + 30 * i + specialTlY, 148, 99 + 30 * i + specialTlY, TFT_WHITE);
+      display->buffer->drawLine(140, 96 + 30 * i + specialTlY, 140, 99 + 30 * i + specialTlY, TFT_WHITE);
+      display->buffer->drawLine(148, 96 + 30 * i + specialTlY, 148, 99 + 30 * i + specialTlY, TFT_WHITE);
     } else if ((i + specialIdx) % 3_pm == 2) {
       display->drawNavArrow(145, 93 + 30 * i + specialTlY, false,
                             0.5 - 0.5 * cos(6.28318 * float(frameCounter % 90) / 90.0), ACCENT_COLOR, BGND_COLOR);
     }
   }
   for (int16_t i = -1; i < 2; i++) {
-    display->drawString(String(char('A' + (i + letterIdx) % 26_pm)), 170, 85 + 30 * i + letterTlY);
+    display->buffer->drawString(String(char('A' + (i + letterIdx) % 26_pm)), 170, 85 + 30 * i + letterTlY);
   }
   for (int16_t i = -1; i < 2; i++) {
-    display->drawString(String(char('0' + (i + numberIdx) % 10_pm)), 200, 85 + 30 * i + numberTlY);
+    display->buffer->drawString(String(char('0' + (i + numberIdx) % 10_pm)), 200, 85 + 30 * i + numberTlY);
   }
   specialTlY *= 0.5;
   letterTlY *= 0.5;
@@ -164,7 +164,7 @@ ConfirmationPage *ConfirmationPage::operator()(const char *message, void (*callb
 // Draw the confirmation page
 void ConfirmationPage::draw() {
   display->textFormat(2, TFT_WHITE);
-  display->drawString(message, 10, 30);
+  display->buffer->drawString(message, 10, 30);
 }
 
 // Event handling for the confirmation page
@@ -186,8 +186,8 @@ void ConfirmationPage::onEvent(pageEvent_t event) {
 InputDisplay::InputDisplay(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
 void InputDisplay::draw() {
     display->textFormat(2, TFT_WHITE);
-    display->drawString(pageName, 30, 30);
-    display->pushImage(60,60,64,64, hand);
+    display->buffer->drawString(pageName, 30, 30);
+    display->buffer->pushImage(60,60,64,64, hand);
     if (uxQueueMessagesWaiting(mouseQueue)) {
         mouseEvent_t event;
         xQueueReceive(mouseQueue, &event, 0);
@@ -224,23 +224,23 @@ void InputDisplay::draw() {
                 break;
         }
         if(lmb) {
-            display->pushImage(60+12,60+24,7,11, Thumb1);
+            display->buffer->pushImage(60+12,60+24,7,11, Thumb1);
         }
         if(rmb) {
-            display->pushImage(60+12,60+35,7,11, Thumb2);
+            display->buffer->pushImage(60+12,60+35,7,11, Thumb2);
         }
         if(scrollU) {
-            display->pushImage(60+29,60+33,5,3, scrollUp);
-            display->pushImage(60+27, 60+6, 9, 19, middle);
+            display->buffer->pushImage(60+29,60+33,5,3, scrollUp);
+            display->buffer->pushImage(60+27, 60+6, 9, 19, middle);
         }
         if(scrollD) {
-            display->pushImage(60+29,60+40,5,3, scrollDown);
+            display->buffer->pushImage(60+29,60+40,5,3, scrollDown);
         }
         if(lock) {
-          display->pushImage(60+37,60+9,7,17,ring);
+          display->buffer->pushImage(60+37,60+9,7,17,ring);
         }
         if(calibrate) {
-          display->pushImage(60+45,60+20,5,15, pinky);
+          display->buffer->pushImage(60+45,60+20,5,15, pinky);
         }
     }
 }

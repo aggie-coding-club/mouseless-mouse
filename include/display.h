@@ -30,7 +30,6 @@ class Display {
   TFT_eSPI *tft;
   TFT_eSprite *bufferA;
   TFT_eSprite *bufferB;
-  TFT_eSprite *activeBuffer;
   uint16_t fillColor;
   uint16_t strokeColor;
 
@@ -38,7 +37,8 @@ class Display {
   uint32_t read32(fs::File &f);
 
 public:
-  uint8_t brightness;
+    uint8_t brightness;
+    TFT_eSprite *buffer;
 
     Display(TFT_eSPI* tft, TFT_eSprite* bufferA, TFT_eSprite* bufferB);
     ~Display();
@@ -48,15 +48,15 @@ public:
     void pushChanges();
     void clear();
     void flush();
-    void setFill(uint16_t color);
-    void setStroke(uint16_t color);
-    int16_t getStringWidth(const char* string);
-    void drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
-    void drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t ir, uint16_t startAngle, uint16_t endAngle, uint16_t fg_color, uint16_t bg_color);
-    void drawString(String string, uint16_t xPos, uint16_t yPos);
+    // void setFill(uint16_t color);
+    // void setStroke(uint16_t color);
+    // int16_t getStringWidth(const char* string);
+    // void drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
+    // void drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t ir, uint16_t startAngle, uint16_t endAngle, uint16_t fg_color, uint16_t bg_color);
+    // void drawString(String string, uint16_t xPos, uint16_t yPos);
     void drawBitmapSPIFFS(const char* filename, uint16_t x, uint16_t y);
-    void pushImage(int x,int y,int width,int height, const unsigned short* data);
-    void fillRect(uint16_t x1, uint16_t y1, uint16_t width, uint16_t height);
+    // void pushImage(int x,int y,int width,int height, const unsigned short* data);
+    // void fillRect(uint16_t x1, uint16_t y1, uint16_t width, uint16_t height);
     void textFormat(uint8_t size, uint16_t color);
     void drawStatusBar();
     void drawNavArrow(uint16_t x, uint16_t y, bool direction, float progress, uint16_t stroke_color, uint16_t bg_color);
