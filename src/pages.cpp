@@ -7,7 +7,7 @@
 #include "imgs/pointer.h"
 #include "imgs/ring.h"
 #include "imgs/thumb1.h"
-#include "imgs/Thumb2.h"
+#include "imgs/thumb2.h"
 #include "imgs/pinky.h"
 #include "imgs/middle.h"
 #include "imgs/scrollDown.h"
@@ -242,10 +242,10 @@ void InputDisplay::draw() {
         break;
     }
     if(lmb) {
-      display->buffer->pushImage(60+12,60+24,7,11, Thumb1);
+      display->buffer->pushImage(60+12,60+24,7,11, thumb1);
     }
     if(rmb) {
-      display->buffer->pushImage(60+12,60+35,7,11, Thumb2);
+      display->buffer->pushImage(60+12,60+35,7,11, thumb2);
     }
     if(scrollU) {
       display->buffer->pushImage(60+29,60+33,5,3, scrollUp);
