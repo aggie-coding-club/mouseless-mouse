@@ -13,6 +13,7 @@
 extern const uint8_t ulp_main_bin_start[] asm("_binary_ulp_main_bin_start");
 extern const uint8_t ulp_main_bin_end[] asm("_binary_ulp_main_bin_end");
 
+// Allow access to the externally declared display object
 extern Display display;
 
 // Put the whole T-Display board into a deep sleep state

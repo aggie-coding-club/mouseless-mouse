@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 
+// Enumerate every possible type of mouse event that can be sent
 enum class mouseEvent_t : byte {
   LMB_PRESS,
   LMB_RELEASE,
