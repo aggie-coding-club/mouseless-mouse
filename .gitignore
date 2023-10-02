@@ -1,5 +1,5 @@
-.pio
-.vscode
+.pio/
+.vscode/
 ulp/ulp_main.common.d
 ulp/ulp.ulp.d
 ulp/ulp_main.bin
