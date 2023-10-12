@@ -116,7 +116,7 @@ char *dummyField = new char[32];
 
 // Instantiate display page hierarchy
 InputDisplay myPlaceholderA(&display, &displayManager, "Input");
-BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
+HelloPage myPlaceholderB(&display, &displayManager, "Hello Page");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
 MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
