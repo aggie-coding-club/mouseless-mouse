@@ -268,3 +268,34 @@ void InputDisplay::onEvent(pageEvent_t event) {
   if (event == pageEvent_t::NAV_CANCEL)
     this->displayManager->pageStack.pop();
 }
+
+// Not much to do for a blank page
+HelloPage::HelloPage(Display *display, DisplayManager *displayManager, const char *pageName)
+  : DisplayPage(display, displayManager, pageName)
+{}
+
+// Great place for debug stuff
+void HelloPage::draw() {
+  display->textFormat(2, TFT_WHITE);
+  display->buffer->drawString(pageName, 30, 30);
+  display->buffer->drawString(String(touchRead(T7)), 30, 60);
+  display->drawNavArrow(
+    120, 110, pageName[12] & 1,
+    0.5 - 0.5 * cos(6.28318 * float(frameCounter % 90) / 90.0),
+    0x461F, TFT_BLACK
+  );
+  frameCounter++;
+};
+
+// This page doesn't do a lot, so it only needs to handle exiting
+void HelloPage::onEvent(pageEvent_t event) {
+  switch(event) {
+    case pageEvent_t::NAV_DOWN:
+      Serial.println("Hello World!");
+      break;
+    case pageEvent_t::NAV_CANCEL:
+      this->displayManager->pageStack.pop();
+      break;
+
+  }
+};
