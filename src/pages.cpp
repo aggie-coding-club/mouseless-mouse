@@ -7,26 +7,30 @@
 #include "imgs/pointer.h"
 #include "imgs/ring.h"
 #include "imgs/thumb1.h"
-#include "imgs/Thumb2.h"
+#include "imgs/thumb2.h"
 #include "imgs/pinky.h"
 #include "imgs/middle.h"
 #include "imgs/scrollDown.h"
 #include "imgs/scrollUp.h"
 
-
-
+// Allow interaction with the externally declared mouseQueue
 extern xQueueHandle mouseQueue;
+
 // Not much to do for a blank page
 BlankPage::BlankPage(Display *display, DisplayManager *displayManager, const char *pageName)
-    : DisplayPage(display, displayManager, pageName) {}
+  : DisplayPage(display, displayManager, pageName)
+{}
 
 // Great place for debug stuff
 void BlankPage::draw() {
   display->textFormat(2, TFT_WHITE);
   display->buffer->drawString(pageName, 30, 30);
   display->buffer->drawString(String(touchRead(T7)), 30, 60);
-  display->drawNavArrow(120, 110, pageName[12] & 1, 0.5 - 0.5 * cos(6.28318 * float(frameCounter % 90) / 90.0), 0x461F,
-                        TFT_BLACK);
+  display->drawNavArrow(
+    120, 110, pageName[12] & 1,
+    0.5 - 0.5 * cos(6.28318 * float(frameCounter % 90) / 90.0),
+    0x461F, TFT_BLACK
+  );
   frameCounter++;
 };
 
@@ -38,16 +42,16 @@ void BlankPage::onEvent(pageEvent_t event) {
 
 // Create a keyboard page attached to a display and manager
 KeyboardPage::KeyboardPage(Display *display, DisplayManager *displayManager, const char *pageName)
-    : DisplayPage(display, displayManager, pageName)
-    , textBuffer(new char[32])
-    , bufferIdx(0)
-    , specialIdx(0)
-    , letterIdx(0)
-    , numberIdx(0)
-    , colIdx(1)
-    , specialTlY(0)
-    , letterTlY(0)
-    , numberTlY(0)
+  : DisplayPage(display, displayManager, pageName)
+  , textBuffer(new char[32])
+  , bufferIdx(0)
+  , specialIdx(0)
+  , letterIdx(0)
+  , numberIdx(0)
+  , colIdx(1)
+  , specialTlY(0)
+  , letterTlY(0)
+  , numberTlY(0)
 {
   for (byte i = 0; i < 32; i++)
     textBuffer[i] = '\0';
@@ -62,8 +66,6 @@ KeyboardPage *KeyboardPage::operator()(char *field) {
 // Draw the keyboard page
 void KeyboardPage::draw() {
   display->textFormat(2, TFT_WHITE);
-  // display->setFill(SEL_COLOR);
-  // display->setStroke(TFT_WHITE);
   display->buffer->drawString(textBuffer, 20, 30);
   display->buffer->fillRect(130 + 30 * colIdx, 78, 30, 30, SEL_COLOR);
   for (int16_t i = -1; i < 2; i++) {
@@ -152,7 +154,8 @@ void KeyboardPage::onEvent(pageEvent_t event) {
 
 // Create a confirmation page attached to a display and manager
 ConfirmationPage::ConfirmationPage(Display *display, DisplayManager *displayManager, const char *pageName)
-    : DisplayPage(display, displayManager, pageName) {}
+  : DisplayPage(display, displayManager, pageName)
+{}
 
 // Attach the confirmation page to a specific prompt message and action
 ConfirmationPage *ConfirmationPage::operator()(const char *message, void (*callback)()) {
@@ -169,81 +172,99 @@ void ConfirmationPage::draw() {
 
 // Event handling for the confirmation page
 void ConfirmationPage::onEvent(pageEvent_t event) {
-    switch (event) {
-        case pageEvent_t::NAV_CANCEL:
-            displayManager->pageStack.pop();
-            break;
-        case pageEvent_t::NAV_SELECT:
-            callback();
-            break;
-        default:
-            break;
-    }
+  switch (event) {
+    case pageEvent_t::NAV_CANCEL:
+      displayManager->pageStack.pop();
+      break;
+    case pageEvent_t::NAV_SELECT:
+      callback();
+      break;
+    default:
+      break;
+  }
 }
 
 
 
-InputDisplay::InputDisplay(Display* display, DisplayManager* displayManager, const char* pageName) : DisplayPage(display, displayManager, pageName) {}
+// Create a page that displays a real-time visualization of mouse inputs
+InputDisplay::InputDisplay(Display* display, DisplayManager* displayManager, const char* pageName)
+  : DisplayPage(display, displayManager, pageName)
+  , lmb(false)
+  , rmb(false)
+  , scrollU(false)
+  , scrollD(false)
+  , lock(false)
+  , calibrate(false)
+{}
+
+// Visualize the mouse input states
 void InputDisplay::draw() {
-    display->textFormat(2, TFT_WHITE);
-    display->buffer->drawString(pageName, 30, 30);
-    display->buffer->pushImage(60,60,64,64, hand);
-    if (uxQueueMessagesWaiting(mouseQueue)) {
-        mouseEvent_t event;
-        xQueueReceive(mouseQueue, &event, 0);
-        switch(event) {
-            case mouseEvent_t::LMB_PRESS:
-                lmb = true;
-                break;
-            case mouseEvent_t::LMB_RELEASE:
-                lmb = false;
-                break;
-            case mouseEvent_t::RMB_PRESS:
-                rmb = true;
-                break;
-            case mouseEvent_t::RMB_RELEASE:
-                lmb = false;
-                break;
-            case mouseEvent_t::SCROLL_PRESS:
-                scrollU = true;
-                scrollD = true;
-                break;
-            case mouseEvent_t::SCROLL_RELEASE:
-                scrollU = false;
-                scrollD = false;
-                break;
-            case mouseEvent_t::LOCK_PRESS:
-              lock = true;
-            case mouseEvent_t::LOCK_RELEASE:
-              lock = false;
-            case mouseEvent_t::CALIBRATE_PRESS:
-              calibrate = true;
-            case mouseEvent_t::CALIBRATE_RELEASE:
-              calibrate = false;
-            default:
-                break;
-        }
-        if(lmb) {
-            display->buffer->pushImage(60+12,60+24,7,11, Thumb1);
-        }
-        if(rmb) {
-            display->buffer->pushImage(60+12,60+35,7,11, Thumb2);
-        }
-        if(scrollU) {
-            display->buffer->pushImage(60+29,60+33,5,3, scrollUp);
-            display->buffer->pushImage(60+27, 60+6, 9, 19, middle);
-        }
-        if(scrollD) {
-            display->buffer->pushImage(60+29,60+40,5,3, scrollDown);
-        }
-        if(lock) {
-          display->buffer->pushImage(60+37,60+9,7,17,ring);
-        }
-        if(calibrate) {
-          display->buffer->pushImage(60+45,60+20,5,15, pinky);
-        }
+  display->textFormat(2, TFT_WHITE);
+  display->buffer->drawString(pageName, 30, 30);
+  display->buffer->pushImage(60,60,64,64, hand);
+  if (uxQueueMessagesWaiting(mouseQueue)) {
+    mouseEvent_t event;
+    xQueueReceive(mouseQueue, &event, 0);
+    switch(event) {
+      case mouseEvent_t::LMB_PRESS:
+        lmb = true;
+        break;
+      case mouseEvent_t::LMB_RELEASE:
+        lmb = false;
+        break;
+      case mouseEvent_t::RMB_PRESS:
+        rmb = true;
+        break;
+      case mouseEvent_t::RMB_RELEASE:
+        lmb = false;
+        break;
+      case mouseEvent_t::SCROLL_PRESS:
+        scrollU = true;
+        scrollD = true;
+        break;
+      case mouseEvent_t::SCROLL_RELEASE:
+        scrollU = false;
+        scrollD = false;
+        break;
+      case mouseEvent_t::LOCK_PRESS:
+        lock = true;
+        break;
+      case mouseEvent_t::LOCK_RELEASE:
+        lock = false;
+        break;
+      case mouseEvent_t::CALIBRATE_PRESS:
+        calibrate = true;
+        break;
+      case mouseEvent_t::CALIBRATE_RELEASE:
+        calibrate = false;
+        break;
+      default:
+        break;
     }
+    if(lmb) {
+      display->buffer->pushImage(60+12,60+24,7,11, thumb1);
+    }
+    if(rmb) {
+      display->buffer->pushImage(60+12,60+35,7,11, thumb2);
+    }
+    if(scrollU) {
+      display->buffer->pushImage(60+29,60+33,5,3, scrollUp);
+      display->buffer->pushImage(60+27, 60+6, 9, 19, middle);
+    }
+    if(scrollD) {
+      display->buffer->pushImage(60+29,60+40,5,3, scrollDown);
+    }
+    if(lock) {
+      display->buffer->pushImage(60+37,60+9,7,17,ring);
+    }
+    if(calibrate) {
+      display->buffer->pushImage(60+45,60+20,5,15, pinky);
+    }
+  }
 }
+
+// Handle relevant navigation events
 void InputDisplay::onEvent(pageEvent_t event) {
-    if (event == pageEvent_t::NAV_CANCEL) this->displayManager->pageStack.pop();
+  if (event == pageEvent_t::NAV_CANCEL)
+    this->displayManager->pageStack.pop();
 }

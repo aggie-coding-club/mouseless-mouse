@@ -4,13 +4,22 @@
 
 // Create a Button that sends page events to a queue
 Button::Button(byte pin, xQueueHandle eventQueue, pageEvent_t pressEvent, pageEvent_t bumpEvent, pageEvent_t holdEvent)
-    : pin(pin), eventQueue(eventQueue), pressEvent(pressEvent), bumpEvent(bumpEvent), holdEvent(holdEvent),
-      isPressed(false), pressTimestamp(0), releaseTimestamp(0), stateChangeTimestamp(0) {
-  debounceTimer = xTimerCreate("Button Debounce Callback",   // Timer name
-                               pdMS_TO_TICKS(DEBOUNCE_TIME), // Timer duration
-                               pdFALSE,                      // Don't auto-restart timer on expiry
-                               this, // Pointer to instance can be retrieved by static callback function
-                               &Button::finalDebounce);
+  : pin(pin)
+  , eventQueue(eventQueue)
+  , pressEvent(pressEvent)
+  , bumpEvent(bumpEvent)
+  , holdEvent(holdEvent)
+  , isPressed(false)
+  , pressTimestamp(0)
+  , releaseTimestamp(0)
+  , stateChangeTimestamp(0)
+{
+  debounceTimer = xTimerCreate(
+    "Button Debounce Callback",   // Timer name
+    pdMS_TO_TICKS(DEBOUNCE_TIME), // Timer duration
+    pdFALSE,                      // Don't auto-restart timer on expiry
+    this,     // Pointer to instance can be retrieved by static callback function
+    &Button::finalDebounce);
 }
 
 // Change the button state and start a timer to check back when the button has stabilized
@@ -26,7 +35,8 @@ void Button::buttonISR(void *instancePtr) {
       instance->isPressed = true;
       xQueueSendFromISR(instance->eventQueue, &eventToSend, &wokeTask);
     }
-  } else {
+  }
+  else {
     if (millis() - instance->stateChangeTimestamp > LONGPRESS_TIME)
       eventToSend = instance->holdEvent;
     else
@@ -92,20 +102,27 @@ static TouchPadInstance *touchInstanceMap[10] = {
 
 // One timer to rule them all
 xTimerHandle TouchPadInstance::pollTimer =
-    xTimerCreate("Touch Polling",  // Timer name
-                 pdMS_TO_TICKS(5), // Duration
-                 pdTRUE,           // Auto-reload on expiry
-                 touchInstanceMap, // This value can be retrieved by the callback function
-                 &TouchPadInstance::touchPoll);
+  xTimerCreate(
+    "Touch Polling",  // Timer name
+    pdMS_TO_TICKS(5), // Duration
+    pdTRUE,           // Auto-reload on expiry
+    touchInstanceMap, // This value can be retrieved by the callback function
+    &TouchPadInstance::touchPoll
+  );
 
 // Don't call this directly - use the TouchPad(n, q, p, r) macro
-TouchPadInstance::TouchPadInstance(byte touchPadNum, xQueueHandle eventQueue, mouseEvent_t pressEvent,
-                                   mouseEvent_t releaseEvent, byte pin)
-    : pin(pin)
-    , eventQueue(eventQueue)
-    , pressEvent(pressEvent)
-    , releaseEvent(releaseEvent)
-    , touchThreshold(TOUCH_DEFAULT_THRESHOLD)
+TouchPadInstance::TouchPadInstance(
+  byte touchPadNum,
+  xQueueHandle eventQueue,
+  mouseEvent_t pressEvent,
+  mouseEvent_t releaseEvent,
+  byte pin
+)
+  : pin(pin)
+  , eventQueue(eventQueue)
+  , pressEvent(pressEvent)
+  , releaseEvent(releaseEvent)
+  , touchThreshold(TOUCH_DEFAULT_THRESHOLD)
 {
   touchInstanceMap[touchPadNum] = this;
 }

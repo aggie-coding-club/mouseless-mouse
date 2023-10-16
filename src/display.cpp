@@ -6,10 +6,7 @@
 #include <TFT_eSPI.h>
 #include <stack>
 
-//Display Library
-
-
-
+// Create a Display object to make double-buffered graphics programming easier
 Display::Display(TFT_eSPI *tft, TFT_eSprite *bufferA, TFT_eSprite *bufferB)
     : tft(tft)
     , bufferA(bufferA)
@@ -23,6 +20,7 @@ Display::Display(TFT_eSPI *tft, TFT_eSprite *bufferA, TFT_eSprite *bufferB)
   bufferB->createSprite(240, 135);
 }
 
+// Buffers are non-trivial objects that must be destroyed explicitly
 Display::~Display() {
   delete bufferA;
   delete bufferB;
@@ -86,24 +84,6 @@ void Display::flush() {
   pushChanges();
 }
 
-// void Display::setFill(uint16_t color) { this->fillColor = color; }
-
-// void Display::setStroke(uint16_t color) { this->strokeColor = color; }
-
-// Get the width (in pixels) a string would occupy if it were displayed with the current text settings
-// int16_t Display::getStringWidth(const char *string) { return buffer->textWidth(string); }
-
-// void Display::drawString(String string, uint16_t xPos, uint16_t yPos) { buffer->drawString(string, xPos, yPos); }
-
-// void Display::drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
-//   buffer->drawLine(x1, y1, x2, y2, strokeColor);
-// }
-
-// void Display::drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t ir, uint16_t startAngle, uint16_t endAngle,
-//                       uint16_t fg_color, uint16_t bg_color) {
-//   buffer->drawArc(x, y, r, ir, startAngle, endAngle, fg_color, bg_color, false);
-// }
-
 // Adapted from a TFT_eSPI example sketch
 void Display::drawBitmapSPIFFS(const char *filename, uint16_t x, uint16_t y) {
   if ((x >= tft->width()) || (y >= tft->height()))
@@ -122,6 +102,7 @@ void Display::drawBitmapSPIFFS(const char *filename, uint16_t x, uint16_t y) {
   uint16_t w, h, row, col;
   uint8_t r, g, b;
   uint16_t header = read16(bmpFS);
+  // All valid bitmap files start with "BM" (little-endian)
   if (header == 0x4D42) {
     read32(bmpFS);
     read32(bmpFS);
@@ -162,15 +143,6 @@ void Display::drawBitmapSPIFFS(const char *filename, uint16_t x, uint16_t y) {
     Serial.printf("Could not read BMP file \"%s\" (Size: %i). Header: %X\n", filename, bmpFS.size(), header);
   bmpFS.close();
 }
-
-//pushes an image from RAM directly to the active buffer. faster than drawBitMap but requires RAM usage
-// void Display::pushImage(int x,int y,int width,int height, const unsigned short* data) {
-//     buffer->pushImage(x,y,width,height, data);
-// }
-
-// void Display::fillRect(uint16_t x1, uint16_t y1, uint16_t width, uint16_t height) {
-//   buffer->fillRect(x1, y1, width, height, fillColor);
-// }
 
 // Apply new text formatting to both framebuffers
 void Display::textFormat(uint8_t size, uint16_t color) {
@@ -234,6 +206,7 @@ void Display::drawNavArrow(uint16_t x, uint16_t y, bool direction, float progres
                              arrowheadY + arrowheadLength * sin(arrowheadAngleRads + arrowheadBreadth), stroke_color);
 }
 
+// Create a base DisplayPage class for other page types to inherit from
 DisplayPage::DisplayPage(Display *display, DisplayManager *displayManager, const char *pageName)
     : display(display)
     , displayManager(displayManager)
@@ -241,6 +214,7 @@ DisplayPage::DisplayPage(Display *display, DisplayManager *displayManager, const
     , pageName(pageName)
 {}
 
+// These classes really should be instantiated statically, so these destructors are more of a formality
 DisplayPage::~DisplayPage() {}
 
 MenuPage::~MenuPage() { delete[] this->memberPages; }
@@ -303,6 +277,7 @@ void MenuPage::onEvent(pageEvent_t event) {
   }
 }
 
+// Create the home page of the display which contains a menu page to open upon a button press
 HomePage::HomePage(Display *display, DisplayManager *displayManager, const char *pageName, MenuPage *mainMenu)
     : DisplayPage(display, displayManager, pageName), mainMenu(mainMenu) {}
 
@@ -328,6 +303,7 @@ void HomePage::onEvent(pageEvent_t event) {
   }
 }
 
+// Create a DisplayManager object to control page navigation and manage which page is displayed
 DisplayManager::DisplayManager(Display *display) : display(display), lastEventFrame(0) {
   eventQueue = xQueueCreate(4, sizeof(pageEvent_t));
 }
