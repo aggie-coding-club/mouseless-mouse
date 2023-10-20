@@ -10,8 +10,10 @@ void Magnetosphere::addPoint(Eigen::Vector3f point) {
 }
 
 void Magnetosphere::calibrate() {
-    // I saw the prison of the angels and their stations beyond the firmaments we're onto fiery light
-    // Gets the centroid through the median, TODO: make this more efficient
+    // I saw the prison of the angels 
+    // and their stations beyond the firmaments were onto fiery lights
+    // my face was changed and I could no longer behold
+    // I saw the hidden and the visible path
     float xMedianFind[points.cols()];
     float yMedianFind[points.cols()];
     float zMedianFind[points.cols()];
@@ -54,9 +56,6 @@ void Magnetosphere::calibrate() {
 
     centroid = {xMedianFind[points.cols() / 2], yMedianFind[points.cols() / 2], zMedianFind[points.cols() / 2]};
 
-    // And my face was changed and I could no longer behold
-    // Gets the line with the smallest least-squares fit
-
     Eigen::Matrix3Xf lines(3, points.cols());
     Eigen::Matrix3Xf rotation(3, 3);
 
@@ -97,8 +96,86 @@ void Magnetosphere::calibrate() {
 
     transform = rotation.inverse();
 
-    // I saw the hidden and the visible path of the...
-    // TODO: Get matrix to squish the elipsoid to the circle
+    float least_squares_squish = 0;
+    Eigen::Matrix <float, 3, 3> elipsoidSquishing;
 
+    elipsoidSquishing.col(0) = points.col(0);
+    elipsoidSquishing.col(1) = points.col(0);
+    elipsoidSquishing.col(2) = points.col(0);
+    elipsoidSquishing(0, 1) = 0;
+    elipsoidSquishing(0, 2) = 0;
+    elipsoidSquishing(1, 0) = 0;
+    elipsoidSquishing(1, 2) = 0;
+    elipsoidSquishing(2, 0) = 0;
+    elipsoidSquishing(2, 1) = 0;
+
+    for (int i = 0; i < points.cols(); i++) {
+        float mult = elipsoidSquishing(0, 0) * elipsoidSquishing(1, 1) * elipsoidSquishing(2, 2);
+        Eigen::Vector3f vect = points.col(i);
+        vect.row(0) *= (float) elipsoidSquishing(0, 0);
+        vect.row(1) *= (float) elipsoidSquishing(1, 1);
+        vect.row(2) *= (float) elipsoidSquishing(2, 2);
+        mult /= sqrt(vect.squaredNorm());
+
+        least_squares_squish = pow(mult - 1, 2);
+    }
+
+    for (int i = 1; i < points.cols(); i++) {
+        float mult = points(i, 0) * elipsoidSquishing(1, 1) * elipsoidSquishing(2, 2);
+        float temp_least_squares = 0;
+
+        for (int j = 0; j < points.cols(); j++) {
+            Eigen::Vector3f vect = points.col(i);
+            vect.row(0) *= (float) points(i, 0);
+            vect.row(1) *= (float) elipsoidSquishing(1, 1);
+            vect.row(2) *= (float) elipsoidSquishing(2, 2);
+            mult /= sqrt(vect.squaredNorm());
+
+            temp_least_squares = pow(mult - 1, 2);
+        }
+
+        if (temp_least_squares < least_squares_squish) {
+            temp_least_squares = least_squares_squish;
+            elipsoidSquishing(0, 0) = points(i, 0);
+        }
+
+        mult = points(i, 1) * elipsoidSquishing(0, 0) * elipsoidSquishing(2, 2);
+        temp_least_squares = 0;
+
+        for (int j = 0; j < points.cols(); j++) {
+            Eigen::Vector3f vect = points.col(i);
+            vect.row(1) *= (float) points(i, 1);
+            vect.row(0) *= (float) elipsoidSquishing(0, 0);
+            vect.row(2) *= (float) elipsoidSquishing(2, 2);
+            mult /= sqrt(vect.squaredNorm());
+
+            temp_least_squares = pow(mult - 1, 2);
+        }
+
+        if (temp_least_squares < least_squares_squish) {
+            temp_least_squares = least_squares_squish;
+            elipsoidSquishing(1, 1) = points(i, 1);
+        }
+
+        mult = points(i, 2) * elipsoidSquishing(0, 0) * elipsoidSquishing(1, 1);
+        temp_least_squares = 0;
+
+        for (int j = 0; j < points.cols(); j++) {
+            Eigen::Vector3f vect = points.col(i);
+            vect.row(2) *= (float) points(i, 2);
+            vect.row(1) *= (float) elipsoidSquishing(1, 1);
+            vect.row(0) *= (float) elipsoidSquishing(0, 0);
+            mult /= sqrt(vect.squaredNorm());
+
+            temp_least_squares = pow(mult - 1, 2);
+        }
+
+        if (temp_least_squares < least_squares_squish) {
+            temp_least_squares = least_squares_squish;
+            elipsoidSquishing(2, 2) = points(i, 2);
+        }
+    }
+    
+    transform *= elipsoidSquishing;
     transform *= rotation;
 }
