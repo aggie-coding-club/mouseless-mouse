@@ -2,10 +2,13 @@
 #define MAGNETOSPHERE_H
 
 #include <ArduinoEigen/Eigen/Dense>
+#include <iostream>
+#include <fstream>
 
 class Magnetosphere {
 public:
-    Magnetosphere(Eigen::Vector3f);
+    Magnetosphere();
+    Magnetosphere(std::string filename);
     void addPoint(Eigen::Vector3f);
     void calibrate();
 

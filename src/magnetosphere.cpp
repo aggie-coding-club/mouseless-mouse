@@ -1,7 +1,7 @@
 #include "magnetosphere.h"
 
-Magnetosphere::Magnetosphere(Eigen::Vector3f startingPoint) {
-    points << startingPoint;
+Magnetosphere::Magnetosphere() {
+    points = {};
 }
 
 void Magnetosphere::addPoint(Eigen::Vector3f point) {
@@ -10,10 +10,9 @@ void Magnetosphere::addPoint(Eigen::Vector3f point) {
 }
 
 void Magnetosphere::calibrate() {
-    // I saw the prison of the angels 
-    // and their stations beyond the firmaments were onto fiery lights
+    // I saw the prison of the angels and their stations beyond the firmaments were onto fiery lights
     // my face was changed and I could no longer behold
-    // I saw the hidden and the visible path
+    // I saw the hidden and the visible path of the moon
     float xMedianFind[points.cols()];
     float yMedianFind[points.cols()];
     float zMedianFind[points.cols()];
