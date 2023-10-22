@@ -57,10 +57,10 @@ public:
   void draw();
 };
 
-// Define a blank placeholder page
-class HelloPage : public DisplayPage {
+// Amruth's sandbox
+class DebugPage : public DisplayPage {
 public:
-  HelloPage(Display *display, DisplayManager *displayManager, const char *pageName);
+  DebugPage(Display *display, DisplayManager *displayManager, const char *pageName);
   void draw();
   void onEvent(pageEvent_t event);
 };
