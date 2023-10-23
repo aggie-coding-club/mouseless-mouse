@@ -16,7 +16,7 @@ const uint8_t DIM_BRIGHTNESS = 10;     // Brightness of the display after a peri
 const uint16_t INACTIVITY_TIME = 900;  // Time (in display frames, 30/sec) until display dimming begins
 
 const uint8_t SBAR_HEIGHT = 15;                         // Height of the status bar in pixels
-extern const uint16_t ACCENT_COLOR;
+const uint16_t ACCENT_COLOR = 0x461F;                   // TFT_eSPI::color565(64, 192, 255)
 const uint16_t TEXT_COLOR = TFT_WHITE;                  // Color of menu text
 const uint16_t SEL_COLOR = ACCENT_COLOR >> 1 & ~0x0410; // Equivalent to lerp(ACCENT_COLOR, TFT_BLACK, 0.5)
 const uint16_t BGND_COLOR = TFT_BLACK;                  // Color of background

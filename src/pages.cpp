@@ -6,8 +6,8 @@
 #include "imgs/hand.h"
 #include "imgs/pointer.h"
 #include "imgs/ring.h"
-#include "imgs/Thumb1.h"
-#include "imgs/Thumb2.h"
+#include "imgs/thumb1.h"
+#include "imgs/thumb2.h"
 #include "imgs/pinky.h"
 #include "imgs/middle.h"
 #include "imgs/scrollDown.h"
@@ -37,7 +37,7 @@ void BlankPage::draw() {
 // This page doesn't do a lot, so it only needs to handle exiting
 void BlankPage::onEvent(pageEvent_t event) {
   if (event == pageEvent_t::NAV_CANCEL)
-    this->displayManager->pageStack.pop();
+    displayManager->pageStack.pop();
 };
 
 // Create a keyboard page attached to a display and manager
@@ -202,69 +202,64 @@ void InputDisplay::draw() {
   display->textFormat(2, TFT_WHITE);
   display->buffer->drawString(pageName, 30, 30);
   display->buffer->pushImage(60,60,64,64, hand);
-  if (uxQueueMessagesWaiting(mouseQueue)) {
-    mouseEvent_t event;
-    xQueueReceive(mouseQueue, &event, 0);
-    switch(event) {
-      case mouseEvent_t::LMB_PRESS:
-        lmb = true;
-        break;
-      case mouseEvent_t::LMB_RELEASE:
-        lmb = false;
-        break;
-      case mouseEvent_t::RMB_PRESS:
-        rmb = true;
-        break;
-      case mouseEvent_t::RMB_RELEASE:
-        lmb = false;
-        break;
-      case mouseEvent_t::SCROLL_PRESS:
-        scrollU = true;
-        scrollD = true;
-        break;
-      case mouseEvent_t::SCROLL_RELEASE:
-        scrollU = false;
-        scrollD = false;
-        break;
-      case mouseEvent_t::LOCK_PRESS:
-        lock = true;
-        break;
-      case mouseEvent_t::LOCK_RELEASE:
-        lock = false;
-        break;
-      case mouseEvent_t::CALIBRATE_PRESS:
-        calibrate = true;
-        break;
-      case mouseEvent_t::CALIBRATE_RELEASE:
-        calibrate = false;
-        break;
-      default:
-        break;
-    }
-    if(lmb) {
-      display->buffer->pushImage(60+12,60+24,7,11, thumb1);
-    }
-    if(rmb) {
-      display->buffer->pushImage(60+12,60+35,7,11, thumb2);
-    }
-    if(scrollU) {
-      display->buffer->pushImage(60+29,60+33,5,3, scrollUp);
-      display->buffer->pushImage(60+27, 60+6, 9, 19, middle);
-    }
-    if(scrollD) {
-      display->buffer->pushImage(60+29,60+40,5,3, scrollDown);
-    }
-    if(lock) {
-      display->buffer->pushImage(60+37,60+9,7,17,ring);
-    }
-    if(calibrate) {
-      display->buffer->pushImage(60+45,60+20,5,15, pinky);
-    }
+  if(lmb)
+    display->buffer->pushImage(60+12,60+24,7,11, thumb1);
+  if(rmb)
+    display->buffer->pushImage(60+12,60+35,7,11, thumb2);
+  if(scrollU) {
+    display->buffer->pushImage(60+29,60+33,5,3, scrollUp);
+    display->buffer->pushImage(60+27, 60+6, 9, 19, middle);
+  }
+  if(scrollD)
+    display->buffer->pushImage(60+29,60+40,5,3, scrollDown);
+  if(lock)
+    display->buffer->pushImage(60+37,60+9,7,17,ring);
+  if(calibrate)
+    display->buffer->pushImage(60+45,60+20,5,15, pinky);
+}
+
+// Handle mouse events via a callback that doesn't disturb the queue
+void InputDisplay::onMouseEvent(mouseEvent_t event) {
+  switch(event) {
+    case mouseEvent_t::LMB_PRESS:
+      lmb = true;
+      break;
+    case mouseEvent_t::LMB_RELEASE:
+      lmb = false;
+      break;
+    case mouseEvent_t::RMB_PRESS:
+      rmb = true;
+      break;
+    case mouseEvent_t::RMB_RELEASE:
+      rmb = false;
+      break;
+    case mouseEvent_t::SCROLL_PRESS:
+      scrollU = true;
+      scrollD = true;
+      break;
+    case mouseEvent_t::SCROLL_RELEASE:
+      scrollU = false;
+      scrollD = false;
+      break;
+    case mouseEvent_t::LOCK_PRESS:
+      lock = true;
+      break;
+    case mouseEvent_t::LOCK_RELEASE:
+      lock = false;
+      break;
+    case mouseEvent_t::CALIBRATE_PRESS:
+      calibrate = true;
+      break;
+    case mouseEvent_t::CALIBRATE_RELEASE:
+      calibrate = false;
+      break;
+    default:
+      break;
   }
 }
 
 // Handle relevant navigation events
 void InputDisplay::onEvent(pageEvent_t event) {
   if (event == pageEvent_t::NAV_CANCEL)
-    this->displayManager->pageStack.pop();
+    displayManager->pageStack.pop();
 }
