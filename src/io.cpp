@@ -27,7 +27,8 @@ void Button::buttonISR(void *instancePtr) {
   Button *instance = reinterpret_cast<Button *>(instancePtr);
   pageEvent_t eventToSend;
   BaseType_t wokeTask = pdFALSE; // Will be set to pdTRUE if a higher-priority task was unblocked by queueing an event
-  if (!digitalRead(instance->pin)) { // Pin is pulled up, so pressing the button creates a falling edge
+  bool pinState = !digitalRead(instance->pin);
+  if (!instance->isPressed && pinState) { // Pin is pulled up, so pressing the button creates a falling edge
     eventToSend = instance->pressEvent;
     if (millis() - instance->stateChangeTimestamp > DEBOUNCE_TIME) {
       instance->pressTimestamp = millis();
@@ -36,8 +37,8 @@ void Button::buttonISR(void *instancePtr) {
       xQueueSendFromISR(instance->eventQueue, &eventToSend, &wokeTask);
     }
   }
-  else {
-    if (millis() - instance->stateChangeTimestamp > LONGPRESS_TIME)
+  else if (instance->isPressed && !pinState) {
+    if (millis() - instance->pressTimestamp > LONGPRESS_TIME)
       eventToSend = instance->holdEvent;
     else
       eventToSend = instance->bumpEvent;
