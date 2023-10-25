@@ -12,7 +12,8 @@
         "cmath": "cpp",
         "type_traits": "cpp",
         "utility": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "dense": "cpp"
     },
     "cmake.sourceDirectory": "${workspaceFolder}/.pio/libdeps/ttgo-lora32-v1/TFT_eSPI"
 }
