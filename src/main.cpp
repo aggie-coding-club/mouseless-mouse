@@ -6,10 +6,6 @@
 #define BUTTON_PIN 14 //Which pin is the mouse click button connected to?
 #define AVG_SIZE 20 //How many inputs will we keep in rolling average array?
 
-<<<<<<< HEAD
-Adafruit_MPU6050 mpu; //Initialize MPU - tracks rotation in terms of acceleratioin + gyroscope
-BleMouse mouse("Mouseless Mouse", "Espressif", 100); //Initialize bluetooth mouse to send mouse events
-=======
 #include "ICM_20948.h"
 
 // Define this if you want to test functionality without an IMU connected
@@ -127,7 +123,6 @@ HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 // Keep track of which mouse functions are active
 bool mouseEnableState = true;
 bool scrollEnableState = false;
->>>>>>> origin/main
 
 
 inline int sign(float inVal) {
@@ -197,8 +192,6 @@ void IRAM_ATTR onButtonPress() {
   buttonPress = true;
 }
 
-<<<<<<< HEAD
-=======
 
 //End of Mouse orientation detection
 
@@ -266,7 +259,6 @@ float normalizeMouseMovement(float axisValue) {
 
 //Code to run once on start up
 
->>>>>>> origin/main
 void setup() {
   // put your setup code here, to run once:
   pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -302,35 +294,5 @@ void loop() {
     else Serial.println("Mouse not connected!");
     buttonPress = false;
   }
-<<<<<<< HEAD
-
-
-  roll.update(-atan2(a.acceleration.x, a.acceleration.z));//weird math to calculate direction change for roll (currently x-axis) then add it to array of prior inputs
-  pitch.update(-atan2(a.acceleration.y,a.acceleration.z));
-  gRoll.update(g.gyro.y);
-  gPitch.update(g.gyro.x);//adding gyroscope in x axis
-
-  //currently using information from gyroscope for if statements
-  if (gPitch.stability() > 8) {//if the stability is decent
-
-    if (mouse.isConnected()){//If the mouse is connected
-      mouse.move(0, (pitch.get() - oldPitch) * 100);//move mouse by current pitch (of accelerometer) - old pitch (of accelerometer)
-    }
-    oldPitch = pitch.get();//update old pitch
-    Serial.printf("Pitch: %f (%d)\n", pitch.get(), gPitch.stability());//prints accelerometer stability and (gyroscope stability)
-  }
-  if (gRoll.stability() > 8) {//currently using information from gyro
-
-    if (mouse.isConnected()){
-      mouse.move((roll.get() - oldRoll) * 100, 0);
-    }
-    oldRoll = roll.get();
-    Serial.printf("Roll: %f (%d)\n", roll.get(), gRoll.stability());
-  }
-
-  delay(10);
-}
-=======
 #endif
 }
->>>>>>> origin/main
