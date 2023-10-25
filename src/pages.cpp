@@ -3,7 +3,6 @@
 #include "helpers.h"
 #include "pages.h"
 #include "mouse.h"
-#include "io.h"
 #include "imgs/hand.h"
 #include "imgs/pointer.h"
 #include "imgs/ring.h"
@@ -269,28 +268,3 @@ void InputDisplay::onEvent(pageEvent_t event) {
   if (event == pageEvent_t::NAV_CANCEL)
     this->displayManager->pageStack.pop();
 }
-
-// Fun playground
-DebugPage::DebugPage(Display *display, DisplayManager *displayManager, const char *pageName)
-  : DisplayPage(display, displayManager, pageName)
-{}
-
-// Great place for debug stuff
-void DebugPage::draw() {
-  display->textFormat(2, TFT_WHITE);
-  //frameCounter++; No animations being currently tested
-};
-
-// Currently testing page events
-void DebugPage::onEvent(pageEvent_t event) {
-  switch(event) {
-    case pageEvent_t::NAV_DOWN:
-      Serial.println("Hello World!");
-      break;
-    case pageEvent_t::NAV_CANCEL:
-      this->displayManager->pageStack.pop();
-      break;
-    default:
-      break;
-  }
-};
