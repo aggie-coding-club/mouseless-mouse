@@ -22,6 +22,12 @@
 #define CALIBRATE_TOUCH_CHANNEL 2
 constexpr signed char SENSITIVITY = 24;
 
+#ifndef NO_SENSOR
+const uint16_t ACCENT_COLOR = 0x461F;                   // TFT_eSPI::color565(64, 192, 255)
+#else
+const uint16_t ACCENT_COLOR = 0xF000;
+#endif
+
 // Mouse logic globals
 #ifndef NO_SENSOR
 ICM_20948_I2C icm;
@@ -108,13 +114,13 @@ TouchPadInstance calibrateButton =
 char *dummyField = new char[32];
 
 // Instantiate display page hierarchy
-InputDisplay myPlaceholderA(&display, &displayManager, "Input");
-DebugPage myPlaceholderB(&display, &displayManager, "Debug Page");
+InputDisplay inputViewPage(&display, &displayManager, "Input");
+DebugPage debugPage(&display, &displayManager, "Debug Page");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
 MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
-  &myPlaceholderA,
-  &myPlaceholderB,
+  &inputViewPage,
+  &debugPage,
   keyboard(dummyField),
   confirm("Are you sure?", deepSleep)
 );
@@ -226,8 +232,8 @@ void drawTask(void *pvParameters) {
     display.clear();
     displayManager.draw();
 
-    // RIP spinny line, gone but not fogotten
-    // display.buffer->drawLine(210, 40, 210 + 10 * cos(frame / 10.0), 40 + 10 * sin(frame / 10.0), TFT_DARKCYAN);
+    // RIP spinny line, gone but not forgotten
+    // display.buffer->drawLine(210, 40, 210 + 10 * cos(frame / 10.0), 40 + 10 * sin(frame / 10.0), TFT_CYAN);
     if (displayManager.upButton->isPressed || displayManager.downButton->isPressed) {
         Button *activeButton =
             displayManager.upButton->isPressed ? displayManager.upButton : displayManager.downButton;
@@ -279,17 +285,53 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-
-
-  sensors_event_t a, g, temp;//sets events (special class)
-  mpu.getEvent(&a, &g, &temp);
-
-
-  //button press stuff
-  if (buttonPress) {
-    if (mouse.isConnected()) {
-      mouse.click();
+  // Relay test messages from touch pads to Serial
+  if (uxQueueMessagesWaiting(mouseEvents)) {
+    mouseEvent_t messageReceived;
+    xQueueReceive(mouseEvents, &messageReceived, 0);
+    inputViewPage.onMouseEvent(messageReceived);  // Update input view page
+    if (mouseEnableState) {//If there is a button event
+      switch (messageReceived) {
+      case mouseEvent_t::LMB_PRESS:
+        Serial.println("LMB_PRESS");
+        mouse.press(MOUSE_LEFT);
+        break;
+      case mouseEvent_t::LMB_RELEASE:
+        Serial.println("LMB_RELEASE");
+        mouse.release(MOUSE_LEFT);
+        break;
+      case mouseEvent_t::RMB_PRESS:
+        Serial.println("RMB_PRESS");
+        mouse.press(MOUSE_RIGHT);
+        break;
+      case mouseEvent_t::RMB_RELEASE:
+        Serial.println("RMB_RELEASE");
+        mouse.release(MOUSE_RIGHT);
+        break;
+      case mouseEvent_t::LOCK_PRESS:
+        Serial.println("DISABLED");
+        mouseEnableState = !mouseEnableState;
+        break;
+      case mouseEvent_t::SCROLL_PRESS:
+        Serial.println("SCROLL ENBALED");
+        scrollEnableState = true;
+        break;
+      case mouseEvent_t::SCROLL_RELEASE:
+        Serial.println("SCROLL DISBALED");
+        scrollEnableState = false;
+        break;
+      case mouseEvent_t::CALIBRATE_PRESS:
+        Serial.println("CALIBRATING...");
+#ifndef NO_SENSOR
+        icm.getAGMT();
+        calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
+        calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
+        Serial.println("Mouse calibrated!");
+#endif
+        break;
+      default:
+        break;
+      }
     }
     else Serial.println("Mouse not connected!");
     buttonPress = false;

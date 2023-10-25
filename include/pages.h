@@ -54,6 +54,7 @@ private:
 public:
   InputDisplay(Display* display, DisplayManager* displayManager, const char* pageName);
   void onEvent(pageEvent_t event);
+  void onMouseEvent(mouseEvent_t event);
   void draw();
 };
 
