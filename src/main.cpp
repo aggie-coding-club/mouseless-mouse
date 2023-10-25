@@ -125,12 +125,12 @@ char *dummyField = new char[32];
 
 // Instantiate display page hierarchy
 InputDisplay inputViewPage(&display, &displayManager, "Input");
-BlankPage myPlaceholder(&display, &displayManager, "Placeholder B");
+DebugPage debugPage(&display, &displayManager, "Debug Page");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
 MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
   &inputViewPage,
-  &myPlaceholder,
+  &debugPage,
   keyboard(dummyField),
   confirm("Are you sure?", deepSleep)
 );
@@ -236,7 +236,15 @@ void drawTask(void *pvParameters) {
     display.clear();
     displayManager.draw();
 
-    display.buffer->drawLine(210, 40, 210 + 10 * cos(frame / 10.0), 40 + 10 * sin(frame / 10.0), TFT_CYAN);
+    // RIP spinny line, gone but not forgotten
+    // display.buffer->drawLine(210, 40, 210 + 10 * cos(frame / 10.0), 40 + 10 * sin(frame / 10.0), TFT_CYAN);
+    if (displayManager.upButton->isPressed || displayManager.downButton->isPressed) {
+        Button *activeButton =
+            displayManager.upButton->isPressed ? displayManager.upButton : displayManager.downButton;
+        display.drawNavArrow(210, 40, displayManager.upButton->isPressed,
+                              pow(millis() - activeButton->pressTimestamp, 2) / pow(LONGPRESS_TIME, 2), ACCENT_COLOR,
+                              SEL_COLOR);
+    }
 
     display.pushChanges();
     frame++;
