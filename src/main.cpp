@@ -124,13 +124,13 @@ TouchPadInstance calibrateButton =
 char *dummyField = new char[32];
 
 // Instantiate display page hierarchy
-InputDisplay myPlaceholderA(&display, &displayManager, "Input");
-BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
+InputDisplay inputViewPage(&display, &displayManager, "Input");
+BlankPage myPlaceholder(&display, &displayManager, "Placeholder B");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
 MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
-  &myPlaceholderA,
-  &myPlaceholderB,
+  &inputViewPage,
+  &myPlaceholder,
   keyboard(dummyField),
   confirm("Are you sure?", deepSleep)
 );
@@ -367,6 +367,7 @@ void loop() {
   if (uxQueueMessagesWaiting(mouseEvents)) {
     mouseEvent_t messageReceived;
     xQueueReceive(mouseEvents, &messageReceived, 0);
+    inputViewPage.onMouseEvent(messageReceived);  // Update input view page
     if (mouseEnableState) {//If there is a button event
       switch (messageReceived) {
       case mouseEvent_t::LMB_PRESS:
