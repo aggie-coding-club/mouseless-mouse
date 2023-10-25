@@ -32,6 +32,12 @@
 #define CALIBRATE_TOUCH_CHANNEL 2
 constexpr signed char SENSITIVITY = 24;
 
+#ifndef NO_SENSOR
+const uint16_t ACCENT_COLOR = 0x461F;                   // TFT_eSPI::color565(64, 192, 255)
+#else
+const uint16_t ACCENT_COLOR = 0xF000;
+#endif
+
 // Mouse logic globals
 #ifndef NO_SENSOR
 ICM_20948_I2C icm;
