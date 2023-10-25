@@ -57,4 +57,12 @@ public:
   void draw();
 };
 
+// Amruth's sandbox
+class DebugPage : public DisplayPage {
+public:
+  DebugPage(Display *display, DisplayManager *displayManager, const char *pageName);
+  void draw();
+  void onEvent(pageEvent_t event);
+};
+
 #endif
