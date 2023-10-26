@@ -272,7 +272,8 @@ float normalizeMouseMovement(float axisValue) {
 void setup() {
   // Begin serial and logging
   Serial.begin(115200);
-  // Log.begin(LOG_LEVEL_VERBOSE, &Serial);
+  Serial.println(__DATE__);
+  Serial.println(__TIME__);
   delay(100);
 
   // Initialize mouse logic components and calibrate mouse
