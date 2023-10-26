@@ -2,7 +2,6 @@
 #include <ArduinoEigen/Eigen/Geometry>
 
 #include <Arduino.h>
-#include <ArduinoLog.h>
 #include <BleMouse.h>
 #include <FS.h>
 #include <LittleFS.h>
@@ -61,20 +60,57 @@ Display display(&tftDisplay, &bufferA, &bufferB);
 DisplayManager displayManager(&display);
 
 // Button instantiation
-Button upButton(0, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_DOWN, pageEvent_t::NAV_SELECT);
-Button downButton(35, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
+Button upButton(
+  0,                          // Pin
+  displayManager.eventQueue,  // Event queue
+  pageEvent_t::NAV_PRESS,     // Event sent on press
+  pageEvent_t::NAV_DOWN,      // Event sent on short release
+  pageEvent_t::NAV_SELECT     // Event sent on long release
+);
+Button downButton(
+  35,
+  displayManager.eventQueue,
+  pageEvent_t::NAV_PRESS,
+  pageEvent_t::NAV_UP,
+  pageEvent_t::NAV_CANCEL
+);
 
 // Touch button instantiation
 TouchPadInstance lMouseButton =
-    TouchPad(LMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::LMB_PRESS, mouseEvent_t::LMB_RELEASE);
+  TouchPad(
+    LMB_TOUCH_CHANNEL,        // Touch controller channel
+    mouseEvents,              // Event queue
+    mouseEvent_t::LMB_PRESS,  // Event sent on press
+    mouseEvent_t::LMB_RELEASE // Event sent on release
+  );
 TouchPadInstance rMouseButton =
-    TouchPad(RMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::RMB_PRESS, mouseEvent_t::RMB_RELEASE);
+  TouchPad(
+    RMB_TOUCH_CHANNEL,
+    mouseEvents,
+    mouseEvent_t::RMB_PRESS,
+    mouseEvent_t::RMB_RELEASE
+  );
 TouchPadInstance scrollButton =
-    TouchPad(SCROLL_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::SCROLL_PRESS, mouseEvent_t::SCROLL_RELEASE);
+  TouchPad(
+    SCROLL_TOUCH_CHANNEL,
+    mouseEvents,
+    mouseEvent_t::SCROLL_PRESS,
+    mouseEvent_t::SCROLL_RELEASE
+  );
 TouchPadInstance lockButton =
-    TouchPad(LOCK_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::LOCK_PRESS, mouseEvent_t::LOCK_RELEASE);
+  TouchPad(
+    LOCK_TOUCH_CHANNEL,
+    mouseEvents,
+    mouseEvent_t::LOCK_PRESS,
+    mouseEvent_t::LOCK_RELEASE
+  );
 TouchPadInstance calibrateButton =
-    TouchPad(CALIBRATE_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::CALIBRATE_PRESS, mouseEvent_t::CALIBRATE_RELEASE);
+  TouchPad(
+    CALIBRATE_TOUCH_CHANNEL,
+    mouseEvents,
+    mouseEvent_t::CALIBRATE_PRESS,
+    mouseEvent_t::CALIBRATE_RELEASE
+  );
 
 char *dummyField = new char[32];
 
@@ -84,13 +120,14 @@ BlankPage myPlaceholderB(&display, &displayManager, "Placeholder B");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
 MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
-    &myPlaceholderA,
-    &myPlaceholderB,
-    keyboard(dummyField),
-    confirm("Are you sure?", deepSleep)
+  &myPlaceholderA,
+  &myPlaceholderB,
+  keyboard(dummyField),
+  confirm("Are you sure?", deepSleep)
 );
 HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 
+// Keep track of which mouse functions are active
 bool mouseEnableState = true;
 bool scrollEnableState = false;
 
@@ -150,9 +187,9 @@ public:
   adjusted_north.normalize();
   Eigen::Vector3f east = adjusted_north.cross(up.get());
   return Eigen::Vector3f{
-      east.dot(vec),
-      adjusted_north.dot(vec),
-      up.get().dot(vec),
+    east.dot(vec),
+    adjusted_north.dot(vec),
+    up.get().dot(vec),
   };
 }
 
@@ -232,10 +269,10 @@ void setup() {
   for (;;) {
     icm.begin();
     if (icm.status != ICM_20948_Stat_Ok) {
-      Log.noticeln("ICM initialization failed with error status \"%s\", retrying", icm.statusString());
+      Serial.printf("ICM initialization failed with error status \"%s\", retrying\n", icm.statusString());
       delay(500);
     } else {
-      Log.traceln("ICM initialization successful");
+      Serial.printf("ICM initialization successful\n");
       break;
     }
   }
@@ -257,9 +294,10 @@ void setup() {
   // Initialize LittleFS
   if (!LittleFS.begin()) {
     LittleFS.begin(true); // Format the filesystem if it failed to mount
-    Log.warningln("SPIFFS had to be formatted before mounting - data lost."); // This can happen on the first upload or
-                                                                              // when the partition scheme is changed
-  } else {
+    // This can happen on the first upload or when the partition scheme is changed
+    Serial.println("SPIFFS had to be formatted before mounting - data lost."); 
+  } 
+  else {
     // Just reupload the filesystem image - this is different from uploading the program
     Serial.println("LittleFS Tree"); // Directory listing
     File root = LittleFS.open("/");
@@ -291,13 +329,14 @@ void setup() {
   Serial.printf("Flash size is %i\n", 2 << (id - 1));
 
   // Dispatch the display drawing task
-  xTaskCreatePinnedToCore(drawTask,        // Task code is in the drawTask() function
-                          "Draw Task",     // Descriptive task name
-                          4000,            // Stack depth
-                          NULL,            // Parameter to function (unnecessary here)
-                          1,               // Task priority
-                          &drawTaskHandle, // Variable to hold new task handle
-                          1                // Pin the task to the core that doesn't handle WiFi/Bluetooth
+  xTaskCreatePinnedToCore(
+    drawTask,        // Task code is in the drawTask() function
+    "Draw Task",     // Descriptive task name
+    4000,            // Stack depth
+    NULL,            // Parameter to function (unnecessary here)
+    1,               // Task priority
+    &drawTaskHandle, // Variable to hold new task handle
+    1                // Pin the task to the core that doesn't handle WiFi/Bluetooth
   );
 
   // If we just woke up from deep sleep, don't attach the buttons until the user lets go
@@ -363,7 +402,8 @@ void loop() {
       default:
         break;
       }
-    } else {
+    }
+    else {  // Check only for this event type if the mouse is not enabled
       if (messageReceived == mouseEvent_t::LOCK_PRESS) {
         Serial.println("ENABLED");
         mouseEnableState = !mouseEnableState;
@@ -373,6 +413,7 @@ void loop() {
     xQueueSend(mouseQueue, &messageReceived, 0);
   }
 #ifndef NO_SENSOR
+  // Move the mouse according to incoming IMU data
   if (icm.dataReady() && mouseEnableState) {
     icm.getAGMT();
     Eigen::Vector3f posY = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 1.0f, 0.0f}, icm);

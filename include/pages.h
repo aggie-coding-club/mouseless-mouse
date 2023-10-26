@@ -46,15 +46,15 @@ public:
   void onEvent(pageEvent_t event);
 };
 
-
-
+// Page to visualize mouse inputs in real-time
 class InputDisplay : public DisplayPage {
-    public:
-    InputDisplay(Display* display, DisplayManager* displayManager, const char* pageName);
-    void onEvent(pageEvent_t event);
-    void draw();
-
-    bool lmb, rmb, scrollU, scrollD, lock, calibrate;
+private:
+  bool lmb, rmb, scrollU, scrollD, lock, calibrate;
+  
+public:
+  InputDisplay(Display* display, DisplayManager* displayManager, const char* pageName);
+  void onEvent(pageEvent_t event);
+  void draw();
 };
 
 #endif

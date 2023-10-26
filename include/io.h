@@ -26,7 +26,7 @@
   20 // Once a touch pad is in the "pressed" state, it must go this far above the threshold to be "released"
 #define TOUCH_POLL_RATE 5 // When a touch is recorded, the pads will be polled every TOUCH_POLL_RATE ms
 
-// Button class - wrapper for I/O buttons with debouncing, timestamping, and event generation
+// Driver class for physical buttons with debouncing, timestamping, and event generation
 class Button {
 private:
   static void buttonISR(void *instancePtr);
@@ -49,8 +49,7 @@ public:
   void detach();
 };
 
-class TouchPadInstance;
-
+// Driver class for capacitive touch pads 
 class TouchPadInstance {
 private:
   static void touchISR(void *instancePtr);
@@ -68,13 +67,19 @@ public:
   uint32_t releaseTimestamp;
   uint32_t stateChangeTimestamp;
 
-  TouchPadInstance(byte touchPadNum, xQueueHandle eventQueue, mouseEvent_t pressEvent, mouseEvent_t releaseEvent,
-                   byte pin);
+  TouchPadInstance(
+    byte touchPadNum,
+    xQueueHandle eventQueue,
+    mouseEvent_t pressEvent,
+    mouseEvent_t releaseEvent,
+    byte pin
+  );
   void attach();
   void setThreshold(uint16_t touchThreshold);
   bool remapEvents(mouseEvent_t pressEvent, mouseEvent_t releaseEvent);
 };
 
+// Concisely attach all instantiated touch pads
 void attachTouchPads();
 
 // Helper to allow expansion of n before token pasting - use TouchPad instead

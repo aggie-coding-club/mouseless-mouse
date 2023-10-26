@@ -7,6 +7,7 @@
 #include <stack>
 #include <mouse.h>
 
+// Constants
 #define PWM_CHANNEL 0
 #define BACKLIGHT_PIN 4
 
@@ -20,6 +21,7 @@ const uint16_t TEXT_COLOR = TFT_WHITE;                  // Color of menu text
 const uint16_t SEL_COLOR = ACCENT_COLOR >> 1 & ~0x0410; // Equivalent to lerp(ACCENT_COLOR, TFT_BLACK, 0.5)
 const uint16_t BGND_COLOR = TFT_BLACK;                  // Color of background
 
+// Allow using externally defined functions/variables/objects
 extern int16_t getBatteryPercentage();
 class Button; // Forward declaration of class Button, which is in io.h
 
@@ -48,15 +50,7 @@ public:
     void pushChanges();
     void clear();
     void flush();
-    // void setFill(uint16_t color);
-    // void setStroke(uint16_t color);
-    // int16_t getStringWidth(const char* string);
-    // void drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
-    // void drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t ir, uint16_t startAngle, uint16_t endAngle, uint16_t fg_color, uint16_t bg_color);
-    // void drawString(String string, uint16_t xPos, uint16_t yPos);
     void drawBitmapSPIFFS(const char* filename, uint16_t x, uint16_t y);
-    // void pushImage(int x,int y,int width,int height, const unsigned short* data);
-    // void fillRect(uint16_t x1, uint16_t y1, uint16_t width, uint16_t height);
     void textFormat(uint8_t size, uint16_t color);
     void drawStatusBar();
     void drawNavArrow(uint16_t x, uint16_t y, bool direction, float progress, uint16_t stroke_color, uint16_t bg_color);
@@ -66,6 +60,7 @@ public:
 // Types of events that can be sent to the active page
 enum class pageEvent_t : byte { ENTER, EXIT, NAV_PRESS, NAV_UP, NAV_DOWN, NAV_SELECT, NAV_CANCEL };
 
+// Forward declaration of DisplayManager class
 class DisplayManager;
 
 // DisplayPage class - base class for a full-screen display routine
@@ -144,6 +139,7 @@ public:
 // Template functions
 ////////////////////////////////////////////////////////////////////////////
 
+// Build a menu page from any number of subpages
 template <typename... Ts>
 MenuPage::MenuPage(Display *display, DisplayManager *displayManager, const char *pageName, Ts *...pages)
     : DisplayPage(display, displayManager, pageName) {
