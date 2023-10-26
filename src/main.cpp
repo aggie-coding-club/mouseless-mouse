@@ -271,7 +271,6 @@ void setup() {
   Serial.begin(115200);
   Serial.println(__DATE__);
   Serial.println(__TIME__);
-  Log.begin(LOG_LEVEL_VERBOSE, &Serial);
   delay(100);
 
   // Initialize mouse logic components and calibrate mouse
