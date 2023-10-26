@@ -6,7 +6,7 @@
 #include "imgs/hand.h"
 #include "imgs/pointer.h"
 #include "imgs/ring.h"
-#include "imgs/thumb1.h"
+#include "imgs/Thumb1.h"
 #include "imgs/Thumb2.h"
 #include "imgs/pinky.h"
 #include "imgs/middle.h"
