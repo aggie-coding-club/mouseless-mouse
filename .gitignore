@@ -1,5 +1,5 @@
 .pio
 .vscode
-ulp
+ulp/*
 !ulp/ulp_main.h
 !ulp/ulp.s
