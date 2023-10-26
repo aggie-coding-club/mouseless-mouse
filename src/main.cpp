@@ -38,7 +38,7 @@ constexpr signed char SENSITIVITY = 24;
 ICM_20948_I2C icm;
 #endif
 
-BleMouse mouse("Mouseless Mouse", "Mouseless Team");
+BleMouse mouse("Mouseless Mouse " __TIME__, "Mouseless Team");
 Eigen::Vector3f calibratedPosX;
 Eigen::Vector3f calibratedPosZ;
 
