@@ -288,7 +288,7 @@ void HomePage::draw() {
   display->buffer->drawString("Battery Life:", 30, 30);
   display->buffer->drawString(String(ulp_ctr & 65535), 30, 90);
   display->textFormat(1, TFT_WHITE);
-  display->buffer->drawString(String(__TIME__) + " " + String(__DATE__), 30, 120);
+  display->buffer->drawString(__TIME__ " " __DATE__, 30, 120);
   display->textFormat(3, TFT_WHITE);
   display->buffer->drawString(String(getBatteryPercentage()) + "%", 30, 50);
   frameCounter++;
