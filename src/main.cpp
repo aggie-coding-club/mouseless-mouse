@@ -43,10 +43,7 @@ const uint16_t ACCENT_COLOR = 0xF000;
 ICM_20948_I2C icm;
 #endif
 
-// Bluetooth interface class instance
-BleMouse mouse("Mouseless Mouse", "Mouseless Team");
-
-// Vectors to hold position data
+BleMouse mouse("Mouseless Mouse " __TIME__, "Mouseless Team");
 Eigen::Vector3f calibratedPosX;
 Eigen::Vector3f calibratedPosZ;
 
@@ -272,7 +269,9 @@ float normalizeMouseMovement(float axisValue) {
 void setup() {
   // Begin serial and logging
   Serial.begin(115200);
-  // Log.begin(LOG_LEVEL_VERBOSE, &Serial);
+  Serial.println(__DATE__);
+  Serial.println(__TIME__);
+  Log.begin(LOG_LEVEL_VERBOSE, &Serial);
   delay(100);
 
   // Initialize mouse logic components and calibrate mouse
