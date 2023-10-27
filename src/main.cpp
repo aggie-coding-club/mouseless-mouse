@@ -33,10 +33,7 @@ const uint16_t ACCENT_COLOR = 0xF000;
 ICM_20948_I2C icm;
 #endif
 
-// Bluetooth interface class instance
-BleMouse mouse("Mouseless Mouse", "Mouseless Team");
-
-// Vectors to hold position data
+BleMouse mouse("Mouseless Mouse " __TIME__, "Mouseless Team");
 Eigen::Vector3f calibratedPosX;
 Eigen::Vector3f calibratedPosZ;
 
@@ -272,17 +269,104 @@ void setup() {
 
   //starts Serial Monitor
   Serial.begin(115200);
+  Serial.println(__DATE__);
+  Serial.println(__TIME__);
+  delay(100);
 
+  // Initialize mouse logic components and calibrate mouse
+  Wire.begin();
+  Wire.setClock(400000);
+  mouse.begin();
 
-  if (!mpu.begin()) {//if MPU can't connect
-    Serial.println("Could not find MPU");
-    while(1);
+#ifndef NO_SENSOR
+  for (;;) {
+    icm.begin();
+    if (icm.status != ICM_20948_Stat_Ok) {
+      Serial.printf("ICM initialization failed with error status \"%s\", retrying\n", icm.statusString());
+      delay(500);
+    } else {
+      Serial.printf("ICM initialization successful\n");
+      break;
+    }
+  }
+  while (!icm.dataReady()) {
+    // do nothing
   }
 
-  Serial.println("Found MPU6050");
-  Serial.println("Starting Bluetooth mouse");
-  mouse.begin();//starts Bluetooth mouse
+  while (Serial.available() > 0) {
+    Serial.read();
+  }
+
+  //Initialize Mouse orientation detection
+  icm.getAGMT();
+  calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
+  calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
+  Serial.println("Mouse calibrated!");
+#endif
+
+  // Initialize LittleFS
+  if (!LittleFS.begin()) {
+    LittleFS.begin(true); // Format the filesystem if it failed to mount
+    // This can happen on the first upload or when the partition scheme is changed
+    Serial.println("SPIFFS had to be formatted before mounting - data lost."); 
+  } 
+  else {
+    // Just reupload the filesystem image - this is different from uploading the program
+    Serial.println("LittleFS Tree"); // Directory listing
+    File root = LittleFS.open("/");
+    File file = root.openNextFile();
+    while (file) {
+      Serial.println(file.name());
+      file.close();
+      file = root.openNextFile();
+    }
+  }
+
+  // Configure battery voltage reading pin
+  pinMode(ADC_ENABLE_PIN, OUTPUT);
+
+  // Attach touch pad interrupts
+  attachTouchPads();
+
+  // Initialize display
+  display.begin();
+
+  // Set up display page manager
+  displayManager.setHomepage(&homepage);
+  displayManager.attachButtons(&upButton, &downButton);
+
+  // Get board flash size and print it to serial
+  uint32_t id = g_rom_flashchip.device_id;
+  id = ((id & 0xff) << 16) | ((id >> 16) & 0xff) | (id & 0xff00);
+  id = (id >> 16) & 0xFF;
+  Serial.printf("Flash size is %i\n", 2 << (id - 1));
+
+  // Dispatch the display drawing task
+  xTaskCreatePinnedToCore(
+    drawTask,        // Task code is in the drawTask() function
+    "Draw Task",     // Descriptive task name
+    4000,            // Stack depth
+    NULL,            // Parameter to function (unnecessary here)
+    1,               // Task priority
+    &drawTaskHandle, // Variable to hold new task handle
+    1                // Pin the task to the core that doesn't handle WiFi/Bluetooth
+  );
+
+  // If we just woke up from deep sleep, don't attach the buttons until the user lets go
+  if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_ULP) {
+    stopULP();
+    pinMode(DOWN_BUTTON_PIN, INPUT_PULLUP);
+    while (!digitalRead(DOWN_BUTTON_PIN))
+      ;
+  }
+
+  // Attach button interrupts
+  upButton.attach();
+  downButton.attach();
 }
+
+
+//Code to constantly run
 
 void loop() {
   // Relay test messages from touch pads to Serial
