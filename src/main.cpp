@@ -1,10 +1,20 @@
-#include <Arduino.h>
-#include <Adafruit_MPU6050.h>
-#include <Wire.h>
-#include <BleMouse.h>
+#include <ArduinoEigen/Eigen/Dense>
+#include <ArduinoEigen/Eigen/Geometry>
 
-#define BUTTON_PIN 14 //Which pin is the mouse click button connected to?
-#define AVG_SIZE 20 //How many inputs will we keep in rolling average array?
+#include <Arduino.h>
+#include <BleMouse.h>
+#include <FS.h>
+#include <LittleFS.h>
+#include <TFT_eSPI.h>
+#include <Wire.h>
+#include <cmath>
+#include <cstdint>
+#include <esp32/rom/spi_flash.h>
+
+#include "display.h"
+#include "io.h"
+#include "pages.h"
+#include "power.h"
 
 #include "ICM_20948.h"
 
@@ -128,71 +138,65 @@ bool mouseEnableState = true;
 bool scrollEnableState = false;
 
 
-inline int sign(float inVal) {
-  /*Returns 1 if input is greater than 0, 0 if input is 0, or -1 if input is less than 0*/
-  return (inVal > 0) - (inVal < 0);
-}
 
-class RollingAverage {
-/*Used to keep track of past inputed values to try to smooth movement*/
+//Start of Orientation detection
+
+
+
+/// @brief Filter to smooth values using a rolling average.
+/// @tparam T The type of the values to be smoothed.
+/// @tparam bufferLength The number of samples to average over.
+template <typename T, std::size_t bufferLength> class RollingAverage {
 private:
-  float avg[AVG_SIZE];
-  bool isInit = false;  // Is the avg buffer full of samples?
-  uint8_t head = 0;     // Index of most recent value
-  float avgVal;
-  uint8_t dStable = 0;  // How stable the direction of the movement is
+  std::array<T, bufferLength> mBuffer;
+  std::size_t mContentLength = 0;
+  std::size_t mCursor = 0;
+  T mAverage;
 
 public:
-  RollingAverage () {}
-  ~RollingAverage () {}
+  static_assert(bufferLength != 0);
 
-  void update(float val) {
-    /*Update Rolling array with input*/
-    if (isInit) {
-      this->avg[++this->head%=AVG_SIZE] = val;
-      float sum = 0;
-      int dir = 0;
-      for (uint8_t i=(this->head+1)%AVG_SIZE; i!=this->head; ++i%=AVG_SIZE) {
-        sum += this->avg[i];
-        dir += sign(this->avg[(i+1)%AVG_SIZE]-this->avg[i]);
-      }
-      this->avgVal = sum / AVG_SIZE;
-      this->dStable = abs(dir);
+  /// @brief Pass another value into the rolling average.
+  /// @param next The new value.
+  void update(T next) noexcept {
+    if (mContentLength < bufferLength) {
+      mContentLength++;
+      mAverage *= static_cast<float>(mContentLength - 1) / static_cast<float>(mContentLength);
+    } else {
+      mAverage -= mBuffer[mCursor] / static_cast<float>(mContentLength);
     }
-    else {
-      for (uint8_t i=0; i<AVG_SIZE; i++) this->avg[++this->head%=AVG_SIZE] = val;
-      this->avgVal = val;
-      isInit = true;
+    mAverage += next / static_cast<float>(mContentLength);
+    mBuffer[mCursor] = next;
+    mCursor++;
+    if (mCursor >= bufferLength) {
+      mCursor = 0;
     }
   }
-
-  uint8_t stability() {
-    /*Returns how consistant is the recent input with eachother?*/
-    return this->dStable;
-  }
-
-  float get() {
-    /*Returns the average value of recent inputs*/
-    return this->avgVal;
-  }
+  /// @brief Get the latest value in the rolling average buffer.
+  /// @return The rolling average of the last bufferLength values inserted.
+  [[nodiscard]] T get() const noexcept { return mAverage; }
 };
 
-volatile bool buttonPress = false;//Is the button currently pressed?
-
-//Initialize values to be smoothed later on
-RollingAverage roll;
-RollingAverage pitch;
-RollingAverage gRoll;
-RollingAverage gPitch;
-
-
-//set previous inputs to 0
-float oldRoll = 0;
-float oldPitch = 0;
-
-//sets up a function that can interupt and immediately be ran
-void IRAM_ATTR onButtonPress() {
-  buttonPress = true;
+/// @brief Convert a vector from mouse-space to world-space.
+/// @details In mouse-space, +x, +y, and +z are defined in accordance with the accelerometer axes defined in the ICM
+/// 20948 datasheet. In world-space, +x is due east, +y is due north, and +z is straight up.
+/// @param vec The vector in mouse-space.
+/// @param icm A reference to the ICM_20948_I2C object whose orientation data is being used.
+/// @return The equivalent of `vec` in world-space.
+[[nodiscard]] Eigen::Vector3f mouseSpaceToWorldSpace(Eigen::Vector3f vec, ICM_20948_I2C &icm) noexcept {
+  constexpr std::size_t ROLLING_AVG_BUFFER_DEPTH = 8U;
+  static RollingAverage<Eigen::Vector3f, ROLLING_AVG_BUFFER_DEPTH> up;
+  static RollingAverage<Eigen::Vector3f, ROLLING_AVG_BUFFER_DEPTH> north;
+  up.update(Eigen::Vector3f(icm.accX(), icm.accY(), icm.accZ()).normalized());
+  north.update(Eigen::Vector3f(icm.magX(), -icm.magY(), -icm.magZ()).normalized());
+  Eigen::Vector3f adjusted_north = north.get() - (up.get() * up.get().dot(north.get()));
+  adjusted_north.normalize();
+  Eigen::Vector3f east = adjusted_north.cross(up.get());
+  return Eigen::Vector3f{
+    east.dot(vec),
+    adjusted_north.dot(vec),
+    up.get().dot(vec),
+  };
 }
 
 
@@ -263,11 +267,7 @@ float normalizeMouseMovement(float axisValue) {
 //Code to run once on start up
 
 void setup() {
-  // put your setup code here, to run once:
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
-  attachInterrupt(BUTTON_PIN, onButtonPress, FALLING);//when Button_pin goes from High to low (button is released) onButtonPress is ran
-
-  //starts Serial Monitor
+  // Begin serial and logging
   Serial.begin(115200);
   Serial.println(__DATE__);
   Serial.println(__TIME__);
@@ -417,8 +417,28 @@ void loop() {
         break;
       }
     }
-    else Serial.println("Mouse not connected!");
-    buttonPress = false;
+    else {  // Check only for this event type if the mouse is not enabled
+      if (messageReceived == mouseEvent_t::LOCK_PRESS) {
+        Serial.println("ENABLED");
+        mouseEnableState = !mouseEnableState;
+      }
+    }
+
+    xQueueSend(mouseQueue, &messageReceived, 0);
+  }
+#ifndef NO_SENSOR
+  // Move the mouse according to incoming IMU data
+  if (icm.dataReady() && mouseEnableState) {
+    icm.getAGMT();
+    Eigen::Vector3f posY = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 1.0f, 0.0f}, icm);
+    signed char xMovement = normalizeMouseMovement(posY.dot(calibratedPosX)) * 3.0f * SENSITIVITY;
+    signed char zMovement = normalizeMouseMovement(posY.dot(calibratedPosZ)) * SENSITIVITY;
+    if (!scrollEnableState) {
+      mouse.move(xMovement, zMovement);
+    } else {
+      mouse.move(0, 0, xMovement, zMovement);
+    }
+    delay(30);
   }
 #endif
 }
