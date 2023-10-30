@@ -1,4 +1,5 @@
-.pio
+.pio/*
+!.pio/libdeps/ttgo-lora32-v1/ulptool-pio/src/include/ulptool/sdkconfig.h
 .vscode
 ulp/*
 !ulp/ulp_main.h
