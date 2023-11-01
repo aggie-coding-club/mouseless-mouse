@@ -16,10 +16,10 @@ const uint8_t DIM_BRIGHTNESS = 10;     // Brightness of the display after a peri
 const uint16_t INACTIVITY_TIME = 900;  // Time (in display frames, 30/sec) until display dimming begins
 
 const uint8_t SBAR_HEIGHT = 15;                         // Height of the status bar in pixels
-extern const uint16_t ACCENT_COLOR;
-const uint16_t TEXT_COLOR = TFT_WHITE;                  // Color of menu text
-const uint16_t SEL_COLOR = ACCENT_COLOR >> 1 & ~0x0410; // Equivalent to lerp(ACCENT_COLOR, TFT_BLACK, 0.5)
-const uint16_t BGND_COLOR = TFT_BLACK;                  // Color of background
+extern uint16_t ACCENT_COLOR;
+extern uint16_t TEXT_COLOR;
+extern uint16_t SEL_COLOR;
+extern uint16_t BGND_COLOR;
 
 // Allow using externally defined functions/variables/objects
 extern int16_t getBatteryPercentage();
@@ -96,6 +96,8 @@ class MenuPage : public DisplayPage {
   int16_t selectionTlY;
 
 public:
+  int16_t selectionY;
+
   template <typename... Ts>
   MenuPage(Display *display, DisplayManager *displayManager, const char *pageName, Ts *...pages);
   ~MenuPage();
@@ -142,15 +144,17 @@ public:
 // Build a menu page from any number of subpages
 template <typename... Ts>
 MenuPage::MenuPage(Display *display, DisplayManager *displayManager, const char *pageName, Ts *...pages)
-    : DisplayPage(display, displayManager, pageName) {
-  this->numPages = sizeof...(Ts);
+    : DisplayPage(display, displayManager, pageName)
+    , numPages(sizeof...(Ts))
+    , subpageIdx(0)
+    , menuTlY(0)
+    , selectionTlY(0)
+    , selectionY(0)
+{
   byte pageInit = 0;
   this->memberPages = (DisplayPage **)malloc(sizeof...(Ts) * sizeof(DisplayPage *));
   auto dummy = {(this->memberPages[pageInit++] = pages)...};
   (void) dummy; // Fix unused variable warning
-  this->subpageIdx = 0;
-  this->menuTlY = 0;
-  this->selectionTlY = 0;
 }
 
 #endif

@@ -66,4 +66,15 @@ public:
   void onEvent(pageEvent_t event);
 };
 
+// Slider adjustment bar displayed inline on a menu page
+typedef void (*changeCallback_t)(byte value);
+class InlineSlider : public DisplayPage {
+  uint8_t sliderValue;
+  changeCallback_t onChange;
+public:
+  InlineSlider(Display *display, DisplayManager *displayManager, const char *pageName, changeCallback_t onChange);
+  void draw();
+  void onEvent(pageEvent_t event);
+};
+
 #endif
