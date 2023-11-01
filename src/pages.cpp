@@ -180,7 +180,7 @@ void InputDisplay::draw() {
     display->textFormat(2, TFT_WHITE);
     display->drawString(pageName, 30, 30);
     display->pushImage(60,60,64,64, hand);
-    if (uxQueueMessagesWaiting(mouseQueue)) {
+    while (uxQueueMessagesWaiting(mouseQueue)) {
         mouseEvent_t event;
         xQueueReceive(mouseQueue, &event, 0);
         switch(event) {
@@ -194,7 +194,7 @@ void InputDisplay::draw() {
                 rmb = true;
                 break;
             case mouseEvent_t::RMB_RELEASE:
-                lmb = false;
+                rmb = false;
                 break;
             case mouseEvent_t::SCROLL_UP:
                 scrollU = true;
@@ -205,19 +205,19 @@ void InputDisplay::draw() {
             default:
                 break;
         }
-        if(lmb) {
+    }
+    if(lmb) {
             display->pushImage(60+1,60+23,8,23, thumb);
         }
-        if(rmb) {
+    if(rmb) {
             display->pushImage(60+20,60+11,6,16, pointer);
         }
-        if(scrollU) {
+    if(scrollU) {
             display->pushImage(60+29,60+33,5,3, scrollUp);
         }
-        if(scrollD) {
+    if(scrollD) {
             display->pushImage(60+29,60+40,5,3, scrollDown);
         }
-    }
 }
 void InputDisplay::onEvent(pageEvent_t event) {
     if (event == pageEvent_t::NAV_CANCEL) this->displayManager->pageStack.pop();
