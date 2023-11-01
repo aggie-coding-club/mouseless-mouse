@@ -33,10 +33,14 @@
 constexpr signed char SENSITIVITY = 24;
 
 #ifndef NO_SENSOR
-const uint16_t ACCENT_COLOR = 0x461F;                   // TFT_eSPI::color565(64, 192, 255)
+uint16_t ACCENT_COLOR = 0x461F;                   // TFT_eSPI::color565(64, 192, 255)
 #else
-const uint16_t ACCENT_COLOR = 0xF000;
+uint16_t ACCENT_COLOR = 0xF000;
 #endif
+
+uint16_t TEXT_COLOR = TFT_WHITE;                  // Color of menu text
+uint16_t SEL_COLOR = ACCENT_COLOR >> 1 & ~0x0410; // Equivalent to lerp(ACCENT_COLOR, TFT_BLACK, 0.5)
+uint16_t BGND_COLOR = TFT_BLACK;                  // Color of background
 
 // Mouse logic globals
 #ifndef NO_SENSOR
@@ -118,9 +122,33 @@ TouchPadInstance calibrateButton =
     mouseEvent_t::CALIBRATE_RELEASE
   );
 
+// YaY cOlOrFuL cOlOrS
+byte triFromTheta(byte theta) {
+  if (theta > 170) return 0;
+  if (theta > 85) return 3 * (170 - theta);
+  return 3 * theta;
+}
+uint16_t hsv_rgb565(byte theta) {
+  uint16_t r = triFromTheta(theta + 85);
+  uint16_t g = triFromTheta(theta);
+  uint16_t b = triFromTheta(theta + 170);
+  return (r << 8 & 0xF800) | (g << 3 & 0x07E0) | (b >> 3);
+}
+
+void modifyHue(byte newHue) {
+  ACCENT_COLOR = hsv_rgb565(newHue << 4);
+  // Serial.printf("New accent color is %06X\n", ACCENT_COLOR);
+  SEL_COLOR = ACCENT_COLOR >> 1 & ~0x0410; // Equivalent to lerp(ACCENT_COLOR, TFT_BLACK, 0.5)
+}
+
 char *dummyField = new char[32];
 
 // Instantiate display page hierarchy
+InlineSlider themeColorSlider(&display, &displayManager, "Theme Color", modifyHue);
+MenuPage settingsPage(&display, &displayManager, "Settings",
+  &themeColorSlider
+);
+
 InputDisplay inputViewPage(&display, &displayManager, "Input");
 DebugPage debugPage(&display, &displayManager, "Debug Page");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
@@ -128,6 +156,7 @@ ConfirmationPage confirm(&display, &displayManager, "Power Off");
 MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
   &inputViewPage,
   &debugPage,
+  &settingsPage,
   keyboard(dummyField),
   confirm("Are you sure?", deepSleep)
 );

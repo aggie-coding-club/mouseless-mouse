@@ -229,8 +229,13 @@ void MenuPage::draw() {
     if (15 + i * 30 + menuTlY > 135)
       break;
     if (i == subpageIdx) {
-      display->buffer->fillRect(0, 15 + i * 30 + selectionTlY + menuTlY, 240, 30, SEL_COLOR);
-      if (displayManager->upButton->isPressed || displayManager->downButton->isPressed) {
+      selectionY = 15 + i * 30 + selectionTlY + menuTlY;
+      display->buffer->fillRect(0, selectionY, 240, 30, SEL_COLOR);
+      if (
+        (displayManager->upButton->isPressed
+        || displayManager->downButton->isPressed)
+        // && displayManager->pageStack.top() == this
+      ) {
         Button *activeButton =
             displayManager->upButton->isPressed ? displayManager->upButton : displayManager->downButton;
         display->drawNavArrow(220, 30 + i * 30 + selectionTlY + menuTlY, displayManager->upButton->isPressed,
