@@ -98,6 +98,7 @@ std::string trim(std::string untrimmed) {
   }
   std::string start_trimmed = untrimmed.substr(cursor);
   std::string start_trimmed_reversed = std::string(start_trimmed.rbegin(), start_trimmed.rend());
+  cursor = 0;
   while (cursor < start_trimmed_reversed.size() && std::isspace(start_trimmed_reversed[cursor])) {
     cursor++;
   }

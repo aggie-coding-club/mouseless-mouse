@@ -40,8 +40,8 @@ struct DirtyDOMNode {
 
   DirtyDOMNode() {}
 
-  DirtyDOMNode(DirtyDOMPlaintextNode plaintext_node) : plaintext_node(plaintext_node), is_plaintext(true) {}
-  DirtyDOMNode(DirtyDOMTagNode tag_node) : tag_node(tag_node), is_plaintext(false) {}
+  DirtyDOMNode(DirtyDOMPlaintextNode plaintext_node) : is_plaintext(true), plaintext_node(plaintext_node) {}
+  DirtyDOMNode(DirtyDOMTagNode tag_node) : is_plaintext(false), tag_node(tag_node) {}
 };
 
 struct DirtyDOM {
