@@ -2,7 +2,6 @@
 #include <ArduinoEigen/Eigen/Geometry>
 
 #include <Arduino.h>
-#include <BleMouse.h>
 #include <FS.h>
 #include <LittleFS.h>
 #include <TFT_eSPI.h>
@@ -15,6 +14,7 @@
 #include "io.h"
 #include "pages.h"
 #include "power.h"
+#include "CustomBLEMouse.h"
 
 #include "ICM_20948.h"
 
@@ -43,7 +43,7 @@ const uint16_t ACCENT_COLOR = 0xF000;
 ICM_20948_I2C icm;
 #endif
 
-BleMouse mouse("Mouseless Mouse " __TIME__, "Mouseless Team");
+CustomBLEMouse mouse("Mouseless Mouse " __TIME__, "Mouseless Team");
 Eigen::Vector3f calibratedPosX;
 Eigen::Vector3f calibratedPosZ;
 
