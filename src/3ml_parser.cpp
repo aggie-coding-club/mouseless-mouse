@@ -8,65 +8,65 @@ void DirtyDOMTagNode::add_child(DirtyDOMNode child) { children.push_back(child);
 
 void DirtyDOM::add_top_level_node(DirtyDOMNode node) { top_level_nodes.push_back(node); }
 
-Attribute parse_attribute(const char **cursor) {
+Attribute parse_attribute(const char *&cursor) {
   std::string name;
   std::string value;
 
-  const char *name_begin = *cursor;
-  while (std::isalpha(**cursor)) {
-    (*cursor)++;
+  const char *name_begin = cursor;
+  while (std::isalpha(*cursor)) {
+    cursor++;
   }
-  name = std::string(name_begin, *cursor - name_begin);
+  name = std::string(name_begin, cursor - name_begin);
 
-  while (std::isspace(**cursor) || **cursor == '=') {
-    (*cursor)++;
+  while (std::isspace(*cursor) || *cursor == '=') {
+    cursor++;
   }
-  (*cursor)++;
-  const char *value_begin = *cursor;
-  while (**cursor != '"') {
-    (*cursor)++;
+  cursor++;
+  const char *value_begin = cursor;
+  while (*cursor != '"') {
+    cursor++;
   }
-  value = remove_escape_codes(std::string(value_begin, *cursor - value_begin));
+  value = remove_escape_codes(std::string(value_begin, cursor - value_begin));
 
   return Attribute(name, value);
 }
 
-Tag parse_tag(const char **cursor) {
+Tag parse_tag(const char *&cursor) {
   std::string name;
   std::vector<Attribute> attributes;
   bool is_closing = false;
   bool is_self_closing = false;
 
-  (*cursor)++;
-  if (**cursor == '/') {
+  cursor++;
+  if (*cursor == '/') {
     is_closing = true;
-    (*cursor)++;
+    cursor++;
   }
-  while (std::isspace(**cursor)) {
-    (*cursor)++;
+  while (std::isspace(*cursor)) {
+    cursor++;
   }
 
-  const char *name_begin = *cursor;
-  while (std::isalnum(**cursor)) {
-    (*cursor)++;
+  const char *name_begin = cursor;
+  while (std::isalnum(*cursor)) {
+    cursor++;
   }
-  name = std::string(name_begin, *cursor - name_begin);
+  name = std::string(name_begin, cursor - name_begin);
 
-  while (std::isalpha(**cursor)) {
-    (*cursor)++;
+  while (std::isalpha(*cursor)) {
+    cursor++;
   }
-  while (**cursor != '/' && **cursor != '>') {
+  while (*cursor != '/' && *cursor != '>') {
     attributes.push_back(parse_attribute(cursor));
-    while (std::isspace(**cursor)) {
-      (*cursor)++;
+    while (std::isspace(*cursor)) {
+      cursor++;
     }
   }
 
-  if (**cursor == '/') {
+  if (*cursor == '/') {
     is_self_closing = true;
-    (*cursor)++;
+    cursor++;
   }
-  (*cursor)++;
+  cursor++;
 
   return Tag(name, attributes, is_closing, is_self_closing);
 }
@@ -120,7 +120,7 @@ DirtyDOM parse_string(const char *str) {
           ParseNode(Plaintext(trim(remove_escape_codes(std::string(plaintext_begin, cursor - plaintext_begin))))));
       is_normal_mode = false;
     } else {
-      parse_chain.push_back(ParseNode(parse_tag(&cursor)));
+      parse_chain.push_back(ParseNode(parse_tag(cursor)));
       is_normal_mode = true;
     }
   }
@@ -147,7 +147,7 @@ DirtyDOM parse_string(const char *str) {
         tag_stack.back().add_child(DirtyDOMNode(current));
       }
     } else if (!node.is_tag) {
-      DirtyDOMPlaintextNode current = DirtyDOMPlaintextNode(node.plaintext.contents);
+      DirtyDOMPlaintextNode current = DirtyDOMPlaintextNode(node.plaintext);
       if (tag_stack.empty()) {
         top_level_nodes.push_back(DirtyDOMNode(current));
       } else {

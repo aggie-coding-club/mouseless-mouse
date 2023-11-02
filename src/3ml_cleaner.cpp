@@ -29,7 +29,7 @@ void DOM::add_top_level_node(DOMNode node) {
 
 DOMNode clean_node(DirtyDOMNode dirty) {
   if (dirty.is_plaintext) {
-    return DOMNode(NodeType::PLAINTEXT, dirty.plaintext_node.contents, std::vector<DOMNode>());
+    return DOMNode(NodeType::PLAINTEXT, dirty.plaintext_node, std::vector<DOMNode>());
   }
   NodeType type;
   if (dirty.tag_node.tag_name == "title") {
@@ -63,7 +63,7 @@ DOMNode clean_node(DirtyDOMNode dirty) {
 DOM clean_dom(DirtyDOM dirty) {
   DOM result;
   for (auto top_level : dirty.top_level_nodes) {
-    if (!(top_level.is_plaintext && top_level.plaintext_node.contents.empty())) {
+    if (!(top_level.is_plaintext && top_level.plaintext_node.empty())) {
       result.add_top_level_node(clean_node(top_level));
     }
   }

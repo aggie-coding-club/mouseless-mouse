@@ -3,6 +3,9 @@
 #include <string>
 #include <vector>
 
+typedef std::string DirtyDOMPlaintextNode;
+typedef std::string Plaintext;
+
 struct Attribute {
   std::string name;
   std::string value;
@@ -10,13 +13,13 @@ struct Attribute {
   Attribute(std::string name, std::string value) : name(name), value(value) {}
 };
 
-struct DirtyDOMPlaintextNode {
-  std::string contents;
+// struct DirtyDOMPlaintextNode {
+//   std::string contents;
 
-  DirtyDOMPlaintextNode() {}
+//   DirtyDOMPlaintextNode() {}
 
-  DirtyDOMPlaintextNode(std::string contents) : contents(contents) {}
-};
+//   DirtyDOMPlaintextNode(std::string contents) : contents(contents) {}
+// };
 
 struct DirtyDOMNode;
 
@@ -52,13 +55,13 @@ struct DirtyDOM {
   void add_top_level_node(DirtyDOMNode node);
 };
 
-struct Plaintext {
-  std::string contents;
+// struct Plaintext {
+//   std::string contents;
 
-  Plaintext() {}
+//   Plaintext() {}
 
-  Plaintext(std::string contents) : contents(contents) {}
-};
+//   Plaintext(std::string contents) : contents(contents) {}
+// };
 
 struct Tag {
   std::string name;
