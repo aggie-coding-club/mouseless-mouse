@@ -15,6 +15,8 @@
 #include "io.h"
 #include "pages.h"
 #include "power.h"
+#include "3ml_parser.h"
+#include "3ml_cleaner.h"
 
 #include "ICM_20948.h"
 
@@ -33,10 +35,14 @@
 constexpr signed char SENSITIVITY = 24;
 
 #ifndef NO_SENSOR
-const uint16_t ACCENT_COLOR = 0x461F;                   // TFT_eSPI::color565(64, 192, 255)
+uint16_t ACCENT_COLOR = 0x461F;                   // TFT_eSPI::color565(64, 192, 255)
 #else
-const uint16_t ACCENT_COLOR = 0xF000;
+uint16_t ACCENT_COLOR = 0xF000;
 #endif
+
+uint16_t TEXT_COLOR = TFT_WHITE;                  // Color of menu text
+uint16_t SEL_COLOR = ACCENT_COLOR >> 1 & ~0x0410; // Equivalent to lerp(ACCENT_COLOR, TFT_BLACK, 0.5)
+uint16_t BGND_COLOR = TFT_BLACK;                  // Color of background
 
 // Mouse logic globals
 #ifndef NO_SENSOR
@@ -118,9 +124,33 @@ TouchPadInstance calibrateButton =
     mouseEvent_t::CALIBRATE_RELEASE
   );
 
+// YaY cOlOrFuL cOlOrS
+byte triFromTheta(byte theta) {
+  if (theta > 170) return 0;
+  if (theta > 85) return 3 * (170 - theta);
+  return 3 * theta;
+}
+uint16_t hsv_rgb565(byte theta) {
+  uint16_t r = triFromTheta(theta + 85);
+  uint16_t g = triFromTheta(theta);
+  uint16_t b = triFromTheta(theta + 170);
+  return (r << 8 & 0xF800) | (g << 3 & 0x07E0) | (b >> 3);
+}
+
+void modifyHue(byte newHue) {
+  ACCENT_COLOR = hsv_rgb565(newHue << 4);
+  // Serial.printf("New accent color is %06X\n", ACCENT_COLOR);
+  SEL_COLOR = ACCENT_COLOR >> 1 & ~0x0410; // Equivalent to lerp(ACCENT_COLOR, TFT_BLACK, 0.5)
+}
+
 char *dummyField = new char[32];
 
 // Instantiate display page hierarchy
+InlineSlider themeColorSlider(&display, &displayManager, "Theme Color", modifyHue);
+MenuPage settingsPage(&display, &displayManager, "Settings",
+  &themeColorSlider
+);
+
 InputDisplay inputViewPage(&display, &displayManager, "Input");
 DebugPage debugPage(&display, &displayManager, "Debug Page");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
@@ -128,6 +158,7 @@ ConfirmationPage confirm(&display, &displayManager, "Power Off");
 MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
   &inputViewPage,
   &debugPage,
+  &settingsPage,
   keyboard(dummyField),
   confirm("Are you sure?", deepSleep)
 );
@@ -263,6 +294,15 @@ float normalizeMouseMovement(float axisValue) {
   }
 }
 
+void recPrintDomNode(DOMNode node, int8_t indentation) {
+  for (int8_t i = indentation; i > 0; --i) Serial.print("  ");
+  Serial.printf("Node of type %i - Plaintext content: %s\n", (byte)node.type, node.plaintext_content.c_str());
+  for (DOMNode child : node.children) recPrintDomNode(child, indentation + 1);
+}
+
+void printDom(DOM dom) {
+  for (DOMNode node : dom.top_level_nodes) recPrintDomNode(node, 0);
+}
 
 //Code to run once on start up
 
@@ -363,6 +403,21 @@ void setup() {
   // Attach button interrupts
   upButton.attach();
   downButton.attach();
+
+  Serial.println("Parsing sample DOM...");
+
+  const char* sampleDOM = R"DOM(
+    <head>
+    </head>
+    <body>
+      <h1>Hello, World!</h1>
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+    </body>
+  )DOM";
+
+  DOM test = clean_dom(parse_string(sampleDOM));
+  printDom(test);
+
 }
 
 
