@@ -15,6 +15,8 @@
 #include "io.h"
 #include "pages.h"
 #include "power.h"
+#include "3ml_parser.h"
+#include "3ml_cleaner.h"
 
 #include "ICM_20948.h"
 
@@ -295,6 +297,15 @@ float normalizeMouseMovement(float axisValue) {
   }
 }
 
+void recPrintDomNode(DOMNode node, int8_t indentation) {
+  for (int8_t i = indentation; i > 0; --i) Serial.print("  ");
+  Serial.printf("Node of type %i - Plaintext content: %s\n", (byte)node.type, node.plaintext_content.c_str());
+  for (DOMNode child : node.children) recPrintDomNode(child, indentation + 1);
+}
+
+void printDom(DOM dom) {
+  for (DOMNode node : dom.top_level_nodes) recPrintDomNode(node, 0);
+}
 
 //Code to run once on start up
 
@@ -395,6 +406,21 @@ void setup() {
   // Attach button interrupts
   upButton.attach();
   downButton.attach();
+
+  Serial.println("Parsing sample DOM...");
+
+  const char* sampleDOM = R"DOM(
+    <head>
+    </head>
+    <body>
+      <h1>Hello, World!</h1>
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+    </body>
+  )DOM";
+
+  DOM test = clean_dom(parse_string(sampleDOM));
+  printDom(test);
+
 }
 
 
