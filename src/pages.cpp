@@ -262,6 +262,7 @@ void InputDisplay::onMouseEvent(mouseEvent_t event) {
 // Handle relevant navigation events
 void InputDisplay::onEvent(pageEvent_t event) {
   if (event == pageEvent_t::NAV_CANCEL)
+
     displayManager->pageStack.pop();
 }
 

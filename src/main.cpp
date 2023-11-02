@@ -49,10 +49,7 @@ uint16_t BGND_COLOR = TFT_BLACK;                  // Color of background
 ICM_20948_I2C icm;
 #endif
 
-// Bluetooth interface class instance
-BleMouse mouse("Mouseless Mouse", "Mouseless Team");
-
-// Vectors to hold position data
+BleMouse mouse("Mouseless Mouse " __TIME__, "Mouseless Team");
 Eigen::Vector3f calibratedPosX;
 Eigen::Vector3f calibratedPosZ;
 
