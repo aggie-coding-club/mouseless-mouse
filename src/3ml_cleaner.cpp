@@ -2,6 +2,8 @@
 #include <Arduino.h>
 #include <cassert>
 
+namespace threeml {
+
 void DOMNode::add_child(DOMNode child) {
   if (child.type == NodeType::PLAINTEXT && child.plaintext_content.empty()) {
     return;
@@ -68,4 +70,6 @@ DOM clean_dom(DirtyDOM dirty) {
     }
   }
   return result;
+}
+
 }

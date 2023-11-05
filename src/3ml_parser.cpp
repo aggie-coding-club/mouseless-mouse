@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+namespace threeml {
+
 void DirtyDOMTagNode::add_child(DirtyDOMNode child) { children.push_back(child); }
 
 void DirtyDOM::add_top_level_node(DirtyDOMNode node) { top_level_nodes.push_back(node); }
@@ -158,3 +160,5 @@ DirtyDOM parse_string(const char *str) {
 
   return DirtyDOM(top_level_nodes);
 }
+
+} // namespace threeml

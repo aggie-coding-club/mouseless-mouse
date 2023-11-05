@@ -3,8 +3,10 @@
 #include <string>
 #include <vector>
 
-typedef std::string DirtyDOMPlaintextNode;
-typedef std::string Plaintext;
+namespace threeml {
+
+using DirtyDOMPlaintextNode = std::string;
+using Plaintext = std::string;
 
 struct Attribute {
   std::string name;
@@ -12,14 +14,6 @@ struct Attribute {
 
   Attribute(std::string name, std::string value) : name(name), value(value) {}
 };
-
-// struct DirtyDOMPlaintextNode {
-//   std::string contents;
-
-//   DirtyDOMPlaintextNode() {}
-
-//   DirtyDOMPlaintextNode(std::string contents) : contents(contents) {}
-// };
 
 struct DirtyDOMNode;
 
@@ -89,3 +83,5 @@ Tag parse_tag(char **cursor);
 std::string remove_escape_codes(std::string escaped);
 std::string trim(std::string untrimmed);
 DirtyDOM parse_string(const char *str);
+
+}

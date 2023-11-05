@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+namespace threeml {
+
 enum class NodeType { PLAINTEXT, TITLE, DIV, HEAD, BODY, SCRIPT, H1, A, BUTTON, INPUT_NODE };
 
 struct DOMNode {
@@ -28,3 +30,5 @@ struct DOM {
 
 DOMNode clean_node(DirtyDOMNode dirty);
 DOM clean_dom(DirtyDOM dirty);
+
+}
