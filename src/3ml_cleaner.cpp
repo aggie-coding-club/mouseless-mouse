@@ -1,5 +1,5 @@
 #include "3ml_cleaner.h"
-#include <Arduino.h>
+#include "3ml_error.h"
 #include <cassert>
 
 namespace threeml {
@@ -8,15 +8,19 @@ void DOMNode::add_child(DOMNode child) {
   if (child.type == NodeType::PLAINTEXT && child.plaintext_content.empty()) {
     return;
   }
-  assert(type != NodeType::PLAINTEXT);
-  assert(type != NodeType::DIV);
-  assert(type != NodeType::SCRIPT);
-  if (type == NodeType::TITLE || type == NodeType::H1 || type == NodeType::A || type == NodeType::BUTTON) {
-    assert(children.empty() && child.type == NodeType::PLAINTEXT);
+  maybe_error(child.type == NodeType::PLAINTEXT, "plaintext nodes cannot have children");
+  maybe_error(child.type == NodeType::DIV, "div nodes cannot have children");
+  maybe_error(child.type == NodeType::SCRIPT, "script nodes cannot have children");
+  if (child.type == NodeType::TITLE || child.type == NodeType::H1 || child.type == NodeType::A ||
+      child.type == NodeType::BUTTON) {
+    maybe_error(!children.empty() || child.type != NodeType::PLAINTEXT,
+                "title, h1, a, and button nodes can only have one child and it must be a plaintext node");
   } else if (type == NodeType::HEAD) {
-    assert(child.type == NodeType::SCRIPT || child.type == NodeType::TITLE);
+    maybe_error(child.type != NodeType::SCRIPT && child.type != NodeType::TITLE,
+                "only title and script nodes can be children of a head node");
   } else if (type == NodeType::BODY) {
-    assert(child.type != NodeType::SCRIPT && child.type != NodeType::TITLE);
+    maybe_error(child.type == NodeType::SCRIPT || child.type == NodeType::TITLE,
+                "title and script nodes cannot be children of a body node");
   }
   children.push_back(child);
 }
@@ -25,7 +29,8 @@ void DOM::add_top_level_node(DOMNode node) {
   if (node.type == NodeType::PLAINTEXT && node.plaintext_content.empty()) {
     return;
   }
-  assert(node.type == NodeType::HEAD || node.type == NodeType::BODY);
+  maybe_error(node.type != NodeType::HEAD && node.type != NodeType::BODY,
+              "top-level DOM nodes must be either head or body nodes");
   top_level_nodes.push_back(node);
 }
 
@@ -53,7 +58,7 @@ DOMNode clean_node(DirtyDOMNode dirty) {
   } else if (dirty.tag_node.tag_name == "input") {
     type = NodeType::INPUT_NODE;
   } else {
-    assert(false);
+    maybe_error(true, "invalid tag name");
   }
   auto result = DOMNode(type, dirty.tag_node.attributes, std::vector<DOMNode>());
   for (auto child : dirty.tag_node.children) {
@@ -72,4 +77,4 @@ DOM clean_dom(DirtyDOM dirty) {
   return result;
 }
 
-}
+} // namespace threeml
