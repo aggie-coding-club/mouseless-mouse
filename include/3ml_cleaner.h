@@ -1,4 +1,5 @@
-#pragma once
+#ifndef THREEML_CLEANER_H
+#define THREEML_CLEANER_H
 
 #include "3ml_parser.h"
 #include <string>
@@ -32,3 +33,5 @@ DOMNode clean_node(DirtyDOMNode dirty);
 DOM clean_dom(DirtyDOM dirty);
 
 }
+
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef THREEML_PARSER_H
+#define THREEML_PARSER_H
 
 #include <string>
 #include <vector>
@@ -76,4 +77,6 @@ std::string remove_escape_codes(std::string escaped);
 std::string trim(std::string untrimmed);
 DirtyDOM parse_string(const char *str);
 
-}
+} // namespace threeml
+
+#endif

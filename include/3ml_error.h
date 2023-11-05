@@ -1,3 +1,6 @@
+#ifndef THREEML_ERROR_H
+#define THREEML_ERROR_H
+
 #include <Arduino.h>
 #include <cstdint>
 
@@ -20,3 +23,5 @@ bool maybe_warn(bool condition, const char *warning_msg, const char *filename = 
                 std::size_t lineno = 0) noexcept;
 
 } // namespace threeml
+
+#endif
