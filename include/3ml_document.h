@@ -1,12 +1,15 @@
 #ifndef THREEML_DOCUMENT_H
 #define THREEML_DOCUMENT_H
 
+#include "3ml_app.h"
 #include "3ml_cleaner.h"
 #include "display.h"
 #include <string>
 #include <vector>
 
 namespace threeml {
+
+class App;
 
 using PlaintextData = std::string;
 struct ButtonData {
