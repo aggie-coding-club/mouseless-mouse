@@ -11,12 +11,12 @@
 #include <cstdint>
 #include <esp32/rom/spi_flash.h>
 
+#include "3ml_cleaner.h"
+#include "3ml_parser.h"
 #include "display.h"
 #include "io.h"
 #include "pages.h"
 #include "power.h"
-#include "3ml_parser.h"
-#include "3ml_cleaner.h"
 
 #include "ICM_20948.h"
 
@@ -35,7 +35,7 @@
 constexpr signed char SENSITIVITY = 24;
 
 #ifndef NO_SENSOR
-uint16_t ACCENT_COLOR = 0x461F;                   // TFT_eSPI::color565(64, 192, 255)
+uint16_t ACCENT_COLOR = 0x461F; // TFT_eSPI::color565(64, 192, 255)
 #else
 uint16_t ACCENT_COLOR = 0xF000;
 #endif
@@ -72,62 +72,35 @@ Display display(&tftDisplay, &bufferA, &bufferB);
 DisplayManager displayManager(&display);
 
 // Button instantiation
-Button upButton(
-  0,                          // Pin
-  displayManager.eventQueue,  // Event queue
-  pageEvent_t::NAV_PRESS,     // Event sent on press
-  pageEvent_t::NAV_DOWN,      // Event sent on short release
-  pageEvent_t::NAV_SELECT     // Event sent on long release
+Button upButton(0,                         // Pin
+                displayManager.eventQueue, // Event queue
+                pageEvent_t::NAV_PRESS,    // Event sent on press
+                pageEvent_t::NAV_DOWN,     // Event sent on short release
+                pageEvent_t::NAV_SELECT    // Event sent on long release
 );
-Button downButton(
-  35,
-  displayManager.eventQueue,
-  pageEvent_t::NAV_PRESS,
-  pageEvent_t::NAV_UP,
-  pageEvent_t::NAV_CANCEL
-);
+Button downButton(35, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
 
 // Touch button instantiation
-TouchPadInstance lMouseButton =
-  TouchPad(
-    LMB_TOUCH_CHANNEL,        // Touch controller channel
-    mouseEvents,              // Event queue
-    mouseEvent_t::LMB_PRESS,  // Event sent on press
-    mouseEvent_t::LMB_RELEASE // Event sent on release
-  );
+TouchPadInstance lMouseButton = TouchPad(LMB_TOUCH_CHANNEL,        // Touch controller channel
+                                         mouseEvents,              // Event queue
+                                         mouseEvent_t::LMB_PRESS,  // Event sent on press
+                                         mouseEvent_t::LMB_RELEASE // Event sent on release
+);
 TouchPadInstance rMouseButton =
-  TouchPad(
-    RMB_TOUCH_CHANNEL,
-    mouseEvents,
-    mouseEvent_t::RMB_PRESS,
-    mouseEvent_t::RMB_RELEASE
-  );
+    TouchPad(RMB_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::RMB_PRESS, mouseEvent_t::RMB_RELEASE);
 TouchPadInstance scrollButton =
-  TouchPad(
-    SCROLL_TOUCH_CHANNEL,
-    mouseEvents,
-    mouseEvent_t::SCROLL_PRESS,
-    mouseEvent_t::SCROLL_RELEASE
-  );
+    TouchPad(SCROLL_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::SCROLL_PRESS, mouseEvent_t::SCROLL_RELEASE);
 TouchPadInstance lockButton =
-  TouchPad(
-    LOCK_TOUCH_CHANNEL,
-    mouseEvents,
-    mouseEvent_t::LOCK_PRESS,
-    mouseEvent_t::LOCK_RELEASE
-  );
+    TouchPad(LOCK_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::LOCK_PRESS, mouseEvent_t::LOCK_RELEASE);
 TouchPadInstance calibrateButton =
-  TouchPad(
-    CALIBRATE_TOUCH_CHANNEL,
-    mouseEvents,
-    mouseEvent_t::CALIBRATE_PRESS,
-    mouseEvent_t::CALIBRATE_RELEASE
-  );
+    TouchPad(CALIBRATE_TOUCH_CHANNEL, mouseEvents, mouseEvent_t::CALIBRATE_PRESS, mouseEvent_t::CALIBRATE_RELEASE);
 
 // YaY cOlOrFuL cOlOrS
 byte triFromTheta(byte theta) {
-  if (theta > 170) return 0;
-  if (theta > 85) return 3 * (170 - theta);
+  if (theta > 170)
+    return 0;
+  if (theta > 85)
+    return 3 * (170 - theta);
   return 3 * theta;
 }
 uint16_t hsv_rgb565(byte theta) {
@@ -147,32 +120,21 @@ char *dummyField = new char[32];
 
 // Instantiate display page hierarchy
 InlineSlider themeColorSlider(&display, &displayManager, "Theme Color", modifyHue);
-MenuPage settingsPage(&display, &displayManager, "Settings",
-  &themeColorSlider
-);
+MenuPage settingsPage(&display, &displayManager, "Settings", &themeColorSlider);
 
 InputDisplay inputViewPage(&display, &displayManager, "Input");
 DebugPage debugPage(&display, &displayManager, "Debug Page");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
-MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
-  &inputViewPage,
-  &debugPage,
-  &settingsPage,
-  keyboard(dummyField),
-  confirm("Are you sure?", deepSleep)
-);
+MenuPage mainMenuPage(&display, &displayManager, "Main Menu", &inputViewPage, &debugPage, &settingsPage,
+                      keyboard(dummyField), confirm("Are you sure?", deepSleep));
 HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 
 // Keep track of which mouse functions are active
 bool mouseEnableState = true;
 bool scrollEnableState = false;
 
-
-
-//Start of Orientation detection
-
-
+// Start of Orientation detection
 
 /// @brief Filter to smooth values using a rolling average.
 /// @tparam T The type of the values to be smoothed.
@@ -224,19 +186,13 @@ public:
   adjusted_north.normalize();
   Eigen::Vector3f east = adjusted_north.cross(up.get());
   return Eigen::Vector3f{
-    east.dot(vec),
-    adjusted_north.dot(vec),
-    up.get().dot(vec),
+      east.dot(vec),
+      adjusted_north.dot(vec),
+      up.get().dot(vec),
   };
 }
 
-
-//End of Mouse orientation detection
-
-
-
-
-
+// End of Mouse orientation detection
 
 // Use the ADC to read the battery voltage - convert result to a percentage
 int16_t getBatteryPercentage() {
@@ -267,11 +223,10 @@ void drawTask(void *pvParameters) {
     // RIP spinny line, gone but not forgotten
     // display.buffer->drawLine(210, 40, 210 + 10 * cos(frame / 10.0), 40 + 10 * sin(frame / 10.0), TFT_CYAN);
     if (displayManager.upButton->isPressed || displayManager.downButton->isPressed) {
-        Button *activeButton =
-            displayManager.upButton->isPressed ? displayManager.upButton : displayManager.downButton;
-        display.drawNavArrow(210, 40, displayManager.upButton->isPressed,
-                              pow(millis() - activeButton->pressTimestamp, 2) / pow(LONGPRESS_TIME, 2), ACCENT_COLOR,
-                              SEL_COLOR);
+      Button *activeButton = displayManager.upButton->isPressed ? displayManager.upButton : displayManager.downButton;
+      display.drawNavArrow(210, 40, displayManager.upButton->isPressed,
+                           pow(millis() - activeButton->pressTimestamp, 2) / pow(LONGPRESS_TIME, 2), ACCENT_COLOR,
+                           SEL_COLOR);
     }
 
     display.pushChanges();
@@ -294,17 +249,20 @@ float normalizeMouseMovement(float axisValue) {
   }
 }
 
-void recPrintDomNode(DOMNode node, int8_t indentation) {
-  for (int8_t i = indentation; i > 0; --i) Serial.print("  ");
+void recPrintDomNode(threeml::DOMNode node, int8_t indentation) {
+  for (int8_t i = indentation; i > 0; --i)
+    Serial.print("  ");
   Serial.printf("Node of type %i - Plaintext content: %s\n", (byte)node.type, node.plaintext_content.c_str());
-  for (DOMNode child : node.children) recPrintDomNode(child, indentation + 1);
+  for (threeml::DOMNode child : node.children)
+    recPrintDomNode(child, indentation + 1);
 }
 
-void printDom(DOM dom) {
-  for (DOMNode node : dom.top_level_nodes) recPrintDomNode(node, 0);
+void printDom(threeml::DOM dom) {
+  for (threeml::DOMNode node : dom.top_level_nodes)
+    recPrintDomNode(node, 0);
 }
 
-//Code to run once on start up
+// Code to run once on start up
 
 void setup() {
   // Begin serial and logging
@@ -337,7 +295,7 @@ void setup() {
     Serial.read();
   }
 
-  //Initialize Mouse orientation detection
+  // Initialize Mouse orientation detection
   icm.getAGMT();
   calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
   calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
@@ -348,9 +306,8 @@ void setup() {
   if (!LittleFS.begin()) {
     LittleFS.begin(true); // Format the filesystem if it failed to mount
     // This can happen on the first upload or when the partition scheme is changed
-    Serial.println("SPIFFS had to be formatted before mounting - data lost."); 
-  } 
-  else {
+    Serial.println("SPIFFS had to be formatted before mounting - data lost.");
+  } else {
     // Just reupload the filesystem image - this is different from uploading the program
     Serial.println("LittleFS Tree"); // Directory listing
     File root = LittleFS.open("/");
@@ -382,14 +339,13 @@ void setup() {
   Serial.printf("Flash size is %i\n", 2 << (id - 1));
 
   // Dispatch the display drawing task
-  xTaskCreatePinnedToCore(
-    drawTask,        // Task code is in the drawTask() function
-    "Draw Task",     // Descriptive task name
-    4000,            // Stack depth
-    NULL,            // Parameter to function (unnecessary here)
-    1,               // Task priority
-    &drawTaskHandle, // Variable to hold new task handle
-    1                // Pin the task to the core that doesn't handle WiFi/Bluetooth
+  xTaskCreatePinnedToCore(drawTask,        // Task code is in the drawTask() function
+                          "Draw Task",     // Descriptive task name
+                          4000,            // Stack depth
+                          NULL,            // Parameter to function (unnecessary here)
+                          1,               // Task priority
+                          &drawTaskHandle, // Variable to hold new task handle
+                          1                // Pin the task to the core that doesn't handle WiFi/Bluetooth
   );
 
   // If we just woke up from deep sleep, don't attach the buttons until the user lets go
@@ -406,7 +362,7 @@ void setup() {
 
   Serial.println("Parsing sample DOM...");
 
-  const char* sampleDOM = R"DOM(
+  const char *sampleDOM = R"DOM(
     <head>
     </head>
     <body>
@@ -415,21 +371,19 @@ void setup() {
     </body>
   )DOM";
 
-  DOM test = clean_dom(parse_string(sampleDOM));
+  threeml::DOM test = threeml::clean_dom(threeml::parse_string(sampleDOM));
   printDom(test);
-
 }
 
-
-//Code to constantly run
+// Code to constantly run
 
 void loop() {
   // Relay test messages from touch pads to Serial
   if (uxQueueMessagesWaiting(mouseEvents)) {
     mouseEvent_t messageReceived;
     xQueueReceive(mouseEvents, &messageReceived, 0);
-    inputViewPage.onMouseEvent(messageReceived);  // Update input view page
-    if (mouseEnableState) {//If there is a button event
+    inputViewPage.onMouseEvent(messageReceived); // Update input view page
+    if (mouseEnableState) {                      // If there is a button event
       switch (messageReceived) {
       case mouseEvent_t::LMB_PRESS:
         Serial.println("LMB_PRESS");
@@ -471,8 +425,7 @@ void loop() {
       default:
         break;
       }
-    }
-    else {  // Check only for this event type if the mouse is not enabled
+    } else { // Check only for this event type if the mouse is not enabled
       if (messageReceived == mouseEvent_t::LOCK_PRESS) {
         Serial.println("ENABLED");
         mouseEnableState = !mouseEnableState;
