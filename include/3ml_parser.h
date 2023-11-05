@@ -49,14 +49,6 @@ struct DirtyDOM {
   void add_top_level_node(DirtyDOMNode node);
 };
 
-// struct Plaintext {
-//   std::string contents;
-
-//   Plaintext() {}
-
-//   Plaintext(std::string contents) : contents(contents) {}
-// };
-
 struct Tag {
   std::string name;
   std::vector<Attribute> attributes;
@@ -78,8 +70,8 @@ struct ParseNode {
   ParseNode(Plaintext plaintext) : plaintext(plaintext), is_tag(false) {}
 };
 
-Attribute parse_attribute(char **cursor);
-Tag parse_tag(char **cursor);
+Attribute parse_attribute(char *&cursor);
+Tag parse_tag(char *&cursor);
 std::string remove_escape_codes(std::string escaped);
 std::string trim(std::string untrimmed);
 DirtyDOM parse_string(const char *str);
