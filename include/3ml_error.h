@@ -3,14 +3,14 @@
 
 namespace threeml {
 
-/// @brief If a condition fails, print an error message to Serial and enter an infinite loop.
+/// @brief If a condition is true, print an error message to Serial and enter an infinite loop.
 /// @param condition The condition to check
 /// @param error_msg The error message to print to Serial
 /// @param filename Optionally, the name of the file where the error was encountered
 /// @param lineno Optionally, the line number where the error was encountered
 [[noreturn]] void maybe_error(bool condition, const char *error_msg, const char *filename = nullptr,
                               std::size_t lineno = 0) noexcept;
-/// @brief If a condition fails, print a warning message to Serial.
+/// @brief If a condition is true, print a warning message to Serial.
 /// @param condition The condition to check
 /// @param warning_msg The warning message to print to Serial
 /// @param filename Optionally, the name of the file where the warning was triggered

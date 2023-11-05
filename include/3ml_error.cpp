@@ -3,7 +3,7 @@
 namespace threeml {
 
 void maybe_error(bool condition, const char *error_msg, const char *filename, std::size_t lineno) noexcept {
-  if (condition) {
+  if (!condition) {
     return;
   }
 
@@ -21,7 +21,7 @@ void maybe_error(bool condition, const char *error_msg, const char *filename, st
 }
 
 bool maybe_warn(bool condition, const char *warning_msg, const char *filename, std::size_t lineno) noexcept {
-  if (condition) {
+  if (!condition) {
     return;
   }
 
@@ -34,7 +34,7 @@ bool maybe_warn(bool condition, const char *warning_msg, const char *filename, s
   }
   Serial.printf(": %s\n", warning_msg);
 
-  return !condition;
+  return condition;
 }
 
 } // namespace threeml
