@@ -11,7 +11,7 @@ namespace threeml {
 /// @param error_msg The error message to print to Serial
 /// @param filename Optionally, the name of the file where the error was encountered
 /// @param lineno Optionally, the line number where the error was encountered
-[[noreturn]] void maybe_error(bool condition, const char *error_msg, const char *filename = nullptr,
+void maybe_error(bool condition, const char *error_msg, const char *filename = nullptr,
                               std::size_t lineno = 0) noexcept;
 /// @brief If a condition is true, print a warning message to Serial.
 /// @param condition The condition to check
