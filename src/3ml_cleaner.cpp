@@ -9,7 +9,6 @@ void DOMNode::add_child(DOMNode child) {
     return;
   }
   maybe_error(type == NodeType::PLAINTEXT, "plaintext nodes cannot have children");
-  maybe_error(type == NodeType::DIV, "div nodes cannot have children");
   maybe_error(type == NodeType::SCRIPT, "script nodes cannot have children");
   if (type == NodeType::TITLE || type == NodeType::H1 || type == NodeType::A ||
       type == NodeType::BUTTON) {
