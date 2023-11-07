@@ -22,7 +22,7 @@ void maybe_error(bool condition, const char *error_msg, const char *filename, st
 
 bool maybe_warn(bool condition, const char *warning_msg, const char *filename, std::size_t lineno) noexcept {
   if (!condition) {
-    return;
+    return condition;
   }
 
   Serial.print("WARNING EMITTED");
