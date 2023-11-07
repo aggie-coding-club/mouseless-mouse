@@ -34,7 +34,7 @@ Attribute parse_attribute(const char *&cursor) {
   cursor++;
   const char *value_begin = cursor;
   while (*cursor != '"' && *cursor != '\0') {
-    maybe_error(!std::isprint(*cursor), "unprintable character in string");
+    maybe_error(!std::isprint(*cursor) && !std::isspace(*cursor), "unprintable character in string");
     maybe_error(*cursor == '\n', "expected closing quote, found newline");
     cursor++;
   }
@@ -109,7 +109,7 @@ std::string remove_escape_codes(std::string escaped) {
       current_escape_num += c - '0';
       maybe_error(current_escape_num >= 256, "escape code not valid ASCII");
     } else if (in_escape_code && c == ';') {
-      maybe_error(!std::isprint(current_escape_num), "unprintable escape code");
+      maybe_error(!std::isprint(current_escape_num) && !std::isspace(current_escape_num), "unprintable escape code");
       maybe_error(expect_hashtag, "empty escape code");
       in_escape_code = false;
       result.push_back(static_cast<char>(current_escape_num));
@@ -145,7 +145,7 @@ DirtyDOM parse_string(const char *str) {
     if (is_normal_mode) {
       const char *plaintext_begin = cursor;
       while (*cursor != '<' && *cursor != '\0') {
-        maybe_error(!std::isprint(*cursor), "unprintable character in plaintext");
+        maybe_error(!std::isprint(*cursor) && !isspace(*cursor), "unprintable character in plaintext");
         cursor++;
       }
       std::string processed = trim(remove_escape_codes(std::string(plaintext_begin, cursor - plaintext_begin)));
