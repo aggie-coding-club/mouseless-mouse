@@ -8,11 +8,11 @@ void DOMNode::add_child(DOMNode child) {
   if (child.type == NodeType::PLAINTEXT && child.plaintext_content.empty()) {
     return;
   }
-  maybe_error(child.type == NodeType::PLAINTEXT, "plaintext nodes cannot have children");
-  maybe_error(child.type == NodeType::DIV, "div nodes cannot have children");
-  maybe_error(child.type == NodeType::SCRIPT, "script nodes cannot have children");
-  if (child.type == NodeType::TITLE || child.type == NodeType::H1 || child.type == NodeType::A ||
-      child.type == NodeType::BUTTON) {
+  maybe_error(type == NodeType::PLAINTEXT, "plaintext nodes cannot have children");
+  maybe_error(type == NodeType::DIV, "div nodes cannot have children");
+  maybe_error(type == NodeType::SCRIPT, "script nodes cannot have children");
+  if (type == NodeType::TITLE || type == NodeType::H1 || type == NodeType::A ||
+      type == NodeType::BUTTON) {
     maybe_error(!children.empty() || child.type != NodeType::PLAINTEXT,
                 "title, h1, a, and button nodes can only have one child and it must be a plaintext node");
   } else if (type == NodeType::HEAD) {
