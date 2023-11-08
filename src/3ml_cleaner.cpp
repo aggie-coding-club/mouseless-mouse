@@ -214,9 +214,40 @@ SliderData::SliderData(const std::vector<Attribute> &tag_attributes, const std::
       } catch (std::exception _) {
         maybe_error(true, "invalid max value on <input>");
       }
+      max_encountered = true;
     } else if (attribute.name == "oninput") {
+      maybe_error(oninput_encountered, "duplicate oninput attribute on <input>");
+      oninput_callback = attribute.value;
+      oninput_encountered = true;
     }
   }
+  maybe_error(!min_encountered || !max_encountered, "slider inputs need both a min and a max");
+  maybe_error(min >= max, "slider input min must be less than max");
+  value = min;
+}
+
+BodyData::BodyData(const std::vector<Attribute> &tag_attributes, const std::vector<DOMNode> &tag_children) {
+  bool onload_encountered = false;
+  bool onbeforeunload_encountered = false;
+  for (const auto &attribute : tag_attributes) {
+    if (attribute.name == "onload") {
+      maybe_error(onload_encountered, "duplicate onload attribute on <body>");
+      onload_callback = attribute.value;
+      onload_encountered = true;
+    } else if (attribute.name == "onbeforeunload") {
+      maybe_error(onbeforeunload_encountered, "duplicate onbeforeunload attribute on <body>");
+      onbeforeunload_callback = attribute.value;
+      onbeforeunload_encountered = true;
+    } else {
+      maybe_error(true, "invalid attribute on <body>");
+    }
+  }
+}
+
+ScriptData::ScriptData(const std::vector<Attribute> &tag_attributes, const std::vector<DOMNode> &tag_children) {
+  maybe_error(tag_attributes.size() != 1, "invalid or no attribute(s) on <script>");
+  maybe_error(tag_attributes[0].name != "src", "invalid attribute on <script>");
+  script_filename = tag_attributes[0].value;
 }
 
 } // namespace threeml
