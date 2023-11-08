@@ -59,6 +59,8 @@ DOMNode::~DOMNode() {
   case NodeType::SLIDER:
     slider_data.~SliderData();
     break;
+  default:
+    break;
   }
 }
 
@@ -80,6 +82,8 @@ DOMNode::DOMNode(const DOMNode &original) {
     break;
   case NodeType::SLIDER:
     slider_data = original.slider_data;
+    break;
+  default:
     break;
   }
 }
