@@ -1,4 +1,5 @@
 #include "3ml_error.h"
+#include <Arduino.h>
 
 namespace threeml {
 
