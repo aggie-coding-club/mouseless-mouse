@@ -203,7 +203,7 @@ SliderData::SliderData(const std::vector<Attribute> &tag_attributes, const std::
       maybe_error(min_encountered, "duplicate min attribute on <input>");
       try {
         min = std::stoull(attribute.value);
-      } catch (std::exception _) {
+      } catch (std::exception &_) {
         maybe_error(true, "invalid min value on <input>");
       }
       min_encountered = true;
@@ -211,7 +211,7 @@ SliderData::SliderData(const std::vector<Attribute> &tag_attributes, const std::
       maybe_error(max_encountered, "duplicate max attribute on <input>");
       try {
         max = std::stoull(attribute.value);
-      } catch (std::exception _) {
+      } catch (std::exception &_) {
         maybe_error(true, "invalid max value on <input>");
       }
       max_encountered = true;

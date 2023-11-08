@@ -7,6 +7,8 @@
 
 namespace threeml {
 
+struct DOMNode;
+
 enum class NodeType { PLAINTEXT, TITLE, DIV, HEAD, BODY, SCRIPT, H1, A, BUTTON, SLIDER, TEXT_INPUT };
 
 using PlaintextData = std::string;
