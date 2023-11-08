@@ -1,6 +1,7 @@
 #include "3ml_cleaner.h"
 #include "3ml_error.h"
 #include <cassert>
+#include <string>
 
 namespace threeml {
 
@@ -162,6 +163,60 @@ DOM clean_dom(DirtyDOM dirty) {
     }
   }
   return result;
+}
+
+ButtonData::ButtonData(const std::vector<Attribute> &tag_attributes, const std::vector<DOMNode> &tag_children) {
+  maybe_error(tag_attributes.size() != 1, "invalid or no attribute(s) on <button>");
+  maybe_error(tag_attributes[0].name != "onclick", "invalid attribute on <button>");
+  std::string label = "";
+  if (!tag_children.empty()) {
+    label = tag_children[0].plaintext_data;
+  }
+  onclick_callback = tag_attributes[0].value;
+}
+
+LinkData::LinkData(const std::vector<Attribute> &tag_attributes, const std::vector<DOMNode> &tag_children) {
+  maybe_error(tag_attributes.size() != 1, "invalid or no attribute(s) on <a>");
+  maybe_error(tag_attributes[0].name != "href", "invalid attribute on <a>");
+  std::string label = "";
+  if (!tag_children.empty()) {
+    label = tag_children[0].plaintext_data;
+  }
+  points_to = tag_attributes[0].value;
+}
+
+TextInputData::TextInputData(const std::vector<Attribute> &tag_attributes, const std::vector<DOMNode> &tag_children) {
+  maybe_error(tag_attributes.size() > 1, "invalid attribute(s) on <input>");
+  maybe_error(!tag_attributes.empty() && tag_attributes[0].name != "oninput", "invalid attribute on <input>");
+  contents = "";
+  if (!tag_attributes.empty()) {
+    oninput_callback = tag_attributes[0].value;
+  }
+}
+
+SliderData::SliderData(const std::vector<Attribute> &tag_attributes, const std::vector<DOMNode> &tag_children) {
+  bool min_encountered = false;
+  bool max_encountered = false;
+  bool oninput_encountered = false;
+  for (const auto &attribute : tag_attributes) {
+    if (attribute.name == "min") {
+      maybe_error(min_encountered, "duplicate min attribute on <input>");
+      try {
+        min = std::stoull(attribute.value);
+      } catch (std::exception _) {
+        maybe_error(true, "invalid min value on <input>");
+      }
+      min_encountered = true;
+    } else if (attribute.name == "max") {
+      maybe_error(max_encountered, "duplicate max attribute on <input>");
+      try {
+        max = std::stoull(attribute.value);
+      } catch (std::exception _) {
+        maybe_error(true, "invalid max value on <input>");
+      }
+    } else if (attribute.name == "oninput") {
+    }
+  }
 }
 
 } // namespace threeml
