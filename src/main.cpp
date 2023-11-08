@@ -252,7 +252,7 @@ float normalizeMouseMovement(float axisValue) {
 void recPrintDomNode(threeml::DOMNode node, int8_t indentation) {
   for (int8_t i = indentation; i > 0; --i)
     Serial.print("  ");
-  Serial.printf("Node of type %i - Plaintext content: %s\n", (byte)node.type, node.plaintext_content.c_str());
+  Serial.printf("Node of type %i - Plaintext content: %s\n", (byte)node.type, node.plaintext_data.c_str());
   for (threeml::DOMNode child : node.children)
     recPrintDomNode(child, indentation + 1);
 }
