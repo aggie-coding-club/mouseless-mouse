@@ -39,22 +39,24 @@ class Display {
   uint32_t read32(fs::File &f);
 
 public:
-    uint8_t brightness;
-    TFT_eSprite *buffer;
+  uint8_t rotation;
+  uint8_t brightness;
+  TFT_eSprite *buffer;
 
-    Display(TFT_eSPI* tft, TFT_eSprite* bufferA, TFT_eSprite* bufferB);
-    ~Display();
-    void begin();
-    void sleepMode();
-    void dim(uint8_t brightness);
-    void pushChanges();
-    void clear();
-    void flush();
-    void drawBitmapSPIFFS(const char* filename, uint16_t x, uint16_t y);
-    void textFormat(uint8_t size, uint16_t color);
-    void drawStatusBar();
-    void drawNavArrow(uint16_t x, uint16_t y, bool direction, float progress, uint16_t stroke_color, uint16_t bg_color);
-    TFT_eSPI* directAccess();
+  Display(TFT_eSPI* tft, TFT_eSprite* bufferA, TFT_eSprite* bufferB);
+  ~Display();
+  void begin();
+  void swapRotation();
+  void sleepMode();
+  void dim(uint8_t brightness);
+  void pushChanges();
+  void clear();
+  void flush();
+  void drawBitmapSPIFFS(const char* filename, uint16_t x, uint16_t y);
+  void textFormat(uint8_t size, uint16_t color);
+  void drawStatusBar();
+  void drawNavArrow(uint16_t x, uint16_t y, bool direction, float progress, uint16_t stroke_color, uint16_t bg_color);
+  TFT_eSPI* directAccess();
 };
 
 // Types of events that can be sent to the active page

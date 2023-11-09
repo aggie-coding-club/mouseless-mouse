@@ -72,13 +72,13 @@ Display display(&tftDisplay, &bufferA, &bufferB);
 DisplayManager displayManager(&display);
 
 // Button instantiation
-Button upButton(0,                         // Pin
+Button upButton(35,                         // Pin
                 displayManager.eventQueue, // Event queue
                 pageEvent_t::NAV_PRESS,    // Event sent on press
                 pageEvent_t::NAV_DOWN,     // Event sent on short release
                 pageEvent_t::NAV_SELECT    // Event sent on long release
 );
-Button downButton(35, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
+Button downButton(0, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
 
 // Touch button instantiation
 TouchPadInstance lMouseButton = TouchPad(LMB_TOUCH_CHANNEL,        // Touch controller channel
@@ -118,16 +118,36 @@ void modifyHue(byte newHue) {
 
 char *dummyField = new char[32];
 
+void swapBoardRotation() {
+  display.swapRotation();
+  upButton.detach();
+  downButton.detach();
+  byte tmpSwap = upButton.pin;
+  upButton.pin = downButton.pin;
+  downButton.pin = tmpSwap;
+  upButton.attach();
+  downButton.attach();
+}
+
 // Instantiate display page hierarchy
 InlineSlider themeColorSlider(&display, &displayManager, "Theme Color", modifyHue);
-MenuPage settingsPage(&display, &displayManager, "Settings", &themeColorSlider);
+ConfirmationPage flipDisplay(&display, &displayManager, "Swap Rotation");
+MenuPage settingsPage(&display, &displayManager, "Settings",
+  &themeColorSlider,
+  flipDisplay("Are you sure?", swapBoardRotation)
+);
 
 InputDisplay inputViewPage(&display, &displayManager, "Input");
 DebugPage debugPage(&display, &displayManager, "Debug Page");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
-MenuPage mainMenuPage(&display, &displayManager, "Main Menu", &inputViewPage, &debugPage, &settingsPage,
-                      keyboard(dummyField), confirm("Are you sure?", deepSleep));
+MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
+  &inputViewPage,
+  &debugPage,
+  &settingsPage,
+  keyboard(dummyField),
+  confirm("Are you sure?", deepSleep)
+);
 HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 
 // Keep track of which mouse functions are active
@@ -362,17 +382,17 @@ void setup() {
 
   Serial.println("Parsing sample DOM...");
 
-  const char *sampleDOM = R"DOM(
-    <head>
-    </head>
-    <body>
-      <h1>Hello, World!</h1>
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-    </body>
-  )DOM";
+  // const char *sampleDOM = R"DOM(
+  //   <head>
+  //   </head>
+  //   <body>
+  //     <h1>Hello, World!</h1>
+  //     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+  //   </body>
+  // )DOM";
 
-  threeml::DOM test = threeml::clean_dom(threeml::parse_string(sampleDOM));
-  printDom(test);
+  // threeml::DOM test = threeml::clean_dom(threeml::parse_string(sampleDOM));
+  // printDom(test);
 }
 
 // Code to constantly run

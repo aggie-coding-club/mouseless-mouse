@@ -174,11 +174,10 @@ void ConfirmationPage::draw() {
 // Event handling for the confirmation page
 void ConfirmationPage::onEvent(pageEvent_t event) {
   switch (event) {
-    case pageEvent_t::NAV_CANCEL:
-      displayManager->pageStack.pop();
-      break;
     case pageEvent_t::NAV_SELECT:
       callback();
+    case pageEvent_t::NAV_CANCEL:
+      displayManager->pageStack.pop();
       break;
     default:
       break;

@@ -13,6 +13,7 @@ Display::Display(TFT_eSPI *tft, TFT_eSprite *bufferA, TFT_eSprite *bufferB)
     , bufferB(bufferB)
     , fillColor(TFT_WHITE)
     , strokeColor(TFT_WHITE)
+    , rotation(3)
     , brightness(0)
     , buffer(bufferA)
 {
@@ -52,12 +53,17 @@ void Display::begin() {
   }
   tft->init();
   tft->initDMA();
-  tft->setRotation(1); // Landscape, buttons on the right
+  tft->setRotation(rotation); // Landscape, buttons on the right
   tft->fillScreen(TFT_BLACK);
   ledcAttachPin(BACKLIGHT_PIN, PWM_CHANNEL); // Attach the display's backlight to an LED controller channel
   ledcSetup(PWM_CHANNEL, 20000, 8);          // 20 kHz PWM, 8 bit resolution
   ledcWrite(PWM_CHANNEL, BRIGHT_BRIGHTNESS); // This little backlight of mine, I'm gonna let it shine
   brightness = BRIGHT_BRIGHTNESS;            // Update brightness tracker
+}
+
+// Swap the rotation of the TFT display
+void Display::swapRotation() {
+  tft->setRotation(rotation ^= 2);
 }
 
 // Put the TFT display's controller to sleep
