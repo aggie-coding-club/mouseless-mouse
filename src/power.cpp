@@ -24,7 +24,8 @@ void deepSleep() {
   ulp_ctr = 0;                    // Initialize global ulp variable
   digitalWrite(14, HIGH);
   rtc_gpio_hold_en(GPIO_NUM_14);
-  rtc_gpio_hold_en(GPIO_NUM_0);   // Keep the pullup resistor on pin 0 powered during deep sleep
+  rtc_gpio_hold_en(GPIO_NUM_0);
+  rtc_gpio_hold_en(GPIO_NUM_35);
   adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_DB_11);
   adc1_config_width(ADC_WIDTH_BIT_12);
   adc1_ulp_enable();                 // Configure ADC 1 for use with the ULP coprocessor
@@ -33,6 +34,12 @@ void deepSleep() {
       ulptool_load_binary(0, ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start) / sizeof(uint32_t));
   err = ulp_run((&ulp_entry - RTC_SLOW_MEM) / sizeof(uint32_t));
   (void) err; // Fix -Wunused warning - might want to add error checking eventually
+  if (display.rotation == 1) {    // Keep the pullup resistor on the wake button pin powered during deep sleep
+    ulp_iomask = 2048;
+  }
+  else {
+    ulp_iomask = 32;
+  }
   esp_sleep_enable_ulp_wakeup(); // Allow the ULP to wake the system
   esp_deep_sleep_start();        // Nighty-night
 }
