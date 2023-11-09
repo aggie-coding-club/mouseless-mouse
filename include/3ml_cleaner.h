@@ -77,6 +77,7 @@ struct DOM {
   std::vector<DOMNode> top_level_nodes;
 
   void add_top_level_node(DOMNode node);
+  DOMNode *get_element_by_id(std::string id);
 };
 
 DOMNode clean_node(DirtyDOMNode dirty);

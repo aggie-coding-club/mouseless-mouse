@@ -1,6 +1,7 @@
 #include "3ml_cleaner.h"
 #include "3ml_error.h"
 #include <cassert>
+#include <functional>
 #include <string>
 
 namespace threeml {
@@ -114,6 +115,29 @@ void DOM::add_top_level_node(DOMNode node) {
   maybe_error(node.type != NodeType::HEAD && node.type != NodeType::BODY,
               "top-level DOM nodes must be either head or body nodes");
   top_level_nodes.push_back(node);
+}
+
+DOMNode *DOM::get_element_by_id(std::string id) {
+  // god bless modern c++
+  std::function<DOMNode *(DOMNode &)> search_recursive = [id, &search_recursive](DOMNode &node) {
+    if (node.id == id) {
+      return &node;
+    }
+    for (auto &child : node.children) {
+      auto result = search_recursive(child);
+      if (result != nullptr) {
+        return result;
+      }
+    }
+    return static_cast<DOMNode *>(nullptr);
+  };
+  for (auto &top_level : top_level_nodes) {
+    auto result = search_recursive(top_level);
+    if (result != nullptr) {
+      return result;
+    }
+  }
+  return nullptr;
 }
 
 DOMNode clean_node(DirtyDOMNode dirty) {
