@@ -14,6 +14,7 @@
 #include "3ml_cleaner.h"
 #include "3ml_parser.h"
 #include "display.h"
+#include "gauss_filter.h"
 #include "io.h"
 #include "pages.h"
 #include "power.h"
@@ -21,7 +22,7 @@
 #include "ICM_20948.h"
 
 // Define this if you want to test functionality without an IMU connected
-#define NO_SENSOR
+// #define NO_SENSOR
 
 // Constants
 #define ADC_ENABLE_PIN 14
@@ -47,6 +48,8 @@ uint16_t BGND_COLOR = TFT_BLACK;                  // Color of background
 // Mouse logic globals
 #ifndef NO_SENSOR
 ICM_20948_I2C icm;
+constexpr double MOUSE_SENSITIVITY = 0.004;
+mvmt::GaussianFilter<Eigen::Vector3d> accel_readings(0.025, 2, 0.004, Eigen::Vector3d(0, 0, 0));
 #endif
 
 BleMouse mouse("Mouseless Mouse " __TIME__, "Mouseless Team");
@@ -141,78 +144,13 @@ InputDisplay inputViewPage(&display, &displayManager, "Input");
 DebugPage debugPage(&display, &displayManager, "Debug Page");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
-MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
-  &inputViewPage,
-  &debugPage,
-  &settingsPage,
-  keyboard(dummyField),
-  confirm("Are you sure?", deepSleep)
-);
+MenuPage mainMenuPage(&display, &displayManager, "Main Menu", &inputViewPage, &debugPage, &settingsPage,
+                      keyboard(dummyField), confirm("Are you sure?", deepSleep));
 HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 
 // Keep track of which mouse functions are active
 bool mouseEnableState = true;
 bool scrollEnableState = false;
-
-// Start of Orientation detection
-
-/// @brief Filter to smooth values using a rolling average.
-/// @tparam T The type of the values to be smoothed.
-/// @tparam bufferLength The number of samples to average over.
-template <typename T, std::size_t bufferLength> class RollingAverage {
-private:
-  std::array<T, bufferLength> mBuffer;
-  std::size_t mContentLength = 0;
-  std::size_t mCursor = 0;
-  T mAverage;
-
-public:
-  static_assert(bufferLength != 0);
-
-  /// @brief Pass another value into the rolling average.
-  /// @param next The new value.
-  void update(T next) noexcept {
-    if (mContentLength < bufferLength) {
-      mContentLength++;
-      mAverage *= static_cast<float>(mContentLength - 1) / static_cast<float>(mContentLength);
-    } else {
-      mAverage -= mBuffer[mCursor] / static_cast<float>(mContentLength);
-    }
-    mAverage += next / static_cast<float>(mContentLength);
-    mBuffer[mCursor] = next;
-    mCursor++;
-    if (mCursor >= bufferLength) {
-      mCursor = 0;
-    }
-  }
-  /// @brief Get the latest value in the rolling average buffer.
-  /// @return The rolling average of the last bufferLength values inserted.
-  [[nodiscard]] T get() const noexcept { return mAverage; }
-};
-
-/// @brief Convert a vector from mouse-space to world-space.
-/// @details In mouse-space, +x, +y, and +z are defined in accordance with the accelerometer axes defined in the ICM
-/// 20948 datasheet. In world-space, +x is due east, +y is due north, and +z is straight up.
-/// @param vec The vector in mouse-space.
-/// @param icm A reference to the ICM_20948_I2C object whose orientation data is being used.
-/// @return The equivalent of `vec` in world-space.
-[[nodiscard]] Eigen::Vector3f mouseSpaceToWorldSpace(Eigen::Vector3f vec, ICM_20948_I2C &icm) noexcept {
-  constexpr std::size_t ROLLING_AVG_BUFFER_DEPTH = 8U;
-  static RollingAverage<Eigen::Vector3f, ROLLING_AVG_BUFFER_DEPTH> up;
-  static RollingAverage<Eigen::Vector3f, ROLLING_AVG_BUFFER_DEPTH> north;
-  up.update(Eigen::Vector3f(icm.accX(), icm.accY(), icm.accZ()).normalized());
-  north.update(Eigen::Vector3f(icm.magX(), -icm.magY(), -icm.magZ()).normalized());
-  Eigen::Vector3f adjusted_north = north.get() - (up.get() * up.get().dot(north.get()));
-  adjusted_north.normalize();
-  Eigen::Vector3f east = adjusted_north.cross(up.get());
-  return Eigen::Vector3f{
-      east.dot(vec),
-      adjusted_north.dot(vec),
-      up.get().dot(vec),
-  };
-}
-
-// End of Mouse orientation detection
 
 // Use the ADC to read the battery voltage - convert result to a percentage
 int16_t getBatteryPercentage() {
@@ -255,20 +193,6 @@ void drawTask(void *pvParameters) {
   }
 }
 
-float normalizeMouseMovement(float axisValue) {
-  if (axisValue < -1.0f) {
-    return -1.0f;
-  } else if (axisValue < -0.8f) {
-    return 0.1f * axisValue - 0.9f;
-  } else if (axisValue < -0.2f) {
-    return 1.5f * axisValue + 0.32f;
-  } else if (axisValue < 0.0f) {
-    return 0.4f * axisValue;
-  } else {
-    return -normalizeMouseMovement(-axisValue);
-  }
-}
-
 void recPrintDomNode(threeml::DOMNode node, int8_t indentation) {
   for (int8_t i = indentation; i > 0; --i)
     Serial.print("  ");
@@ -296,32 +220,6 @@ void setup() {
   Wire.setClock(400000);
   mouse.begin();
 
-#ifndef NO_SENSOR
-  for (;;) {
-    icm.begin();
-    if (icm.status != ICM_20948_Stat_Ok) {
-      Serial.printf("ICM initialization failed with error status \"%s\", retrying\n", icm.statusString());
-      delay(500);
-    } else {
-      Serial.printf("ICM initialization successful\n");
-      break;
-    }
-  }
-  while (!icm.dataReady()) {
-    // do nothing
-  }
-
-  while (Serial.available() > 0) {
-    Serial.read();
-  }
-
-  // Initialize Mouse orientation detection
-  icm.getAGMT();
-  calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
-  calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
-  Serial.println("Mouse calibrated!");
-#endif
-
   // Initialize LittleFS
   if (!LittleFS.begin()) {
     LittleFS.begin(true); // Format the filesystem if it failed to mount
@@ -345,9 +243,24 @@ void setup() {
   // Attach touch pad interrupts
   attachTouchPads();
 
+  Serial.println("Hello there!");
+
   // Initialize display
   display.begin();
 
+#ifndef NO_SENSOR
+  for (;;) {
+    if (icm.begin() != ICM_20948_Stat_Ok) {
+      Serial.printf("ICM initialization failed, retrying\n");
+      delay(500);
+    } else {
+      Serial.printf("ICM initialization successful\n");
+      break;
+    }
+  }
+#endif
+
+  Serial.println("I was once an adventurer like you,");
   // Set up display page manager
   displayManager.setHomepage(&homepage);
   displayManager.attachButtons(&upButton, &downButton);
@@ -436,10 +349,6 @@ void loop() {
       case mouseEvent_t::CALIBRATE_PRESS:
         Serial.println("CALIBRATING...");
 #ifndef NO_SENSOR
-        icm.getAGMT();
-        calibratedPosX = mouseSpaceToWorldSpace(Eigen::Vector3f{1.0f, 0.0f, 0.0f}, icm);
-        calibratedPosZ = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 0.0f, 1.0f}, icm);
-        Serial.println("Mouse calibrated!");
 #endif
         break;
       default:
@@ -458,15 +367,14 @@ void loop() {
   // Move the mouse according to incoming IMU data
   if (icm.dataReady() && mouseEnableState) {
     icm.getAGMT();
-    Eigen::Vector3f posY = mouseSpaceToWorldSpace(Eigen::Vector3f{0.0f, 1.0f, 0.0f}, icm);
-    signed char xMovement = normalizeMouseMovement(posY.dot(calibratedPosX)) * 3.0f * SENSITIVITY;
-    signed char zMovement = normalizeMouseMovement(posY.dot(calibratedPosZ)) * SENSITIVITY;
+    accel_readings.add_measurement(Eigen::Vector3d(icm.accX(), icm.accY(), icm.accZ()));
     if (!scrollEnableState) {
-      mouse.move(xMovement, zMovement);
+      mouse.move(accel_readings.get_current().x() * MOUSE_SENSITIVITY,
+                 accel_readings.get_current().y() * MOUSE_SENSITIVITY);
     } else {
-      mouse.move(0, 0, xMovement, zMovement);
+      mouse.move(0, 0, accel_readings.get_current().x(), accel_readings.get_current().y());
     }
-    delay(30);
   }
+  delay(5);
 #endif
 }
