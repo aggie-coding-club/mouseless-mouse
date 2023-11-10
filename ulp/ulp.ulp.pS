@@ -1,6 +1,10 @@
        
        
        
+    .data
+    .global iomask
+iomask:
+    .long 32
     .bss
     .global ctr
 ctr:
@@ -8,9 +12,11 @@ ctr:
     .text
     .global entry
 entry:
+    move r3, iomask
+    ld r2, r3, 0
     move r3, ctr
     REG_RD ((((0x3ff48400 + 0x24)) - 0x3ff48000) / 4), ((14) + (16) - 1), (14)
-    and r0, r0, 2048
+    and r0, r0, r2
     jumpr press, 1, LT
     ld r0, r3, 0
     jumpr nopress, 1, LT

@@ -1,10 +1,13 @@
-#pragma once
+#ifndef THREEML_PARSER_H
+#define THREEML_PARSER_H
 
 #include <string>
 #include <vector>
 
-typedef std::string DirtyDOMPlaintextNode;
-typedef std::string Plaintext;
+namespace threeml {
+
+using DirtyDOMPlaintextNode = std::string;
+using Plaintext = std::string;
 
 struct Attribute {
   std::string name;
@@ -12,14 +15,6 @@ struct Attribute {
 
   Attribute(std::string name, std::string value) : name(name), value(value) {}
 };
-
-// struct DirtyDOMPlaintextNode {
-//   std::string contents;
-
-//   DirtyDOMPlaintextNode() {}
-
-//   DirtyDOMPlaintextNode(std::string contents) : contents(contents) {}
-// };
 
 struct DirtyDOMNode;
 
@@ -55,14 +50,6 @@ struct DirtyDOM {
   void add_top_level_node(DirtyDOMNode node);
 };
 
-// struct Plaintext {
-//   std::string contents;
-
-//   Plaintext() {}
-
-//   Plaintext(std::string contents) : contents(contents) {}
-// };
-
 struct Tag {
   std::string name;
   std::vector<Attribute> attributes;
@@ -84,8 +71,12 @@ struct ParseNode {
   ParseNode(Plaintext plaintext) : plaintext(plaintext), is_tag(false) {}
 };
 
-Attribute parse_attribute(char **cursor);
-Tag parse_tag(char **cursor);
+Attribute parse_attribute(char *&cursor);
+Tag parse_tag(char *&cursor);
 std::string remove_escape_codes(std::string escaped);
 std::string trim(std::string untrimmed);
 DirtyDOM parse_string(const char *str);
+
+} // namespace threeml
+
+#endif

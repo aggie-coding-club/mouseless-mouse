@@ -18,7 +18,6 @@
 #include "io.h"
 #include "pages.h"
 #include "power.h"
-#include "sensor.h"
 
 #include "ICM_20948.h"
 
@@ -76,13 +75,13 @@ Display display(&tftDisplay, &bufferA, &bufferB);
 DisplayManager displayManager(&display);
 
 // Button instantiation
-Button upButton(0,                         // Pin
+Button upButton(35,                         // Pin
                 displayManager.eventQueue, // Event queue
                 pageEvent_t::NAV_PRESS,    // Event sent on press
                 pageEvent_t::NAV_DOWN,     // Event sent on short release
                 pageEvent_t::NAV_SELECT    // Event sent on long release
 );
-Button downButton(35, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
+Button downButton(0, displayManager.eventQueue, pageEvent_t::NAV_PRESS, pageEvent_t::NAV_UP, pageEvent_t::NAV_CANCEL);
 
 // Touch button instantiation
 TouchPadInstance lMouseButton = TouchPad(LMB_TOUCH_CHANNEL,        // Touch controller channel
@@ -122,9 +121,24 @@ void modifyHue(byte newHue) {
 
 char *dummyField = new char[32];
 
+void swapBoardRotation() {
+  display.swapRotation();
+  upButton.detach();
+  downButton.detach();
+  byte tmpSwap = upButton.pin;
+  upButton.pin = downButton.pin;
+  downButton.pin = tmpSwap;
+  upButton.attach();
+  downButton.attach();
+}
+
 // Instantiate display page hierarchy
 InlineSlider themeColorSlider(&display, &displayManager, "Theme Color", modifyHue);
-MenuPage settingsPage(&display, &displayManager, "Settings", &themeColorSlider);
+ConfirmationPage flipDisplay(&display, &displayManager, "Swap Rotation");
+MenuPage settingsPage(&display, &displayManager, "Settings",
+  &themeColorSlider,
+  flipDisplay("Are you sure?", swapBoardRotation)
+);
 
 InputDisplay inputViewPage(&display, &displayManager, "Input");
 DebugPage debugPage(&display, &displayManager, "Debug Page");
@@ -179,16 +193,16 @@ void drawTask(void *pvParameters) {
   }
 }
 
-void recPrintDomNode(DOMNode node, int8_t indentation) {
+void recPrintDomNode(threeml::DOMNode node, int8_t indentation) {
   for (int8_t i = indentation; i > 0; --i)
     Serial.print("  ");
-  Serial.printf("Node of type %i - Plaintext content: %s\n", (byte)node.type, node.plaintext_content.c_str());
-  for (DOMNode child : node.children)
+  Serial.printf("Node of type %i - Plaintext content: %s\n", (byte)node.type, node.plaintext_data.c_str());
+  for (threeml::DOMNode child : node.children)
     recPrintDomNode(child, indentation + 1);
 }
 
-void printDom(DOM dom) {
-  for (DOMNode node : dom.top_level_nodes)
+void printDom(threeml::DOM dom) {
+  for (threeml::DOMNode node : dom.top_level_nodes)
     recPrintDomNode(node, 0);
 }
 
@@ -281,17 +295,17 @@ void setup() {
 
   Serial.println("Parsing sample DOM...");
 
-  const char *sampleDOM = R"DOM(
-    <head>
-    </head>
-    <body>
-      <h1>Hello, World!</h1>
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-    </body>
-  )DOM";
+  // const char *sampleDOM = R"DOM(
+  //   <head>
+  //   </head>
+  //   <body>
+  //     <h1>Hello, World!</h1>
+  //     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+  //   </body>
+  // )DOM";
 
-  DOM test = clean_dom(parse_string(sampleDOM));
-  printDom(test);
+  // threeml::DOM test = threeml::clean_dom(threeml::parse_string(sampleDOM));
+  // printDom(test);
 }
 
 // Code to constantly run
