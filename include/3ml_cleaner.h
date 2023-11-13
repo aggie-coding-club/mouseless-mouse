@@ -31,10 +31,12 @@ struct DOM {
 
   void add_top_level_node(DOMNode* node);
   DOMNode *get_element_by_id(std::string id);
+
+  ~DOM();
 };
 
 DOMNode* clean_node(DirtyDOMNode dirty, DOMNode* parent);
-DOM clean_dom(DirtyDOM dirty);
+DOM* clean_dom(DirtyDOM dirty);
 
 } // namespace threeml
 

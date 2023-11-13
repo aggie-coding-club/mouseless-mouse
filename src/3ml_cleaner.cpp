@@ -223,14 +223,19 @@ DOMNode* clean_node(DirtyDOMNode dirty, DOMNode* parent) {
   return result;
 }
 
-DOM clean_dom(DirtyDOM dirty) {
-  DOM result;
+DOM* clean_dom(DirtyDOM dirty) {
+  DOM* result = new DOM();
   for (auto top_level : dirty.top_level_nodes) {
     if (!(top_level.is_plaintext && top_level.plaintext_node.empty())) {
-      result.add_top_level_node(clean_node(top_level, nullptr));
+      result->add_top_level_node(clean_node(top_level, nullptr));
     }
   }
   return result;
+}
+
+DOM::~DOM() {
+  for (DOMNode *child : top_level_nodes)
+    delete child;
 }
 
 } // namespace threeml

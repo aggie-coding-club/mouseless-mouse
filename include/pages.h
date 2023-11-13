@@ -79,9 +79,10 @@ public:
 };
 
 class DOMPage : public DisplayPage {
-  threeml::DOM& dom;
+  const char *sourceFileName;
+  threeml::DOM *dom;
 public:
-  DOMPage(Display *display, DisplayManager *displayManager, const char *pageName, threeml::DOM& dom);
+  DOMPage(Display *display, DisplayManager *displayManager, const char *pageName, const char *fileName);
   void draw();
   void onEvent(pageEvent_t event);
 };

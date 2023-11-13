@@ -130,16 +130,16 @@ void swapBoardRotation() {
   downButton.attach();
 }
 
-const char *sampleDOM = R"DOM(
-  <head>
-  </head>
-  <body>
-    <h1>Hello, World!</h1>
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-  </body>
-)DOM";
+// const char *sampleDOM = R"DOM(
+//   <head>
+//   </head>
+//   <body>
+//     <h1>Hello, World!</h1>
+//     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+//   </body>
+// )DOM";
 
-threeml::DOM test = threeml::clean_dom(threeml::parse_string(sampleDOM));
+// threeml::DOM test = threeml::clean_dom(threeml::parse_string(sampleDOM));
 
 // Instantiate display page hierarchy
 InlineSlider themeColorSlider(&display, &displayManager, "Theme Color", modifyHue);
@@ -150,7 +150,7 @@ MenuPage settingsPage(&display, &displayManager, "Settings",
 );
 
 InputDisplay inputViewPage(&display, &displayManager, "Input");
-DOMPage testDomPage(&display, &displayManager, "DOM Page :D", test);
+DOMPage testDomPage(&display, &displayManager, "DOM Page :D", "/testpage.3ml");
 DebugPage debugPage(&display, &displayManager, "Debug Page");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
@@ -288,7 +288,7 @@ void recPrintDomNode(threeml::DOMNode* node, int8_t indentation) {
     Serial.print("  ");
   Serial.printf("Node of type %i (Parent type %i) - Plaintext content:\n", (byte)node->type, node->parent ? (byte)node->parent->type : -1);
   for (std::string str : node->plaintext_data) {
-    for (int8_t i = indentation; i > 0; --i)
+    for (int8_t i = indentation + 1; i > 0; --i)
       Serial.print("  ");
     Serial.println(str.c_str());
   }
@@ -401,8 +401,6 @@ void setup() {
     while (!digitalRead(DOWN_BUTTON_PIN))
       ;
   }
-  
-  printDom(test);
 }
 
 // Code to constantly run

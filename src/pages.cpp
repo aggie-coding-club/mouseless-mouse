@@ -1,3 +1,5 @@
+#include <LittleFS.h>
+
 #include "pages.h"
 #include "display.h"
 #include "helpers.h"
@@ -325,14 +327,18 @@ void InlineSlider::onEvent(pageEvent_t event) {
   }
 }
 
-DOMPage::DOMPage(Display *display, DisplayManager *displayManager, const char *pageName, threeml::DOM& dom)
+DOMPage::DOMPage(Display *display, DisplayManager *displayManager, const char *pageName, const char *fileName)
   : DisplayPage(display, displayManager, pageName)
-  , dom(dom)
-{
-
-}
+  , sourceFileName(fileName)
+  , dom(nullptr)
+{}
 
 void DOMPage::draw() {
+  if (!dom) {
+    displayManager->pageStack.pop();
+    Serial.println("Kinda hard to draw a page without a DOM");
+    return;
+  }
   auto& localDisplay = display;
   uint16_t yPos = 20;
   std::function<void(threeml::DOMNode*)> drawDOMNode = [&drawDOMNode, &localDisplay, &yPos](threeml::DOMNode* node){
@@ -349,12 +355,32 @@ void DOMPage::draw() {
       }
     }
   };
-  for (threeml::DOMNode* node : dom.top_level_nodes) {
+  for (threeml::DOMNode* node : dom->top_level_nodes) {
     drawDOMNode(node);
   }
 }
 
 void DOMPage::onEvent(pageEvent_t event) {
-  if (event == pageEvent_t::NAV_CANCEL)
-    displayManager->pageStack.pop();
+  switch (event) {
+    case pageEvent_t::ENTER: {
+      File sourceFile = LittleFS.open(sourceFileName);
+      if (!sourceFile) {
+        Serial.println("404 Doodoo Error - Page not found D:");
+        break;
+      }
+      size_t fileSize = sourceFile.available();
+      char *sourceCode = new char[fileSize + 1];
+      sourceFile.readBytes(sourceCode, fileSize);
+      sourceCode[fileSize] = '\0';
+      Serial.println(sourceCode);
+      dom = threeml::clean_dom(threeml::parse_string(sourceCode));
+      delete sourceCode;
+    } break;
+    case pageEvent_t::NAV_CANCEL: {
+      displayManager->pageStack.pop();
+      delete dom;
+    } break;
+    default:
+      break;
+  }
 }
