@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <esp32/rom/spi_flash.h>
 
+#include "ulp_main.h"
 #include "3ml_cleaner.h"
 #include "3ml_parser.h"
 #include "display.h"
@@ -380,7 +381,9 @@ void setup() {
   upButton.attach();
   downButton.attach();
 
-  Serial.println("Parsing sample DOM...");
+  if (ulp_iomask == 2048)
+    swapBoardRotation();
+  // Serial.println("Parsing sample DOM...");
 
   // const char *sampleDOM = R"DOM(
   //   <head>
