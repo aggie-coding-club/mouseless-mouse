@@ -1,9 +1,58 @@
 #include "3ml_cleaner.h"
 #include "3ml_error.h"
 #include <cassert>
+#include <functional>
 #include <string>
 
 namespace threeml {
+
+void verify_slider_attributes(const std::vector<Attribute> &tag_attributes) {
+  bool min_encountered = false;
+  bool max_encountered = false;
+  bool oninput_encountered = false;
+  unsigned long long min = 0;
+  unsigned long long max = 0;
+  for (const auto &attribute : tag_attributes) {
+    if (attribute.name == "min") {
+      maybe_error(min_encountered, "duplicate min attribute on <input>");
+      try {
+        min = std::stoull(attribute.value);
+      } catch (std::exception &_) {
+        maybe_error(true, "invalid min value on <input>");
+      }
+      min_encountered = true;
+    } else if (attribute.name == "max") {
+      maybe_error(max_encountered, "duplicate max attribute on <input>");
+      try {
+        max = std::stoull(attribute.value);
+      } catch (std::exception &_) {
+        maybe_error(true, "invalid max value on <input>");
+      }
+      max_encountered = true;
+    } else if (attribute.name == "oninput") {
+      maybe_error(oninput_encountered, "duplicate oninput attribute on <input>");
+      oninput_encountered = true;
+    }
+  }
+  maybe_error(!min_encountered || !max_encountered, "slider inputs need both a min and a max");
+  maybe_error(min >= max, "slider input min must be less than max");
+}
+
+void verify_body_attributes(const std::vector<Attribute> &tag_attributes) {
+  bool onload_encountered = false;
+  bool onbeforeunload_encountered = false;
+  for (const auto &attribute : tag_attributes) {
+    if (attribute.name == "onload") {
+      maybe_error(onload_encountered, "duplicate onload attribute on <body>");
+      onload_encountered = true;
+    } else if (attribute.name == "onbeforeunload") {
+      maybe_error(onbeforeunload_encountered, "duplicate onbeforeunload attribute on <body>");
+      onbeforeunload_encountered = true;
+    } else {
+      maybe_error(true, "invalid attribute on <body>");
+    }
+  }
+}
 
 DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vector<DOMNode> children)
     : type(type), children(children) {
@@ -18,73 +67,32 @@ DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vect
       filtered_attributes.push_back(attribute);
     }
   }
+  unique_attributes = filtered_attributes;
   switch (type) {
   case NodeType::A:
-    link_data = LinkData(filtered_attributes, children);
+    maybe_error(unique_attributes.size() != 1, "invalid or no attribute(s) on <a>");
+    maybe_error(unique_attributes[0].name != "href", "invalid attribute on <a>");
     break;
   case NodeType::BODY:
-    body_data = BodyData(filtered_attributes, children);
+    verify_body_attributes(unique_attributes);
     break;
   case NodeType::BUTTON:
-    button_data = ButtonData(filtered_attributes, children);
+    maybe_error(unique_attributes.size() != 1, "invalid or no attribute(s) on <button>");
+    maybe_error(unique_attributes[0].name != "onclick", "invalid attribute on <button>");
     break;
   case NodeType::SCRIPT:
-    script_data = ScriptData(filtered_attributes, children);
+    maybe_error(unique_attributes.size() != 1, "invalid or no attribute(s) on <script>");
+    maybe_error(unique_attributes[0].name != "src", "invalid attribute on <script>");
     break;
   case NodeType::SLIDER:
-    slider_data = SliderData(filtered_attributes, children);
+    verify_slider_attributes(unique_attributes);
     break;
   case NodeType::TEXT_INPUT:
-    text_input_data = TextInputData(filtered_attributes, children);
+    maybe_error(unique_attributes.size() > 1, "invalid attribute(s) on <input>");
+    maybe_error(!unique_attributes.empty() && unique_attributes[0].name != "oninput", "invalid attribute on <input>");
     break;
   default:
     maybe_error(!filtered_attributes.empty(), "invalid attribute");
-  }
-}
-
-DOMNode::~DOMNode() {
-  switch (type) {
-  case NodeType::A:
-    link_data.~LinkData();
-    break;
-  case NodeType::BUTTON:
-    button_data.~ButtonData();
-    break;
-  case NodeType::TEXT_INPUT:
-    text_input_data.~TextInputData();
-    break;
-  case NodeType::PLAINTEXT:
-    plaintext_data.~PlaintextData();
-    break;
-  case NodeType::SLIDER:
-    slider_data.~SliderData();
-    break;
-  default:
-    break;
-  }
-}
-
-DOMNode::DOMNode(const DOMNode &original) {
-  type = original.type;
-  id = original.id;
-  switch (type) {
-  case NodeType::A:
-    link_data = original.link_data;
-    break;
-  case NodeType::BUTTON:
-    button_data = original.button_data;
-    break;
-  case NodeType::TEXT_INPUT:
-    text_input_data = original.text_input_data;
-    break;
-  case NodeType::PLAINTEXT:
-    plaintext_data = original.plaintext_data;
-    break;
-  case NodeType::SLIDER:
-    slider_data = original.slider_data;
-    break;
-  default:
-    break;
   }
 }
 
@@ -116,11 +124,34 @@ void DOM::add_top_level_node(DOMNode node) {
   top_level_nodes.push_back(node);
 }
 
+DOMNode *DOM::get_element_by_id(std::string id) {
+  // god bless modern c++
+  std::function<DOMNode *(DOMNode &)> search_recursive = [id, &search_recursive](DOMNode &node) {
+    if (node.id == id) {
+      return &node;
+    }
+    for (auto &child : node.children) {
+      auto result = search_recursive(child);
+      if (result != nullptr) {
+        return result;
+      }
+    }
+    return static_cast<DOMNode *>(nullptr);
+  };
+  for (auto &top_level : top_level_nodes) {
+    auto result = search_recursive(top_level);
+    if (result != nullptr) {
+      return result;
+    }
+  }
+  return nullptr;
+}
+
 DOMNode clean_node(DirtyDOMNode dirty) {
   if (dirty.is_plaintext) {
     return DOMNode(NodeType::PLAINTEXT, dirty.plaintext_node, std::vector<DOMNode>());
   }
-  NodeType type;
+  NodeType type = NodeType::A; // placeholder to suppress a meaningless warning
   if (dirty.tag_node.tag_name == "title") {
     type = NodeType::TITLE;
   } else if (dirty.tag_node.tag_name == "div") {
@@ -167,91 +198,6 @@ DOM clean_dom(DirtyDOM dirty) {
     }
   }
   return result;
-}
-
-ButtonData::ButtonData(const std::vector<Attribute> &tag_attributes, const std::vector<DOMNode> &tag_children) {
-  maybe_error(tag_attributes.size() != 1, "invalid or no attribute(s) on <button>");
-  maybe_error(tag_attributes[0].name != "onclick", "invalid attribute on <button>");
-  std::string label = "";
-  if (!tag_children.empty()) {
-    label = tag_children[0].plaintext_data;
-  }
-  onclick_callback = tag_attributes[0].value;
-}
-
-LinkData::LinkData(const std::vector<Attribute> &tag_attributes, const std::vector<DOMNode> &tag_children) {
-  maybe_error(tag_attributes.size() != 1, "invalid or no attribute(s) on <a>");
-  maybe_error(tag_attributes[0].name != "href", "invalid attribute on <a>");
-  std::string label = "";
-  if (!tag_children.empty()) {
-    label = tag_children[0].plaintext_data;
-  }
-  points_to = tag_attributes[0].value;
-}
-
-TextInputData::TextInputData(const std::vector<Attribute> &tag_attributes, const std::vector<DOMNode> &tag_children) {
-  maybe_error(tag_attributes.size() > 1, "invalid attribute(s) on <input>");
-  maybe_error(!tag_attributes.empty() && tag_attributes[0].name != "oninput", "invalid attribute on <input>");
-  contents = "";
-  if (!tag_attributes.empty()) {
-    oninput_callback = tag_attributes[0].value;
-  }
-}
-
-SliderData::SliderData(const std::vector<Attribute> &tag_attributes, const std::vector<DOMNode> &tag_children) {
-  bool min_encountered = false;
-  bool max_encountered = false;
-  bool oninput_encountered = false;
-  for (const auto &attribute : tag_attributes) {
-    if (attribute.name == "min") {
-      maybe_error(min_encountered, "duplicate min attribute on <input>");
-      try {
-        min = std::stoull(attribute.value);
-      } catch (std::exception &_) {
-        maybe_error(true, "invalid min value on <input>");
-      }
-      min_encountered = true;
-    } else if (attribute.name == "max") {
-      maybe_error(max_encountered, "duplicate max attribute on <input>");
-      try {
-        max = std::stoull(attribute.value);
-      } catch (std::exception &_) {
-        maybe_error(true, "invalid max value on <input>");
-      }
-      max_encountered = true;
-    } else if (attribute.name == "oninput") {
-      maybe_error(oninput_encountered, "duplicate oninput attribute on <input>");
-      oninput_callback = attribute.value;
-      oninput_encountered = true;
-    }
-  }
-  maybe_error(!min_encountered || !max_encountered, "slider inputs need both a min and a max");
-  maybe_error(min >= max, "slider input min must be less than max");
-  value = min;
-}
-
-BodyData::BodyData(const std::vector<Attribute> &tag_attributes, const std::vector<DOMNode> &tag_children) {
-  bool onload_encountered = false;
-  bool onbeforeunload_encountered = false;
-  for (const auto &attribute : tag_attributes) {
-    if (attribute.name == "onload") {
-      maybe_error(onload_encountered, "duplicate onload attribute on <body>");
-      onload_callback = attribute.value;
-      onload_encountered = true;
-    } else if (attribute.name == "onbeforeunload") {
-      maybe_error(onbeforeunload_encountered, "duplicate onbeforeunload attribute on <body>");
-      onbeforeunload_callback = attribute.value;
-      onbeforeunload_encountered = true;
-    } else {
-      maybe_error(true, "invalid attribute on <body>");
-    }
-  }
-}
-
-ScriptData::ScriptData(const std::vector<Attribute> &tag_attributes, const std::vector<DOMNode> &tag_children) {
-  maybe_error(tag_attributes.size() != 1, "invalid or no attribute(s) on <script>");
-  maybe_error(tag_attributes[0].name != "src", "invalid attribute on <script>");
-  script_filename = tag_attributes[0].value;
 }
 
 } // namespace threeml
