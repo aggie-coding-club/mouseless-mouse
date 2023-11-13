@@ -130,6 +130,17 @@ void swapBoardRotation() {
   downButton.attach();
 }
 
+const char *sampleDOM = R"DOM(
+  <head>
+  </head>
+  <body>
+    <h1>Hello, World!</h1>
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+  </body>
+)DOM";
+
+threeml::DOM test = threeml::clean_dom(threeml::parse_string(sampleDOM));
+
 // Instantiate display page hierarchy
 InlineSlider themeColorSlider(&display, &displayManager, "Theme Color", modifyHue);
 ConfirmationPage flipDisplay(&display, &displayManager, "Swap Rotation");
@@ -139,11 +150,13 @@ MenuPage settingsPage(&display, &displayManager, "Settings",
 );
 
 InputDisplay inputViewPage(&display, &displayManager, "Input");
+DOMPage testDomPage(&display, &displayManager, "DOM Page :D", test);
 DebugPage debugPage(&display, &displayManager, "Debug Page");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
 MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
   &inputViewPage,
+  &testDomPage,
   &debugPage,
   &settingsPage,
   keyboard(dummyField),
@@ -359,6 +372,13 @@ void setup() {
   id = (id >> 16) & 0xFF;
   Serial.printf("Flash size is %i\n", 2 << (id - 1));
 
+  // Attach button interrupts
+  upButton.attach();
+  downButton.attach();
+
+  if (ulp_iomask == 2048)
+    swapBoardRotation();
+
   // Dispatch the display drawing task
   xTaskCreatePinnedToCore(drawTask,        // Task code is in the drawTask() function
                           "Draw Task",     // Descriptive task name
@@ -376,26 +396,7 @@ void setup() {
     while (!digitalRead(DOWN_BUTTON_PIN))
       ;
   }
-
-  // Attach button interrupts
-  upButton.attach();
-  downButton.attach();
-
-  if (ulp_iomask == 2048)
-    swapBoardRotation();
   
-  Serial.println("Parsing sample DOM...");
-
-  const char *sampleDOM = R"DOM(
-    <head>
-    </head>
-    <body>
-      <h1>Hello, World!</h1>
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-    </body>
-  )DOM";
-
-  threeml::DOM test = threeml::clean_dom(threeml::parse_string(sampleDOM));
   printDom(test);
 }
 

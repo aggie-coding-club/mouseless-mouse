@@ -1,8 +1,11 @@
 #include "3ml_cleaner.h"
 #include "3ml_error.h"
+#include "display.h"
 #include <cassert>
 #include <functional>
 #include <string>
+
+extern Display display;
 
 namespace threeml {
 
@@ -55,7 +58,7 @@ void verify_body_attributes(const std::vector<Attribute> &tag_attributes) {
 }
 
 DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vector<DOMNode> children)
-    : type(type), children(children) {
+    : type(type), plaintext_height(0), children(children) {
   std::vector<Attribute> filtered_attributes;
   bool id_encountered = false;
   for (const auto &attribute : tag_attributes) {
@@ -93,6 +96,24 @@ DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vect
     break;
   default:
     maybe_error(!filtered_attributes.empty(), "invalid attribute");
+  }
+}
+
+DOMNode::DOMNode(NodeType type, std::string plaintext_content, std::vector<DOMNode> children)
+  : type(type), plaintext_data(plaintext_content), plaintext_height(0), children(children)
+{
+  display.textFormat(2, TFT_WHITE);
+  size_t len = plaintext_data.length();
+  size_t start = 0;
+  while (plaintext_data.substr(start).length()) {
+    plaintext_height += display.buffer->textsize * 10;
+    while (display.buffer->textWidth(plaintext_data.substr(start, len).c_str()) > display.buffer->width()) --len;
+    if (len == plaintext_data.length() - start) break;
+    while (!isspace(plaintext_data.at(start + len - 1)) && len > 0) --len;
+    maybe_error(len == 0, "ur words r 2 long :(");
+    plaintext_data.at(start + len - 1) = '\n';
+    start += len;
+    len = plaintext_data.substr(start).length();
   }
 }
 

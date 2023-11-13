@@ -12,12 +12,12 @@ enum class NodeType { PLAINTEXT, TITLE, DIV, HEAD, BODY, SCRIPT, H1, A, BUTTON, 
 struct DOMNode {
   NodeType type;
   std::string plaintext_data;
+  uint16_t plaintext_height;
   std::vector<Attribute> unique_attributes;
   std::string id;
   std::vector<DOMNode> children;
 
-  DOMNode(NodeType type, std::string plaintext_content, std::vector<DOMNode> children)
-      : type(type), plaintext_data(plaintext_content), children(children) {}
+  DOMNode(NodeType type, std::string plaintext_content, std::vector<DOMNode> children);
   DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vector<DOMNode> children);
 
   void add_child(DOMNode child);

@@ -2,6 +2,7 @@
 #define DISPLAY_PAGES
 
 #include "display.h"
+#include "3ml_cleaner.h"
 #include <Arduino.h>
 
 // Define a blank placeholder page
@@ -73,6 +74,14 @@ class InlineSlider : public DisplayPage {
   changeCallback_t onChange;
 public:
   InlineSlider(Display *display, DisplayManager *displayManager, const char *pageName, changeCallback_t onChange);
+  void draw();
+  void onEvent(pageEvent_t event);
+};
+
+class DOMPage : public DisplayPage {
+  threeml::DOM& dom;
+public:
+  DOMPage(Display *display, DisplayManager *displayManager, const char *pageName, threeml::DOM& dom);
   void draw();
   void onEvent(pageEvent_t event);
 };

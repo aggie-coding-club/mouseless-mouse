@@ -324,3 +324,34 @@ void InlineSlider::onEvent(pageEvent_t event) {
       break;
   }
 }
+
+DOMPage::DOMPage(Display *display, DisplayManager *displayManager, const char *pageName, threeml::DOM& dom)
+  : DisplayPage(display, displayManager, pageName)
+  , dom(dom)
+{
+
+}
+
+void DOMPage::draw() {
+  auto& localDisplay = display;
+  uint16_t yPos = 20;
+  std::function<void(threeml::DOMNode&)> drawDOMNode = [&drawDOMNode, &localDisplay, &yPos](threeml::DOMNode& node){
+    if (node.type != threeml::NodeType::PLAINTEXT)
+      for (threeml::DOMNode& child : node.children) {
+        drawDOMNode(child);
+      }
+    else {
+      localDisplay->buffer->drawString(node.plaintext_data.c_str(), 0, yPos);
+      yPos += node.plaintext_height;
+    }
+  };
+  display->textFormat(2, TFT_WHITE);
+  for (threeml::DOMNode& node : dom.top_level_nodes) {
+    drawDOMNode(node);
+  }
+}
+
+void DOMPage::onEvent(pageEvent_t event) {
+  if (event == pageEvent_t::NAV_CANCEL)
+    displayManager->pageStack.pop();
+}
