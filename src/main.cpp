@@ -383,19 +383,20 @@ void setup() {
 
   if (ulp_iomask == 2048)
     swapBoardRotation();
-  // Serial.println("Parsing sample DOM...");
+  
+  Serial.println("Parsing sample DOM...");
 
-  // const char *sampleDOM = R"DOM(
-  //   <head>
-  //   </head>
-  //   <body>
-  //     <h1>Hello, World!</h1>
-  //     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-  //   </body>
-  // )DOM";
+  const char *sampleDOM = R"DOM(
+    <head>
+    </head>
+    <body>
+      <h1>Hello, World!</h1>
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+    </body>
+  )DOM";
 
-  // threeml::DOM test = threeml::clean_dom(threeml::parse_string(sampleDOM));
-  // printDom(test);
+  threeml::DOM test = threeml::clean_dom(threeml::parse_string(sampleDOM));
+  printDom(test);
 }
 
 // Code to constantly run
