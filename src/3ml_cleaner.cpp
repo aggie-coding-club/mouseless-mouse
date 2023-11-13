@@ -57,8 +57,12 @@ void verify_body_attributes(const std::vector<Attribute> &tag_attributes) {
   }
 }
 
-DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vector<DOMNode> children)
-    : type(type), plaintext_height(0), children(children) {
+DOMNode::DOMNode()
+  : type(NodeType::ROOT), plaintext_height(0), parent(nullptr)
+{}
+
+DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vector<DOMNode*> children, DOMNode* parent)
+    : type(type), plaintext_height(0), children(children), parent(parent) {
   std::vector<Attribute> filtered_attributes;
   bool id_encountered = false;
   for (const auto &attribute : tag_attributes) {
@@ -99,59 +103,67 @@ DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vect
   }
 }
 
-DOMNode::DOMNode(NodeType type, std::string plaintext_content, std::vector<DOMNode> children)
-  : type(type), plaintext_data(plaintext_content), plaintext_height(0), children(children)
+DOMNode::DOMNode(NodeType type, std::string plaintext_content, std::vector<DOMNode*> children, DOMNode* parent)
+  : type(type), plaintext_height(0), children(children), parent(parent)
 {
-  display.textFormat(2, TFT_WHITE);
-  size_t len = plaintext_data.length();
+  display.textFormat(parent->type == NodeType::H1 ? 3 : 2, TFT_WHITE);
+  size_t len = plaintext_content.length();
   size_t start = 0;
-  while (plaintext_data.substr(start).length()) {
+  while (plaintext_content.substr(start).length()) {
     plaintext_height += display.buffer->textsize * 10;
-    while (display.buffer->textWidth(plaintext_data.substr(start, len).c_str()) > display.buffer->width()) --len;
-    if (len == plaintext_data.length() - start) break;
-    while (!isspace(plaintext_data.at(start + len - 1)) && len > 0) --len;
+    while (display.buffer->textWidth(plaintext_content.substr(start, len).c_str()) > display.buffer->width()) --len;
+    if (len == plaintext_content.length() - start) {
+      plaintext_data.push_back(plaintext_content.substr(start));
+      break;
+    }
+    while (!isspace(plaintext_content.at(start + len - 1)) && len > 0) --len;
     maybe_error(len == 0, "ur words r 2 long :(");
-    plaintext_data.at(start + len - 1) = '\n';
+    plaintext_data.push_back(plaintext_content.substr(start, len));
     start += len;
-    len = plaintext_data.substr(start).length();
+    len = plaintext_content.substr(start).length();
   }
 }
 
-void DOMNode::add_child(DOMNode child) {
-  if (child.type == NodeType::PLAINTEXT && child.plaintext_data.empty()) {
+DOMNode::~DOMNode() {
+  for (DOMNode* child : children)
+    delete child;
+}
+
+void DOMNode::add_child(DOMNode* child) {
+  if (child->type == NodeType::PLAINTEXT && child->plaintext_data.empty()) {
     return;
   }
   maybe_error(type == NodeType::PLAINTEXT, "plaintext nodes cannot have children");
   maybe_error(type == NodeType::SCRIPT, "script nodes cannot have children");
   if (type == NodeType::TITLE || type == NodeType::H1 || type == NodeType::A || type == NodeType::BUTTON) {
-    maybe_error(!children.empty() || child.type != NodeType::PLAINTEXT,
+    maybe_error(!children.empty() || child->type != NodeType::PLAINTEXT,
                 "title, h1, a, and button nodes can only have one child and it must be a plaintext node");
   } else if (type == NodeType::HEAD) {
-    maybe_error(child.type != NodeType::SCRIPT && child.type != NodeType::TITLE,
+    maybe_error(child->type != NodeType::SCRIPT && child->type != NodeType::TITLE,
                 "only title and script nodes can be children of a head node");
   } else if (type == NodeType::BODY) {
-    maybe_error(child.type == NodeType::SCRIPT || child.type == NodeType::TITLE,
+    maybe_error(child->type == NodeType::SCRIPT || child->type == NodeType::TITLE,
                 "title and script nodes cannot be children of a body node");
   }
   children.push_back(child);
 }
 
-void DOM::add_top_level_node(DOMNode node) {
-  if (node.type == NodeType::PLAINTEXT && node.plaintext_data.empty()) {
+void DOM::add_top_level_node(DOMNode* node) {
+  if (node->type == NodeType::PLAINTEXT && node->plaintext_data.empty()) {
     return;
   }
-  maybe_error(node.type != NodeType::HEAD && node.type != NodeType::BODY,
+  maybe_error(node->type != NodeType::HEAD && node->type != NodeType::BODY,
               "top-level DOM nodes must be either head or body nodes");
   top_level_nodes.push_back(node);
 }
 
 DOMNode *DOM::get_element_by_id(std::string id) {
   // god bless modern c++
-  std::function<DOMNode *(DOMNode &)> search_recursive = [id, &search_recursive](DOMNode &node) {
-    if (node.id == id) {
-      return &node;
+  std::function<DOMNode *(DOMNode *)> search_recursive = [id, &search_recursive](DOMNode *node) {
+    if (node->id == id) {
+      return node;
     }
-    for (auto &child : node.children) {
+    for (auto &child : node->children) {
       auto result = search_recursive(child);
       if (result != nullptr) {
         return result;
@@ -168,9 +180,9 @@ DOMNode *DOM::get_element_by_id(std::string id) {
   return nullptr;
 }
 
-DOMNode clean_node(DirtyDOMNode dirty) {
+DOMNode* clean_node(DirtyDOMNode dirty, DOMNode* parent) {
   if (dirty.is_plaintext) {
-    return DOMNode(NodeType::PLAINTEXT, dirty.plaintext_node, std::vector<DOMNode>());
+    return new DOMNode(NodeType::PLAINTEXT, dirty.plaintext_node, std::vector<DOMNode *>(), parent);
   }
   NodeType type = NodeType::A; // placeholder to suppress a meaningless warning
   if (dirty.tag_node.tag_name == "title") {
@@ -204,9 +216,9 @@ DOMNode clean_node(DirtyDOMNode dirty) {
   } else {
     maybe_error(true, "invalid tag name");
   }
-  auto result = DOMNode(type, dirty.tag_node.attributes, std::vector<DOMNode>());
+  DOMNode *result = new DOMNode(type, dirty.tag_node.attributes, std::vector<DOMNode *>(), parent);
   for (auto child : dirty.tag_node.children) {
-    result.add_child(clean_node(child));
+    result->add_child(clean_node(child, result));
   }
   return result;
 }
@@ -215,7 +227,7 @@ DOM clean_dom(DirtyDOM dirty) {
   DOM result;
   for (auto top_level : dirty.top_level_nodes) {
     if (!(top_level.is_plaintext && top_level.plaintext_node.empty())) {
-      result.add_top_level_node(clean_node(top_level));
+      result.add_top_level_node(clean_node(top_level, nullptr));
     }
   }
   return result;

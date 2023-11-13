@@ -335,18 +335,21 @@ DOMPage::DOMPage(Display *display, DisplayManager *displayManager, const char *p
 void DOMPage::draw() {
   auto& localDisplay = display;
   uint16_t yPos = 20;
-  std::function<void(threeml::DOMNode&)> drawDOMNode = [&drawDOMNode, &localDisplay, &yPos](threeml::DOMNode& node){
-    if (node.type != threeml::NodeType::PLAINTEXT)
-      for (threeml::DOMNode& child : node.children) {
+  std::function<void(threeml::DOMNode*)> drawDOMNode = [&drawDOMNode, &localDisplay, &yPos](threeml::DOMNode* node){
+    if (node->type != threeml::NodeType::PLAINTEXT)
+      for (threeml::DOMNode* child : node->children) {
         drawDOMNode(child);
       }
     else {
-      localDisplay->buffer->drawString(node.plaintext_data.c_str(), 0, yPos);
-      yPos += node.plaintext_height;
+      byte textSize = node->parent->type == threeml::NodeType::H1 ? 3 : 2;
+      localDisplay->textFormat(textSize, TFT_WHITE);
+      for (std::string str : node->plaintext_data) {
+        localDisplay->buffer->drawString(str.c_str(), 0, yPos);
+        yPos += 10 * textSize;
+      }
     }
   };
-  display->textFormat(2, TFT_WHITE);
-  for (threeml::DOMNode& node : dom.top_level_nodes) {
+  for (threeml::DOMNode* node : dom.top_level_nodes) {
     drawDOMNode(node);
   }
 }

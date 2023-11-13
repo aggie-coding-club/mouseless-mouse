@@ -283,16 +283,21 @@ float normalizeMouseMovement(float axisValue) {
   }
 }
 
-void recPrintDomNode(threeml::DOMNode node, int8_t indentation) {
+void recPrintDomNode(threeml::DOMNode* node, int8_t indentation) {
   for (int8_t i = indentation; i > 0; --i)
     Serial.print("  ");
-  Serial.printf("Node of type %i - Plaintext content: %s\n", (byte)node.type, node.plaintext_data.c_str());
-  for (threeml::DOMNode child : node.children)
+  Serial.printf("Node of type %i (Parent type %i) - Plaintext content:\n", (byte)node->type, node->parent ? (byte)node->parent->type : -1);
+  for (std::string str : node->plaintext_data) {
+    for (int8_t i = indentation; i > 0; --i)
+      Serial.print("  ");
+    Serial.println(str.c_str());
+  }
+  for (threeml::DOMNode* child : node->children)
     recPrintDomNode(child, indentation + 1);
 }
 
 void printDom(threeml::DOM dom) {
-  for (threeml::DOMNode node : dom.top_level_nodes)
+  for (threeml::DOMNode* node : dom.top_level_nodes)
     recPrintDomNode(node, 0);
 }
 
