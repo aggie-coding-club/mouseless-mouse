@@ -30,8 +30,6 @@ extern TFT_eSPI* tft;
 // Wrapper class for TFT_eSPI that handles double buffering
 class Display {
   TFT_eSPI *tft;
-  TFT_eSprite *bufferA;
-  TFT_eSprite *bufferB;
   uint16_t fillColor;
   uint16_t strokeColor;
 
@@ -43,7 +41,7 @@ public:
   uint8_t brightness;
   TFT_eSprite *buffer;
 
-  Display(TFT_eSPI* tft, TFT_eSprite* bufferA, TFT_eSprite* bufferB);
+  Display(TFT_eSPI* tft, TFT_eSprite* buffer);
   ~Display();
   void begin();
   void swapRotation();

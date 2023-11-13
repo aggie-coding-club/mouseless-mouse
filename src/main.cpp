@@ -63,11 +63,10 @@ xQueueHandle mouseQueue = xQueueCreate(4, sizeof(mouseEvent_t));
 TFT_eSPI tftDisplay = TFT_eSPI();
 
 // Instantiate two sprites to be used as frame buffers
-TFT_eSprite bufferA = TFT_eSprite(&tftDisplay);
-TFT_eSprite bufferB = TFT_eSprite(&tftDisplay);
+TFT_eSprite bufferSprite = TFT_eSprite(&tftDisplay);
 
 // Wrap display module and frame buffers into Display class object
-Display display(&tftDisplay, &bufferA, &bufferB);
+Display display(&tftDisplay, &bufferSprite);
 
 // Instantiate display page manager
 DisplayManager displayManager(&display);

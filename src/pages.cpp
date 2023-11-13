@@ -372,9 +372,9 @@ void DOMPage::onEvent(pageEvent_t event) {
       char *sourceCode = new char[fileSize + 1];
       sourceFile.readBytes(sourceCode, fileSize);
       sourceCode[fileSize] = '\0';
-      Serial.println(sourceCode);
+      sourceFile.close();
       dom = threeml::clean_dom(threeml::parse_string(sourceCode));
-      delete sourceCode;
+      delete[] sourceCode;
     } break;
     case pageEvent_t::NAV_CANCEL: {
       displayManager->pageStack.pop();

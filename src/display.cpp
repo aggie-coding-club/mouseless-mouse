@@ -7,24 +7,20 @@
 #include <stack>
 
 // Create a Display object to make double-buffered graphics programming easier
-Display::Display(TFT_eSPI *tft, TFT_eSprite *bufferA, TFT_eSprite *bufferB)
+Display::Display(TFT_eSPI *tft, TFT_eSprite *buffer)
     : tft(tft)
-    , bufferA(bufferA)
-    , bufferB(bufferB)
     , fillColor(TFT_WHITE)
     , strokeColor(TFT_WHITE)
     , rotation(3)
     , brightness(0)
-    , buffer(bufferA)
+    , buffer(buffer)
 {
-  bufferA->createSprite(240, 135);
-  bufferB->createSprite(240, 135);
+  buffer->createSprite(240, 135);
 }
 
 // Buffers are non-trivial objects that must be destroyed explicitly
 Display::~Display() {
-  delete bufferA;
-  delete bufferB;
+  delete buffer;
 }
 
 // Read words of image data from SPIFFS
@@ -152,16 +148,13 @@ void Display::drawBitmapSPIFFS(const char *filename, uint16_t x, uint16_t y) {
 
 // Apply new text formatting to both framebuffers
 void Display::textFormat(uint8_t size, uint16_t color) {
-  bufferA->setTextSize(size);
-  bufferB->setTextSize(size);
-  bufferA->setTextColor(color);
-  bufferB->setTextColor(color);
+  buffer->setTextSize(size);
+  buffer->setTextColor(color);
 }
 
 // Push the active framebuffer to the screen, then swap buffers
 void Display::pushChanges() {
   buffer->pushSprite(0, 0);
-  buffer = (buffer == bufferA) ? bufferB : bufferA;
 }
 
 // Draw the status bar

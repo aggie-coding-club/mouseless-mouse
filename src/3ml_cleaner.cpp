@@ -111,13 +111,13 @@ DOMNode::DOMNode(NodeType type, std::string plaintext_content, std::vector<DOMNo
   size_t start = 0;
   while (plaintext_content.substr(start).length()) {
     plaintext_height += display.buffer->textsize * 10;
-    while (display.buffer->textWidth(plaintext_content.substr(start, len).c_str()) > display.buffer->width()) --len;
-    if (len == plaintext_content.length() - start) {
+    while (len > 0 && display.buffer->textWidth(plaintext_content.substr(start, len).c_str()) > display.buffer->width()) --len;
+    if (len == plaintext_content.substr(start).length()) {
       plaintext_data.push_back(plaintext_content.substr(start));
       break;
     }
-    while (!isspace(plaintext_content.at(start + len - 1)) && len > 0) --len;
-    maybe_error(len == 0, "ur words r 2 long :(");
+    while (len > 0 && !isspace(plaintext_content.at(start + len - 1))) --len;
+    maybe_error(len == 0, plaintext_content.c_str());
     plaintext_data.push_back(plaintext_content.substr(start, len));
     start += len;
     len = plaintext_content.substr(start).length();
@@ -131,6 +131,7 @@ DOMNode::~DOMNode() {
 
 void DOMNode::add_child(DOMNode* child) {
   if (child->type == NodeType::PLAINTEXT && child->plaintext_data.empty()) {
+    delete child;
     return;
   }
   maybe_error(type == NodeType::PLAINTEXT, "plaintext nodes cannot have children");
