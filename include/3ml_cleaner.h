@@ -4,6 +4,7 @@
 #include "3ml_parser.h"
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 namespace threeml {
 
@@ -13,7 +14,7 @@ struct DOMNode {
   NodeType type;
   std::vector<std::string> plaintext_data;
   uint16_t height;
-  std::vector<Attribute> unique_attributes;
+  std::unordered_map<std::string, std::string> unique_attributes;
   std::string id;
   std::vector<DOMNode*> children;
   DOMNode* parent;

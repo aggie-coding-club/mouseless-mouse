@@ -4,35 +4,36 @@
 #include <cassert>
 #include <functional>
 #include <string>
+#include <unordered_map>
 
 extern Display display;
 
 namespace threeml {
 
-void verify_slider_attributes(const std::vector<Attribute> &tag_attributes) {
+void verify_slider_attributes(const std::unordered_map<std::string, std::string> &tag_attributes) {
   bool min_encountered = false;
   bool max_encountered = false;
   bool oninput_encountered = false;
   unsigned long long min = 0;
   unsigned long long max = 0;
   for (const auto &attribute : tag_attributes) {
-    if (attribute.name == "min") {
+    if (attribute.first == "min") {
       maybe_error(min_encountered, "duplicate min attribute on <input>");
       try {
-        min = std::stoull(attribute.value);
+        min = std::stoull(attribute.second);
       } catch (std::exception &_) {
         maybe_error(true, "invalid min value on <input>");
       }
       min_encountered = true;
-    } else if (attribute.name == "max") {
+    } else if (attribute.first == "max") {
       maybe_error(max_encountered, "duplicate max attribute on <input>");
       try {
-        max = std::stoull(attribute.value);
+        max = std::stoull(attribute.second);
       } catch (std::exception &_) {
         maybe_error(true, "invalid max value on <input>");
       }
       max_encountered = true;
-    } else if (attribute.name == "oninput") {
+    } else if (attribute.first == "oninput") {
       maybe_error(oninput_encountered, "duplicate oninput attribute on <input>");
       oninput_encountered = true;
     }
@@ -41,14 +42,14 @@ void verify_slider_attributes(const std::vector<Attribute> &tag_attributes) {
   maybe_error(min >= max, "slider input min must be less than max");
 }
 
-void verify_body_attributes(const std::vector<Attribute> &tag_attributes) {
+void verify_body_attributes(const std::unordered_map<std::string, std::string> &tag_attributes) {
   bool onload_encountered = false;
   bool onbeforeunload_encountered = false;
   for (const auto &attribute : tag_attributes) {
-    if (attribute.name == "onload") {
+    if (attribute.first == "onload") {
       maybe_error(onload_encountered, "duplicate onload attribute on <body>");
       onload_encountered = true;
-    } else if (attribute.name == "onbeforeunload") {
+    } else if (attribute.first == "onbeforeunload") {
       maybe_error(onbeforeunload_encountered, "duplicate onbeforeunload attribute on <body>");
       onbeforeunload_encountered = true;
     } else {
@@ -62,32 +63,33 @@ DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vect
   std::vector<Attribute> filtered_attributes;
   bool id_encountered = false;
   for (const auto &attribute : tag_attributes) {
-    if (attribute.name == "id") {
+    if (attribute.first == "id") {
       maybe_error(id_encountered, "duplicate id");
-      id = attribute.value;
+      id = attribute.second;
       id_encountered = true;
     } else {
       filtered_attributes.push_back(attribute);
     }
   }
-  unique_attributes = filtered_attributes;
+  for (Attribute attr : filtered_attributes)
+    unique_attributes.insert(attr);
   switch (type) {
   case NodeType::A:
     maybe_error(unique_attributes.size() != 1, "invalid or no attribute(s) on <a>");
-    maybe_error(unique_attributes[0].name != "href", "invalid attribute on <a>");
+    maybe_error(unique_attributes.find("href") == unique_attributes.end(), "no `href` attribute on <a>");
     selectable = true;
     break;
   case NodeType::BODY:
     verify_body_attributes(unique_attributes);
     break;
   case NodeType::BUTTON:
-    maybe_error(unique_attributes.size() != 1, "invalid or no attribute(s) on <button>");
-    maybe_error(unique_attributes[0].name != "onclick", "invalid attribute on <button>");
+    maybe_error(unique_attributes.size() < 1, "invalid or no attribute(s) on <button>");
+    maybe_error(unique_attributes.find("onclick") == unique_attributes.end(), "no `onclick` attribute on <button>");
     selectable = true;
     break;
   case NodeType::SCRIPT:
     maybe_error(unique_attributes.size() != 1, "invalid or no attribute(s) on <script>");
-    maybe_error(unique_attributes[0].name != "src", "invalid attribute on <script>");
+    maybe_error(unique_attributes.find("src") == unique_attributes.end(), "no `src` attribute on <script>");
     break;
   case NodeType::SLIDER:
     verify_slider_attributes(unique_attributes);
@@ -95,7 +97,7 @@ DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vect
     break;
   case NodeType::TEXT_INPUT:
     maybe_error(unique_attributes.size() > 1, "invalid attribute(s) on <input>");
-    maybe_error(!unique_attributes.empty() && unique_attributes[0].name != "oninput", "invalid attribute on <input>");
+    maybe_error(!unique_attributes.empty() && unique_attributes.find("oninput") == unique_attributes.end(), "invalid attribute on <input>");
     selectable = true;
     break;
   default:
@@ -221,10 +223,10 @@ DOMNode* clean_node(DirtyDOMNode dirty, DOMNode* parent) {
     type = NodeType::BUTTON;
   } else if (dirty.tag_node.tag_name == "input") {
     for (const auto &attribute : dirty.tag_node.attributes) {
-      if (attribute.name == "type") {
-        if (attribute.value == "text") {
+      if (attribute.first == "type") {
+        if (attribute.second == "text") {
           type = NodeType::TEXT_INPUT;
-        } else if (attribute.value == "range") {
+        } else if (attribute.second == "range") {
           type = NodeType::SLIDER;
         } else {
           maybe_error(true, "invalid input tag type");

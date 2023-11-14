@@ -78,17 +78,21 @@ public:
   void onEvent(pageEvent_t event);
 };
 
+struct Script {
+  char *memory;
+  struct js *engine;
+
+  Script();
+  ~Script();
+
+  void register3MLBindings();
+};
+
+// DOM page class supporting dynamic loading and unloading on entry and exit
 class DOMPage : public DisplayPage {
   struct SelectableNode {
     threeml::DOMNode *node;
     int16_t yPos;
-  };
-  struct Script {
-    char *memory;
-    struct js *engine;
-
-    Script();
-    ~Script();
   };
 
   const char *sourceFileName;

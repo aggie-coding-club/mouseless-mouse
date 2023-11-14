@@ -429,13 +429,14 @@ void setup() {
     swapBoardRotation();
 
   // Dispatch the display drawing task
-  xTaskCreatePinnedToCore(drawTask,        // Task code is in the drawTask() function
-                          "Draw Task",     // Descriptive task name
-                          4000,            // Stack depth
-                          NULL,            // Parameter to function (unnecessary here)
-                          1,               // Task priority
-                          &drawTaskHandle, // Variable to hold new task handle
-                          1                // Pin the task to the core that doesn't handle WiFi/Bluetooth
+  xTaskCreatePinnedToCore(
+    drawTask,        // Task code is in the drawTask() function
+    "Draw Task",     // Descriptive task name
+    4000,            // Stack depth
+    NULL,            // Parameter to function (unnecessary here)
+    1,               // Task priority
+    &drawTaskHandle, // Variable to hold new task handle
+    1                // Pin the task to the core that doesn't handle WiFi/Bluetooth
   );
 
   // If we just woke up from deep sleep, don't attach the buttons until the user lets go
