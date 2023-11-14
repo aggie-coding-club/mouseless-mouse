@@ -79,12 +79,36 @@ public:
 };
 
 class DOMPage : public DisplayPage {
+  struct SelectableNode {
+    threeml::DOMNode *node;
+    int16_t yPos;
+  };
+  struct Script {
+    char *memory;
+    struct js *engine;
+
+    Script(char *memory);
+    ~Script();
+  };
+
   const char *sourceFileName;
   threeml::DOM *dom;
+  std::vector<Script*> scripts;
+  SelectableNode nextSelectableNode;
+  SelectableNode selectedNode;
+  SelectableNode prevSelectableNode;
+  int16_t scrollPos;
+  int16_t scrollTlY;
+  byte selectionIdx;
+  
 public:
-  DOMPage(Display *display, DisplayManager *displayManager, const char *pageName, const char *fileName);
+  DOMPage(Display *display, DisplayManager *displayManager, const char *fileName);
   void draw();
   void onEvent(pageEvent_t event);
+  void load();
+    void loadDOM();
+    void loadScript(threeml::DOMNode *script);
+  void unload();
 };
 
 #endif

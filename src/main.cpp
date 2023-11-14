@@ -129,17 +129,6 @@ void swapBoardRotation() {
   downButton.attach();
 }
 
-// const char *sampleDOM = R"DOM(
-//   <head>
-//   </head>
-//   <body>
-//     <h1>Hello, World!</h1>
-//     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-//   </body>
-// )DOM";
-
-// threeml::DOM test = threeml::clean_dom(threeml::parse_string(sampleDOM));
-
 // Instantiate display page hierarchy
 InlineSlider themeColorSlider(&display, &displayManager, "Theme Color", modifyHue);
 ConfirmationPage flipDisplay(&display, &displayManager, "Swap Rotation");
@@ -149,7 +138,7 @@ MenuPage settingsPage(&display, &displayManager, "Settings",
 );
 
 InputDisplay inputViewPage(&display, &displayManager, "Input");
-DOMPage testDomPage(&display, &displayManager, "DOM Page :D", "/testpage.3ml");
+DOMPage testDomPage(&display, &displayManager, "/testpage.3ml");
 DebugPage debugPage(&display, &displayManager, "Debug Page");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");

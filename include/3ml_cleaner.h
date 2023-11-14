@@ -12,13 +12,14 @@ enum class NodeType { PLAINTEXT, TITLE, DIV, HEAD, BODY, SCRIPT, H1, A, BUTTON, 
 struct DOMNode {
   NodeType type;
   std::vector<std::string> plaintext_data;
-  uint16_t plaintext_height;
+  uint16_t height;
   std::vector<Attribute> unique_attributes;
   std::string id;
   std::vector<DOMNode*> children;
   DOMNode* parent;
+  bool selectable;
+  size_t num_selectable_children;
 
-  DOMNode();
   DOMNode(NodeType type, std::string plaintext_content, std::vector<DOMNode*> children, DOMNode* parent);
   DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vector<DOMNode*> children, DOMNode* parent);
   ~DOMNode();
@@ -28,10 +29,13 @@ struct DOMNode {
 
 struct DOM {
   std::vector<DOMNode*> top_level_nodes;
+  size_t num_selectable_nodes;
+  uint16_t height;
 
   void add_top_level_node(DOMNode* node);
   DOMNode *get_element_by_id(std::string id);
 
+  DOM();
   ~DOM();
 };
 

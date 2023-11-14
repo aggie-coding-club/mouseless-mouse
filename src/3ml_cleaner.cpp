@@ -57,12 +57,8 @@ void verify_body_attributes(const std::vector<Attribute> &tag_attributes) {
   }
 }
 
-DOMNode::DOMNode()
-  : type(NodeType::ROOT), plaintext_height(0), parent(nullptr)
-{}
-
 DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vector<DOMNode*> children, DOMNode* parent)
-    : type(type), plaintext_height(0), children(children), parent(parent) {
+    : type(type), height(0), children(children), parent(parent), selectable(false), num_selectable_children(0) {
   std::vector<Attribute> filtered_attributes;
   bool id_encountered = false;
   for (const auto &attribute : tag_attributes) {
@@ -79,6 +75,7 @@ DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vect
   case NodeType::A:
     maybe_error(unique_attributes.size() != 1, "invalid or no attribute(s) on <a>");
     maybe_error(unique_attributes[0].name != "href", "invalid attribute on <a>");
+    selectable = true;
     break;
   case NodeType::BODY:
     verify_body_attributes(unique_attributes);
@@ -86,6 +83,7 @@ DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vect
   case NodeType::BUTTON:
     maybe_error(unique_attributes.size() != 1, "invalid or no attribute(s) on <button>");
     maybe_error(unique_attributes[0].name != "onclick", "invalid attribute on <button>");
+    selectable = true;
     break;
   case NodeType::SCRIPT:
     maybe_error(unique_attributes.size() != 1, "invalid or no attribute(s) on <script>");
@@ -93,24 +91,32 @@ DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vect
     break;
   case NodeType::SLIDER:
     verify_slider_attributes(unique_attributes);
+    selectable = true;
     break;
   case NodeType::TEXT_INPUT:
     maybe_error(unique_attributes.size() > 1, "invalid attribute(s) on <input>");
     maybe_error(!unique_attributes.empty() && unique_attributes[0].name != "oninput", "invalid attribute on <input>");
+    selectable = true;
     break;
   default:
     maybe_error(!filtered_attributes.empty(), "invalid attribute");
   }
+
+  for (DOMNode* child : children) {
+    num_selectable_children += child->num_selectable_children;
+    if (child->selectable) num_selectable_children += 1;
+    height += child->height;
+  }
 }
 
 DOMNode::DOMNode(NodeType type, std::string plaintext_content, std::vector<DOMNode*> children, DOMNode* parent)
-  : type(type), plaintext_height(0), children(children), parent(parent)
+  : type(type), height(0), children(children), parent(parent), selectable(false), num_selectable_children(0)
 {
   display.textFormat(parent->type == NodeType::H1 ? 3 : 2, TFT_WHITE);
   size_t len = plaintext_content.length();
   size_t start = 0;
   while (plaintext_content.substr(start).length()) {
-    plaintext_height += display.buffer->textsize * 10;
+    height += display.buffer->textsize * 10;
     while (len > 0 && display.buffer->textWidth(plaintext_content.substr(start, len).c_str()) > display.buffer->width()) --len;
     if (len == plaintext_content.substr(start).length()) {
       plaintext_data.push_back(plaintext_content.substr(start));
@@ -121,6 +127,12 @@ DOMNode::DOMNode(NodeType type, std::string plaintext_content, std::vector<DOMNo
     plaintext_data.push_back(plaintext_content.substr(start, len));
     start += len;
     len = plaintext_content.substr(start).length();
+  }
+
+  for (DOMNode* child : children) {
+    num_selectable_children += child->num_selectable_children;
+    if (child->selectable) num_selectable_children += 1;
+    height += child->height;
   }
 }
 
@@ -147,6 +159,9 @@ void DOMNode::add_child(DOMNode* child) {
                 "title and script nodes cannot be children of a body node");
   }
   children.push_back(child);
+  num_selectable_children += child->num_selectable_children;
+  if (child->selectable) num_selectable_children += 1;
+  height += child->height;
 }
 
 void DOM::add_top_level_node(DOMNode* node) {
@@ -156,6 +171,8 @@ void DOM::add_top_level_node(DOMNode* node) {
   maybe_error(node->type != NodeType::HEAD && node->type != NodeType::BODY,
               "top-level DOM nodes must be either head or body nodes");
   top_level_nodes.push_back(node);
+  num_selectable_nodes += node->num_selectable_children;
+  height += node->height;
 }
 
 DOMNode *DOM::get_element_by_id(std::string id) {
@@ -233,6 +250,11 @@ DOM* clean_dom(DirtyDOM dirty) {
   }
   return result;
 }
+
+DOM::DOM()
+  : num_selectable_nodes(0)
+  , height(0)
+{}
 
 DOM::~DOM() {
   for (DOMNode *child : top_level_nodes)

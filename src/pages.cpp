@@ -1,4 +1,5 @@
 #include <LittleFS.h>
+#include <elk.h>
 
 #include "pages.h"
 #include "display.h"
@@ -15,6 +16,9 @@
 #include "imgs/middle.h"
 #include "imgs/scrollDown.h"
 #include "imgs/scrollUp.h"
+
+// Set memory space allocated to each Elk script in a DOMPage
+const size_t ELK_STACK = 4096;
 
 // Allow interaction with the externally declared mouseQueue
 extern xQueueHandle mouseQueue;
@@ -327,60 +331,199 @@ void InlineSlider::onEvent(pageEvent_t event) {
   }
 }
 
-DOMPage::DOMPage(Display *display, DisplayManager *displayManager, const char *pageName, const char *fileName)
-  : DisplayPage(display, displayManager, pageName)
+DOMPage::DOMPage(Display *display, DisplayManager *displayManager, const char *fileName)
+  : DisplayPage(display, displayManager, fileName)
   , sourceFileName(fileName)
   , dom(nullptr)
+  , scripts(std::vector<Script*>())
+  , nextSelectableNode{nullptr, 0}
+  , selectedNode{nullptr, 0}
+  , prevSelectableNode{nullptr, 0}
+  , scrollPos(0)
+  , scrollTlY(0)
+  , selectionIdx(0)
 {}
 
 void DOMPage::draw() {
   if (!dom) {
     displayManager->pageStack.pop();
-    Serial.println("Kinda hard to draw a page without a DOM");
+    Serial.println("No page DOM - exiting page");
     return;
   }
-  auto& localDisplay = display;
-  uint16_t yPos = 20;
-  std::function<void(threeml::DOMNode*)> drawDOMNode = [&drawDOMNode, &localDisplay, &yPos](threeml::DOMNode* node){
+  int16_t yPos = 20 - scrollPos - scrollTlY;
+  int8_t nodeSelector = selectionIdx;
+  std::function<void(threeml::DOMNode*)> drawDOMNode = [&drawDOMNode, &yPos, &nodeSelector, this](threeml::DOMNode* node){
     if (node->type != threeml::NodeType::PLAINTEXT)
       for (threeml::DOMNode* child : node->children) {
         drawDOMNode(child);
       }
     else {
       byte textSize = node->parent->type == threeml::NodeType::H1 ? 3 : 2;
-      localDisplay->textFormat(textSize, TFT_WHITE);
+      display->textFormat(textSize, node->parent->type == threeml::NodeType::A ? ACCENT_COLOR : TFT_WHITE);
+      if (node->parent->selectable) {
+        if (nodeSelector == 1)
+          prevSelectableNode = {node, yPos};
+        if (nodeSelector == -1)
+          nextSelectableNode = {node, yPos};
+        if (nodeSelector == 0 && yPos + node->height > 10 && yPos < display->buffer->height()) {
+          display->buffer->fillRect(0, yPos - 1, display->buffer->width(), node->height, SEL_COLOR);
+          selectedNode = {node, yPos};
+        }
+        --nodeSelector;
+      }
       for (std::string str : node->plaintext_data) {
-        localDisplay->buffer->drawString(str.c_str(), 0, yPos);
+        if (yPos > -10 && yPos < display->buffer->height()) {
+          display->buffer->drawString(str.c_str(), 0, yPos);
+          if (node->parent->type == threeml::NodeType::A)
+            display->buffer->drawFastHLine(0, yPos + 17, display->buffer->textWidth(str.c_str()), ACCENT_COLOR);
+        }
         yPos += 10 * textSize;
       }
     }
   };
+  prevSelectableNode = {nullptr, 0};
+  nextSelectableNode = {nullptr, 0};
   for (threeml::DOMNode* node : dom->top_level_nodes) {
-    drawDOMNode(node);
+    if (node->type == threeml::NodeType::BODY)
+      drawDOMNode(node);
   }
+  scrollTlY *= 0.75;
 }
 
 void DOMPage::onEvent(pageEvent_t event) {
   switch (event) {
     case pageEvent_t::ENTER: {
-      File sourceFile = LittleFS.open(sourceFileName);
-      if (!sourceFile) {
-        Serial.println("404 Doodoo Error - Page not found D:");
-        break;
-      }
-      size_t fileSize = sourceFile.available();
-      char *sourceCode = new char[fileSize + 1];
-      sourceFile.readBytes(sourceCode, fileSize);
-      sourceCode[fileSize] = '\0';
-      sourceFile.close();
-      dom = threeml::clean_dom(threeml::parse_string(sourceCode));
-      delete[] sourceCode;
+      load();
     } break;
     case pageEvent_t::NAV_CANCEL: {
       displayManager->pageStack.pop();
-      delete dom;
+      unload();
+      displayManager->pageStack.top()->onEvent(pageEvent_t::ENTER);
+    } break;
+    case pageEvent_t::NAV_DOWN: {
+      if (nextSelectableNode.node && nextSelectableNode.yPos + nextSelectableNode.node->height <= display->buffer->height())
+          ++selectionIdx;
+      if (dom->height - scrollPos + 20 > display->buffer->height()) {
+        scrollPos += 20;
+        scrollTlY -= 20;
+      }
+    } break;
+    case pageEvent_t::NAV_UP: {
+      if (prevSelectableNode.node && prevSelectableNode.yPos > 10)
+          --selectionIdx;
+      if (scrollPos >= 20) {
+        scrollPos -= 20;
+        scrollTlY += 20;
+      }
+    } break;
+    case pageEvent_t::NAV_SELECT: {
+      if (selectedNode.node && selectedNode.yPos > 10 && selectedNode.yPos + selectedNode.node->height <= display->buffer->height()) {
+        if (selectedNode.node->type == threeml::NodeType::A) {
+          Serial.printf("Not yet implemented - navigate to `%s`\n", selectedNode.node->unique_attributes.front().value.c_str());
+        }
+        else if (selectedNode.node->type == threeml::NodeType::BUTTON) {
+          for (Script *script : scripts) {
+            Serial.printf("Onclick script result: %s", js_str(script->engine, js_eval(script->engine, selectedNode.node->unique_attributes.front().value.c_str(), ~0)));
+          }
+        }
+      }
     } break;
     default:
       break;
   }
+}
+
+void DOMPage::load() {
+  scrollPos = 0;
+  scrollTlY = 0;
+  selectionIdx = 0;
+  loadDOM();
+  for (threeml::DOMNode *node : dom->top_level_nodes)
+    if (node->type == threeml::NodeType::HEAD) {
+      for (threeml::DOMNode *child : node->children) {
+        if (child->type == threeml::NodeType::TITLE) {
+          for (threeml::DOMNode *text : child->children)
+            if (text->type == threeml::NodeType::PLAINTEXT && !text->plaintext_data.empty())
+              pageName = text->plaintext_data.front().c_str();
+        }
+        else if (child->type == threeml::NodeType::SCRIPT) {
+          loadScript(child);
+        }
+      }
+    }
+    else if (node->type == threeml::NodeType::BODY) {
+      for (threeml::Attribute attr : node->unique_attributes) {
+        if (attr.name == "onload")
+          for (Script *script : scripts) {
+            Serial.printf("Onload script result: %s", js_str(script->engine, js_eval(script->engine, attr.value.c_str(), ~0)));
+          }
+      }
+    }
+}
+
+void DOMPage::loadDOM() {
+  File sourceFile = LittleFS.open(sourceFileName);
+  if (!sourceFile) {
+    Serial.printf("3ML source file `%s` not found\n", sourceFileName);
+    return;
+  }
+  size_t fileSize = sourceFile.available();
+  char *sourceCode = new char[fileSize + 1];
+  if (!sourceCode) {
+    Serial.println("Failed to allocate space for 3ML source code buffer - likely out of memory");
+    sourceFile.close();
+    return;
+  }
+  sourceFile.readBytes(sourceCode, fileSize);
+  sourceCode[fileSize] = '\0';
+  sourceFile.close();
+  dom = threeml::clean_dom(threeml::parse_string(sourceCode));
+  delete[] sourceCode;
+}
+
+DOMPage::Script::Script(char *memory)
+  : engine(js_create(memory, ELK_STACK))
+{}
+
+DOMPage::Script::~Script() {
+  Serial.println("Script destructor called");
+  delete[] memory;
+}
+
+void DOMPage::loadScript(threeml::DOMNode *script) {
+  const char *sourceFileName = script->unique_attributes.front().value.c_str();
+  File sourceFile = LittleFS.open(sourceFileName);
+  if (!sourceFile) {
+    Serial.printf("Elk source file `%s` not found\n", sourceFileName);
+    return;
+  }
+  Script *result = new Script(new char[ELK_STACK]);
+  if (!result->engine) {
+    Serial.println("Failed to create Elk script engine - likely out of memory");
+    delete[] result->memory;
+    delete result;
+    return;
+  }
+  size_t fileSize = sourceFile.available();
+  char *sourceCode = new char[fileSize + 1];
+  if (!sourceCode) {
+    Serial.println("Failed to allocate space for Elk source code buffer - likely out of memory");
+    sourceFile.close();
+    delete[] result->memory;
+    delete result;
+    return;
+  }
+  sourceFile.readBytes(sourceCode, fileSize);
+  sourceCode[fileSize] = '\0';
+  sourceFile.close();
+  js_eval(result->engine, sourceCode, ~0);
+  delete[] sourceCode;
+  scripts.push_back(result);
+}
+
+void DOMPage::unload() {
+  for (Script *script : scripts)
+    delete script;
+  scripts.clear();
+  delete dom;
 }

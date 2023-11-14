@@ -10,6 +10,7 @@
             "includePath": [
                 "C:/Users/jeury/mouseless-mouse4/include",
                 "C:/Users/jeury/mouseless-mouse4/src",
+                "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/elk",
                 "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/ulptool-pio/src",
                 "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/TFT_eSPI",
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/LittleFS/src",
@@ -249,6 +250,7 @@
                 "path": [
                     "C:/Users/jeury/mouseless-mouse4/include",
                     "C:/Users/jeury/mouseless-mouse4/src",
+                    "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/elk",
                     "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/ulptool-pio/src",
                     "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/TFT_eSPI",
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/LittleFS/src",
