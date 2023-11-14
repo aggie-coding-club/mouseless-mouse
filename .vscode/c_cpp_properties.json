@@ -10,6 +10,7 @@
             "includePath": [
                 "C:/Users/jeury/mouseless-mouse4/include",
                 "C:/Users/jeury/mouseless-mouse4/src",
+                "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/ESP-FTP-Server-Lib/src",
                 "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/elk",
                 "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/ulptool-pio/src",
                 "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/TFT_eSPI",
@@ -215,6 +216,7 @@
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/dio_qspi/include",
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/cores/esp32",
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/variants/ttgo-lora32-v1",
+                "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                 "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/Adafruit LIS3MDL",
                 "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/Adafruit Unified Sensor",
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
@@ -240,7 +242,6 @@
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/USB/src",
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/Update/src",
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
-                "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
                 "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/WiFiProv/src",
                 ""
@@ -250,6 +251,7 @@
                 "path": [
                     "C:/Users/jeury/mouseless-mouse4/include",
                     "C:/Users/jeury/mouseless-mouse4/src",
+                    "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/ESP-FTP-Server-Lib/src",
                     "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/elk",
                     "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/ulptool-pio/src",
                     "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/TFT_eSPI",
@@ -455,6 +457,7 @@
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/dio_qspi/include",
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/cores/esp32",
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/variants/ttgo-lora32-v1",
+                    "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                     "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/Adafruit LIS3MDL",
                     "C:/Users/jeury/mouseless-mouse4/.pio/libdeps/ttgo-lora32-v1/Adafruit Unified Sensor",
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
@@ -480,7 +483,6 @@
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/USB/src",
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/Update/src",
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
-                    "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
                     "C:/Users/jeury/.platformio/packages/framework-arduinoespressif32/libraries/WiFiProv/src",
                     ""

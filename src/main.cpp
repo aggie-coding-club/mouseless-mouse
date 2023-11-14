@@ -2,6 +2,7 @@
 #include <ArduinoEigen/Eigen/Geometry>
 
 #include <Arduino.h>
+#include <BLEDevice.h>
 #include <BleMouse.h>
 #include <FS.h>
 #include <LittleFS.h>
@@ -10,6 +11,8 @@
 #include <cmath>
 #include <cstdint>
 #include <esp32/rom/spi_flash.h>
+#include <WiFi.h>
+#include <ESP-FTP-Server-Lib.h>
 
 #include "ulp_main.h"
 #include "3ml_cleaner.h"
@@ -50,7 +53,9 @@ uint16_t BGND_COLOR = TFT_BLACK;                  // Color of background
 ICM_20948_I2C icm;
 #endif
 
-BleMouse mouse("Mouseless Mouse " __TIME__, "Mouseless Team");
+const char *SSID = "Mouseless Mouse " __TIME__;
+
+BleMouse mouse(SSID, "Mouseless Team");
 Eigen::Vector3f calibratedPosX;
 Eigen::Vector3f calibratedPosZ;
 
@@ -129,12 +134,54 @@ void swapBoardRotation() {
   downButton.attach();
 }
 
+void ftpTask(void *pvParameters) {
+  FTPServer ftp;
+  ftp.addUser("mouseless", "mouse");
+  ftp.addFilesystem("LittleFS", &LittleFS);
+  if (!ftp.begin()) {
+    Serial.println("Could not start FTP server");
+    while (true);
+  }
+  Serial.println("FTP server started!");
+
+  while (true) {
+    ftp.handle();
+  }
+}
+
+void hangAndFTP() {
+  vTaskDelete(xTaskGetHandle("server"));
+  BLEDevice::deinit(true);
+
+  WiFi.softAP(SSID);
+  IPAddress IP = WiFi.softAPIP();
+  display.buffer->deleteSprite();
+  tftDisplay.fillRect(0, 0, tftDisplay.width(), tftDisplay.height(), TFT_BLACK);
+  tftDisplay.setTextSize(2);
+  tftDisplay.setTextColor(TFT_WHITE);
+  tftDisplay.drawString("IP Address:", 20, 20);
+  tftDisplay.drawString(IP.toString(), 20, 50);
+  TaskHandle_t ftpHandle;
+  xTaskCreatePinnedToCore(
+    ftpTask,
+    "FTP Server",
+    20000,
+    NULL,
+    1,
+    &ftpHandle,
+    1
+  );
+  vTaskDelete(NULL);
+}
+
 // Instantiate display page hierarchy
 InlineSlider themeColorSlider(&display, &displayManager, "Theme Color", modifyHue);
 ConfirmationPage flipDisplay(&display, &displayManager, "Swap Rotation");
+ConfirmationPage startFTP(&display, &displayManager, "Edit Filesystem");
 MenuPage settingsPage(&display, &displayManager, "Settings",
   &themeColorSlider,
-  flipDisplay("Are you sure?", swapBoardRotation)
+  flipDisplay("Are you sure?", swapBoardRotation),
+  startFTP("Stop mouse?", hangAndFTP)
 );
 
 InputDisplay inputViewPage(&display, &displayManager, "Input");

@@ -418,12 +418,12 @@ void DOMPage::onEvent(pageEvent_t event) {
     } break;
     case pageEvent_t::NAV_SELECT: {
       if (selectedNode.node && selectedNode.yPos > 10 && selectedNode.yPos + selectedNode.node->height <= display->buffer->height()) {
-        if (selectedNode.node->type == threeml::NodeType::A) {
-          Serial.printf("Not yet implemented - navigate to `%s`\n", selectedNode.node->unique_attributes.front().value.c_str());
+        if (selectedNode.node->parent->type == threeml::NodeType::A) {
+          Serial.printf("Not yet implemented - navigate to `%s`\n", selectedNode.node->parent->unique_attributes.front().value.c_str());
         }
-        else if (selectedNode.node->type == threeml::NodeType::BUTTON) {
+        else if (selectedNode.node->parent->type == threeml::NodeType::BUTTON) {
           for (Script *script : scripts) {
-            Serial.printf("Onclick script result: %s\n", js_str(script->engine, js_eval(script->engine, selectedNode.node->unique_attributes.front().value.c_str(), ~0)));
+            Serial.printf("Onclick script result: %s\n", js_str(script->engine, js_eval(script->engine, selectedNode.node->parent->unique_attributes.front().value.c_str(), ~0)));
           }
         }
       }
