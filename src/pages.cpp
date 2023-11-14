@@ -423,7 +423,7 @@ void DOMPage::onEvent(pageEvent_t event) {
         }
         else if (selectedNode.node->type == threeml::NodeType::BUTTON) {
           for (Script *script : scripts) {
-            Serial.printf("Onclick script result: %s", js_str(script->engine, js_eval(script->engine, selectedNode.node->unique_attributes.front().value.c_str(), ~0)));
+            Serial.printf("Onclick script result: %s\n", js_str(script->engine, js_eval(script->engine, selectedNode.node->unique_attributes.front().value.c_str(), ~0)));
           }
         }
       }
@@ -455,7 +455,7 @@ void DOMPage::load() {
       for (threeml::Attribute attr : node->unique_attributes) {
         if (attr.name == "onload")
           for (Script *script : scripts) {
-            Serial.printf("Onload script result: %s", js_str(script->engine, js_eval(script->engine, attr.value.c_str(), ~0)));
+            Serial.printf("Onload script result: %s\n", js_str(script->engine, js_eval(script->engine, attr.value.c_str(), ~0)));
           }
       }
     }
@@ -479,15 +479,16 @@ void DOMPage::loadDOM() {
   sourceFile.close();
   dom = threeml::clean_dom(threeml::parse_string(sourceCode));
   delete[] sourceCode;
+  // Serial.printf("DOMPage loaded - free heap: %i\n", xPortGetFreeHeapSize());
 }
 
-DOMPage::Script::Script(char *memory)
-  : engine(js_create(memory, ELK_STACK))
+DOMPage::Script::Script()
+  : memory((char*)calloc(ELK_STACK, sizeof(char)))
+  , engine(js_create(memory, ELK_STACK))
 {}
 
 DOMPage::Script::~Script() {
-  Serial.println("Script destructor called");
-  delete[] memory;
+  free(memory);
 }
 
 void DOMPage::loadScript(threeml::DOMNode *script) {
@@ -497,19 +498,17 @@ void DOMPage::loadScript(threeml::DOMNode *script) {
     Serial.printf("Elk source file `%s` not found\n", sourceFileName);
     return;
   }
-  Script *result = new Script(new char[ELK_STACK]);
+  Script *result = new Script();
   if (!result->engine) {
     Serial.println("Failed to create Elk script engine - likely out of memory");
-    delete[] result->memory;
     delete result;
     return;
   }
   size_t fileSize = sourceFile.available();
-  char *sourceCode = new char[fileSize + 1];
+  char *sourceCode = (char*)calloc(fileSize + 1, sizeof(char));
   if (!sourceCode) {
     Serial.println("Failed to allocate space for Elk source code buffer - likely out of memory");
     sourceFile.close();
-    delete[] result->memory;
     delete result;
     return;
   }
@@ -517,7 +516,7 @@ void DOMPage::loadScript(threeml::DOMNode *script) {
   sourceCode[fileSize] = '\0';
   sourceFile.close();
   js_eval(result->engine, sourceCode, ~0);
-  delete[] sourceCode;
+  free(sourceCode);
   scripts.push_back(result);
 }
 

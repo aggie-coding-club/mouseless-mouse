@@ -87,7 +87,7 @@ class DOMPage : public DisplayPage {
     char *memory;
     struct js *engine;
 
-    Script(char *memory);
+    Script();
     ~Script();
   };
 
