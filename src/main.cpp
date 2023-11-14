@@ -11,8 +11,6 @@
 #include <cmath>
 #include <cstdint>
 #include <esp32/rom/spi_flash.h>
-#include <WiFi.h>
-#include <ESP-FTP-Server-Lib.h>
 
 #include "ulp_main.h"
 #include "3ml_cleaner.h"
@@ -26,6 +24,12 @@
 
 // Define this if you want to test functionality without an IMU connected
 #define NO_SENSOR
+// #define DO_FTP
+
+#ifdef DO_FTP
+#include <WiFi.h>
+#include <ESP-FTP-Server-Lib.h>
+#endif
 
 // Constants
 #define ADC_ENABLE_PIN 14
@@ -134,18 +138,19 @@ void swapBoardRotation() {
   downButton.attach();
 }
 
+#ifdef DO_FTP
 void ftpTask(void *pvParameters) {
-  FTPServer ftp;
-  ftp.addUser("mouseless", "mouse");
-  ftp.addFilesystem("LittleFS", &LittleFS);
-  if (!ftp.begin()) {
+  FTPServer *ftp = new FTPServer();
+  ftp->addUser("mouseless", "mouse");
+  ftp->addFilesystem("LittleFS", &LittleFS);
+  if (!ftp->begin()) {
     Serial.println("Could not start FTP server");
     while (true);
   }
   Serial.println("FTP server started!");
 
   while (true) {
-    ftp.handle();
+    ftp->handle();
   }
 }
 
@@ -165,7 +170,7 @@ void hangAndFTP() {
   xTaskCreatePinnedToCore(
     ftpTask,
     "FTP Server",
-    20000,
+    4000,
     NULL,
     1,
     &ftpHandle,
@@ -174,14 +179,19 @@ void hangAndFTP() {
   vTaskDelete(NULL);
 }
 
+ConfirmationPage startFTP(&display, &displayManager, "Edit Filesystem");
+#endif
+
 // Instantiate display page hierarchy
 InlineSlider themeColorSlider(&display, &displayManager, "Theme Color", modifyHue);
 ConfirmationPage flipDisplay(&display, &displayManager, "Swap Rotation");
-ConfirmationPage startFTP(&display, &displayManager, "Edit Filesystem");
+
 MenuPage settingsPage(&display, &displayManager, "Settings",
   &themeColorSlider,
-  flipDisplay("Are you sure?", swapBoardRotation),
-  startFTP("Stop mouse?", hangAndFTP)
+  flipDisplay("Are you sure?", swapBoardRotation)
+#ifdef DO_FTP
+  , startFTP("Stop mouse?", hangAndFTP)
+#endif
 );
 
 InputDisplay inputViewPage(&display, &displayManager, "Input");
@@ -341,8 +351,7 @@ void printDom(threeml::DOM dom) {
 void setup() {
   // Begin serial and logging
   Serial.begin(115200);
-  Serial.println(__DATE__);
-  Serial.println(__TIME__);
+  Serial.println("Mouseless Mouse Build " __TIME__ " " __DATE__);
   delay(100);
 
   // Initialize mouse logic components and calibrate mouse
@@ -436,6 +445,8 @@ void setup() {
     while (!digitalRead(DOWN_BUTTON_PIN))
       ;
   }
+
+  Serial.printf("Free heap at end of setup(): %i\n", xPortGetFreeHeapSize());
 }
 
 // Code to constantly run

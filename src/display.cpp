@@ -205,6 +205,10 @@ void Display::drawNavArrow(uint16_t x, uint16_t y, bool direction, float progres
                              arrowheadY + arrowheadLength * sin(arrowheadAngleRads + arrowheadBreadth), stroke_color);
 }
 
+TFT_eSPI *Display::directAccess() {
+  return tft;
+}
+
 // Create a base DisplayPage class for other page types to inherit from
 DisplayPage::DisplayPage(Display *display, DisplayManager *displayManager, const char *pageName)
     : display(display)

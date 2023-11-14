@@ -359,15 +359,31 @@ void DOMPage::draw() {
       }
     else {
       byte textSize = node->parent->type == threeml::NodeType::H1 ? 3 : 2;
-      display->textFormat(textSize, node->parent->type == threeml::NodeType::A ? ACCENT_COLOR : TFT_WHITE);
+      uint16_t textColor = TFT_WHITE;
+      if (node->parent->type == threeml::NodeType::A)
+        textColor = ACCENT_COLOR;
+      else if (node->parent->type == threeml::NodeType::BUTTON)
+        textColor = TFT_BLACK;
+      display->textFormat(textSize, textColor);
       if (node->parent->selectable) {
         if (nodeSelector == 1)
           prevSelectableNode = {node, yPos};
-        if (nodeSelector == -1)
+        else if (nodeSelector == -1)
           nextSelectableNode = {node, yPos};
-        if (nodeSelector == 0 && yPos + node->height > 10 && yPos < display->buffer->height()) {
-          display->buffer->fillRect(0, yPos - 1, display->buffer->width(), node->height, SEL_COLOR);
-          selectedNode = {node, yPos};
+        if (yPos + node->height > 10 && yPos < display->buffer->height()) {
+          int16_t maxTextWidth = 0;
+          if (node->parent->type == threeml::NodeType::BUTTON) {
+            for (std::string str : node->plaintext_data)
+              maxTextWidth = max(maxTextWidth, display->buffer->textWidth(str.c_str()));
+          }
+          if (nodeSelector == 0) {
+            display->buffer->fillRect(0, yPos - 1, display->buffer->width(), node->height, SEL_COLOR);
+            if (node->parent->type == threeml::NodeType::BUTTON)
+              display->buffer->fillRect(0, yPos - 1, maxTextWidth, node->height, ACCENT_COLOR);
+            selectedNode = {node, yPos};
+          }
+          else if (node->parent->type == threeml::NodeType::BUTTON)
+            display->buffer->fillRect(0, yPos - 1, maxTextWidth, node->height, TFT_WHITE);
         }
         --nodeSelector;
       }
@@ -423,7 +439,9 @@ void DOMPage::onEvent(pageEvent_t event) {
         }
         else if (selectedNode.node->parent->type == threeml::NodeType::BUTTON) {
           for (Script *script : scripts) {
-            Serial.printf("Onclick script result: %s\n", js_str(script->engine, js_eval(script->engine, selectedNode.node->parent->unique_attributes.front().value.c_str(), ~0)));
+            jsval_t result = js_eval(script->engine, selectedNode.node->parent->unique_attributes.front().value.c_str(), ~0);
+            // Serial.printf("Onclick script result: %s\n", js_str(script->engine, result));
+            (void) result;
           }
         }
       }
@@ -455,7 +473,9 @@ void DOMPage::load() {
       for (threeml::Attribute attr : node->unique_attributes) {
         if (attr.name == "onload")
           for (Script *script : scripts) {
-            Serial.printf("Onload script result: %s\n", js_str(script->engine, js_eval(script->engine, attr.value.c_str(), ~0)));
+            jsval_t result = js_eval(script->engine, attr.value.c_str(), ~0);
+            // Serial.printf("Onload script result: %s\n", js_str(script->engine, result));
+            (void) result;
           }
       }
     }
@@ -515,12 +535,36 @@ void DOMPage::loadScript(threeml::DOMNode *script) {
   sourceFile.readBytes(sourceCode, fileSize);
   sourceCode[fileSize] = '\0';
   sourceFile.close();
-  js_eval(result->engine, sourceCode, ~0);
+  jsval_t consoleObject = js_mkobj(result->engine);
+  js_set(result->engine, consoleObject, "log", js_mkfun(
+    [](struct js *eng, jsval_t *args, int nargs) {
+      size_t lenDummy;
+      Serial.println(js_getstr(eng, *args, &lenDummy));
+      return js_mkval(JS_UNDEF);
+    }
+  ));
+  js_set(result->engine, js_glob(result->engine), "console", consoleObject);
+  jsval_t scriptResult = js_eval(result->engine, sourceCode, ~0);
   free(sourceCode);
+  // Serial.printf("Script result (not a callback): %s\n", js_str(result->engine, scriptResult));
+  (void) scriptResult;
+
   scripts.push_back(result);
 }
 
 void DOMPage::unload() {
+  for (threeml::DOMNode *node : dom->top_level_nodes) {
+    if (node->type == threeml::NodeType::BODY) {
+      for (threeml::Attribute attr : node->unique_attributes) {
+        if (attr.name == "onbeforeunload")
+          for (Script *script : scripts) {
+            jsval_t result = js_eval(script->engine, attr.value.c_str(), ~0);
+            // Serial.printf("Onbeforeunload script result: %s\n", js_str(script->engine, result));
+            (void) result;
+          }
+      }
+    }
+  }
   for (Script *script : scripts)
     delete script;
   scripts.clear();
