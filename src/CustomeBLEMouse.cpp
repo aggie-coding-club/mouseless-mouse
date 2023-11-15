@@ -15,7 +15,6 @@ class CustomBLEMouse : public BleMouse {
 
     void end() {
         vTaskDelete(handle);
-        BLEDevice::
         BLEDevice::deinit(true);
     }
 };
