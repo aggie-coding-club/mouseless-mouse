@@ -174,11 +174,10 @@ void ConfirmationPage::draw() {
 // Event handling for the confirmation page
 void ConfirmationPage::onEvent(pageEvent_t event) {
   switch (event) {
-    case pageEvent_t::NAV_CANCEL:
-      displayManager->pageStack.pop();
-      break;
     case pageEvent_t::NAV_SELECT:
       callback();
+    case pageEvent_t::NAV_CANCEL:
+      displayManager->pageStack.pop();
       break;
     default:
       break;
@@ -291,3 +290,37 @@ void DebugPage::onEvent(pageEvent_t event) {
   }
 };
 
+InlineSlider::InlineSlider(Display *display, DisplayManager *displayManager, const char *pageName, changeCallback_t onChange)
+  : DisplayPage(display, displayManager, pageName)
+  , sliderValue(0)
+  , onChange(onChange)
+{}
+
+void InlineSlider::draw() {
+  // Draw the underlying menu page
+  displayManager->pageStack.pop();
+  MenuPage *menuPage = reinterpret_cast<MenuPage*>(displayManager->pageStack.top());
+  displayManager->pageStack.push(this);
+  menuPage->draw();
+  display->buffer->fillRect(0, menuPage->selectionY, 240, 30, SEL_COLOR);
+  display->buffer->drawRect(39, menuPage->selectionY + 5, 162, 20, TFT_WHITE);
+  display->buffer->fillRect(40, menuPage->selectionY + 6, 10 * sliderValue, 18, ACCENT_COLOR);
+}
+
+void InlineSlider::onEvent(pageEvent_t event) {
+  switch(event) {
+    case pageEvent_t::NAV_UP:
+      if (sliderValue > 0) onChange(--sliderValue);
+      break;
+    case pageEvent_t::NAV_DOWN:
+      if (sliderValue < 16) onChange(++sliderValue);
+      break;
+    case pageEvent_t::NAV_CANCEL:
+      displayManager->pageStack.pop();
+      break;
+    case pageEvent_t::NAV_SELECT:
+      break;
+    default:
+      break;
+  }
+}
