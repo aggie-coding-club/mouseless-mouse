@@ -2,7 +2,6 @@
 #include <ArduinoEigen/Eigen/Geometry>
 
 #include <Arduino.h>
-#include <BleMouse.h>
 #include <FS.h>
 #include <LittleFS.h>
 #include <TFT_eSPI.h>
@@ -19,6 +18,7 @@
 #include "io.h"
 #include "pages.h"
 #include "power.h"
+#include "CustomBLEMouse.h"
 
 #include "ICM_20948.h"
 
@@ -53,7 +53,7 @@ constexpr double MOUSE_SENSITIVITY = 0.004;
 mvmt::GaussianFilter<Eigen::Vector3d> accel_readings(0.025, 2, 0.004, Eigen::Vector3d(0, 0, 0));
 #endif
 
-BleMouse mouse("Mouseless Mouse " __TIME__, "Mouseless Team");
+CustomBLEMouse mouse("Mouseless Mouse " __TIME__, "Mouseless Team");
 Eigen::Vector3f calibratedPosX;
 Eigen::Vector3f calibratedPosZ;
 

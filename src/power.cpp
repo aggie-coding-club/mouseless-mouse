@@ -5,6 +5,7 @@
 #include "soc/rtc.h"
 #include "soc/rtc_cntl_reg.h"
 #include <esp32/ulp.h>
+#include "CustomBLEMouse.h"
 // ULP header in ./ulp - links ULP entry points and variables to main program
 #include "ulp_main.h"
 // Need to include custom binary loader
@@ -12,12 +13,14 @@
 // Unlike the esp-idf always use these binary blob names
 extern const uint8_t ulp_main_bin_start[] asm("_binary_ulp_main_bin_start");
 extern const uint8_t ulp_main_bin_end[] asm("_binary_ulp_main_bin_end");
+extern CustomBLEMouse mouse;
 
 // Allow access to the externally declared display object
 extern Display display;
 
 // Put the whole T-Display board into a deep sleep state
 void deepSleep() {
+  mouse.end();
   display.flush();                // Clear the display
   vTaskDelay(pdMS_TO_TICKS(100)); // Give the display driver a little time
   display.sleepMode();            // Put the display driver to sleep
