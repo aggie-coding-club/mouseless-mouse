@@ -1,4 +1,5 @@
 #include <BleMouse.h>
+#include <BLEDevice.h>
 
 class CustomBLEMouse : public BleMouse {
     private:
@@ -14,5 +15,7 @@ class CustomBLEMouse : public BleMouse {
 
     void end() {
         vTaskDelete(handle);
+        BLEDevice::
+        BLEDevice::deinit(true);
     }
 };
