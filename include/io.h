@@ -21,9 +21,9 @@
 #define LONGPRESS_TIME                                                                                                 \
   300 // Buttons held longer than LONGPRESS_TIME milliseconds will fire holdEvent rather than bumpEvent on release
 
-#define TOUCH_DEFAULT_THRESHOLD 40 // Threshold value below which touch counter values are interpreted as touches
+#define TOUCH_DEFAULT_THRESHOLD 30 // Threshold value below which touch counter values are interpreted as touches
 #define TOUCH_HYSTERESIS                                                                                               \
-  20 // Once a touch pad is in the "pressed" state, it must go this far above the threshold to be "released"
+  10 // Once a touch pad is in the "pressed" state, it must go this far above the threshold to be "released"
 #define TOUCH_POLL_RATE 5 // When a touch is recorded, the pads will be polled every TOUCH_POLL_RATE ms
 
 // Driver class for physical buttons with debouncing, timestamping, and event generation

@@ -59,5 +59,6 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp"
     },
-    "cmake.sourceDirectory": "${workspaceFolder}/.pio/libdeps/ttgo-lora32-v1/TFT_eSPI"
+    "cmake.sourceDirectory": "${workspaceFolder}/.pio/libdeps/ttgo-lora32-v1/TFT_eSPI",
+    "cmake.configureOnOpen": false
 }

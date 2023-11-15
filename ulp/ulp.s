@@ -3,10 +3,18 @@
 #include "soc/rtc_io_reg.h"
 #include "soc/sens_reg.h"
 
+// Define variables to be initialized to a nonzero value
+    .data
+    .global iomask  // RTC_IO register mask for the down button's GPIO pin, whichever that is in the current rotation scheme
+
+iomask:
+    .long 32
+
 /* Define variables, which go into .bss section (zero-initialized data) */
     .bss
 /* Store count value */
     .global ctr             // Global counter variable - is accessible to the main program by the identifier `ulp_ctr`
+
 ctr:
     .long 0
 
@@ -14,9 +22,11 @@ ctr:
     .text
     .global entry           // Pointer to the execution entry point for the program (the main system will use this to start the ULP coprocessor)
 entry:
+    move    r3, iomask      // Load the address of the variable `iomask` into register 3
+    ld      r2, r3, 0       // Load the IO mask variable's value from memory into register 2
     move    r3, ctr         // Load the address of the variable `ctr` into register 3
     READ_RTC_REG(RTC_GPIO_IN_REG, RTC_GPIO_IN_NEXT_S, 16)   // Read the RTC GPIO pin states into register 0
-    and     r0, r0, 2048    // Mask register 0 with hex 0x0800, store the result in register 0 - this value is nonzero if pin GPIO 0 is high
+    and     r0, r0, r2      // Mask register 0 with the IO mask, store the result in register 0 - this value is nonzero if the wake button pin is high
     jumpr   press, 1, LT    // If pin GPIO 0 is low, the button is pressed, so skip past the `halt` instruction
     ld      r0, r3, 0       // Load the counter variable's value from memory into register 0
     jumpr   nopress, 1, LT  // The sleep cycle time register will usually be set correctly, so skip this next bit if it hasn't been modified
