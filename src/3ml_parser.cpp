@@ -40,6 +40,7 @@ Attribute parse_attribute(const char *&cursor) {
   }
   maybe_error(*cursor == '\0', "expected closing quote, found EOF");
   value = remove_escape_codes(std::string(value_begin, cursor - value_begin));
+  ++cursor;
 
   return Attribute(name, value);
 }

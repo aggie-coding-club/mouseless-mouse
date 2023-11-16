@@ -3,18 +3,21 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 namespace threeml {
 
 using DirtyDOMPlaintextNode = std::string;
 using Plaintext = std::string;
 
-struct Attribute {
-  std::string name;
-  std::string value;
+// struct Attribute {
+//   std::string name;
+//   std::string value;
 
-  Attribute(std::string name, std::string value) : name(name), value(value) {}
-};
+//   Attribute(std::string name, std::string value) : name(name), value(value) {}
+// };
+
+using Attribute = std::pair<std::string, std::string>;
 
 struct DirtyDOMNode;
 
