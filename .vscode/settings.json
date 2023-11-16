@@ -20,7 +20,6 @@
         "chrono": "cpp",
         "clocale": "cpp",
         "complex": "cpp",
-        "condition_variable": "cpp",
         "cstdarg": "cpp",
         "cstddef": "cpp",
         "cstdint": "cpp",
