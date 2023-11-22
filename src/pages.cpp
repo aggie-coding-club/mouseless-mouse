@@ -1,5 +1,6 @@
 #include <LittleFS.h>
 #include <elk.h>
+#include <unordered_map>
 
 #include "pages.h"
 #include "display.h"
@@ -7,6 +8,7 @@
 #include "pages.h"
 #include "mouse.h"
 #include "io.h"
+#include "elk_interface.h"
 #include "imgs/hand.h"
 #include "imgs/pointer.h"
 #include "imgs/ring.h"
@@ -505,14 +507,12 @@ void DOMPage::load() {
     }
     // With all scripts loaded, execute the `onload` callback if it exists
     else if (node->type == threeml::NodeType::BODY) {
-      for (threeml::Attribute attr : node->unique_attributes) {
-        if (attr.first == "onload")
-          for (Script *script : scripts) {
-            jsval_t result = js_eval(script->engine, attr.second.c_str(), ~0);
-            // Serial.printf("Onload script result: %s\n", js_str(script->engine, result));
-            (void) result;
-          }
-      }
+      if (node->unique_attributes.find("onload") != node->unique_attributes.end())
+        for (Script *script : scripts) {
+          jsval_t result = js_eval(script->engine, node->unique_attributes.at("onload").c_str(), ~0);
+          // Serial.printf("Onload script result: %s\n", js_str(script->engine, result));
+          (void) result;
+        }
     }
 }
 
@@ -556,15 +556,29 @@ Script::~Script() {
   free(memory);
 }
 
+JS::Prototype Bob(
+  new JS::PropertyType<int>("id"),
+  new JS::PropertyType<const char*>("content"),
+  new JS::PropertyType<std::function<int(const char*)>>("sayHello")
+);
+
+// struct js *myJs;
+// JS::Object *myBob = Bob[myJs]("Bobbothy", 7, "Hello, World!", [](){ Serial.println("Hello, world!"); });
+
 // Register standard JavaScript bindings necessary for working with a 3ML page
 void Script::register3MLBindings() {
   // Implement `console.log`
   jsval_t consoleObject = js_mkobj(engine);       // Create `console` object
   js_set(engine, consoleObject, "log", js_mkfun(  // Create `log` method and attach it to `console`
     [](struct js *eng, jsval_t *args, int nargs) {
-      size_t lenDummy;
       for (int8_t i = 0; i < nargs; ++i) {
-        Serial.print(js_getstr(eng, *(args + i), &lenDummy));
+        if (js_type(*(args + i)) == JS_STR) {
+          size_t *lenDummy = new size_t(0);
+          Serial.print(js_getstr(eng, *(args + i), lenDummy));
+          delete lenDummy;
+        }
+        else
+          Serial.print(js_str(eng, *(args + i)));
         if (i < nargs - 1)
           Serial.print(' ');
       }
@@ -619,13 +633,12 @@ void DOMPage::unload() {
   // While everything is still loaded, execute the `onbeforeunload` callback if it exists
   for (threeml::DOMNode *node : dom->top_level_nodes) {
     if (node->type == threeml::NodeType::BODY) {
-      for (threeml::Attribute attr : node->unique_attributes) {
-        if (attr.first == "onbeforeunload")
-          for (Script *script : scripts) {
-            jsval_t result = js_eval(script->engine, attr.second.c_str(), ~0);
-            // Serial.printf("Onbeforeunload script result: %s\n", js_str(script->engine, result));
-            (void) result;
-          }
+      if (node->unique_attributes.find("onbeforeunload") != node->unique_attributes.end()) {
+        for (Script *script : scripts) {
+          jsval_t result = js_eval(script->engine, node->unique_attributes.at("onbeforeunload").c_str(), ~0);
+          // Serial.printf("Onbeforeunload script result: %s\n", js_str(script->engine, result));
+          (void) result;
+        }
       }
     }
   }

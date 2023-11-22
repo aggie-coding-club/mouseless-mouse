@@ -5,6 +5,7 @@
 #include "soc/rtc.h"
 #include "soc/rtc_cntl_reg.h"
 #include <esp32/ulp.h>
+#include <BLEDevice.h>
 // ULP header in ./ulp - links ULP entry points and variables to main program
 #include "ulp_main.h"
 // Need to include custom binary loader
@@ -18,6 +19,9 @@ extern Display display;
 
 // Put the whole T-Display board into a deep sleep state
 void deepSleep() {
+  vTaskDelete(xTaskGetHandle("server"));
+  BLEDevice::deinit(true);
+
   display.flush();                // Clear the display
   vTaskDelay(pdMS_TO_TICKS(100)); // Give the display driver a little time
   display.sleepMode();            // Put the display driver to sleep

@@ -3,7 +3,7 @@ let sayHello = function() {
 };
 
 let booper = function() {
-    console.log("Boop!");
+    console.log(console);
 };
 
 let sayGoodbye = function() {

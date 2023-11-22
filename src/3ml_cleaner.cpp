@@ -49,12 +49,14 @@ void verify_body_attributes(const std::unordered_map<std::string, std::string> &
     if (attribute.first == "onload") {
       maybe_error(onload_encountered, "duplicate onload attribute on <body>");
       onload_encountered = true;
-    } else if (attribute.first == "onbeforeunload") {
+    }
+    else if (attribute.first == "onbeforeunload") {
       maybe_error(onbeforeunload_encountered, "duplicate onbeforeunload attribute on <body>");
       onbeforeunload_encountered = true;
-    } else {
-      maybe_error(true, "invalid attribute on <body>");
-    }
+    } 
+    // else {
+    //   maybe_error(true, "invalid attribute on <body>");
+    // }
   }
 }
 
@@ -75,7 +77,7 @@ DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vect
     unique_attributes.insert(attr);
   switch (type) {
   case NodeType::A:
-    maybe_error(unique_attributes.size() != 1, "invalid or no attribute(s) on <a>");
+    maybe_error(unique_attributes.size() < 1, "no attribute(s) on <a>");
     maybe_error(unique_attributes.find("href") == unique_attributes.end(), "no `href` attribute on <a>");
     selectable = true;
     break;
@@ -83,12 +85,12 @@ DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vect
     verify_body_attributes(unique_attributes);
     break;
   case NodeType::BUTTON:
-    maybe_error(unique_attributes.size() < 1, "invalid or no attribute(s) on <button>");
+    maybe_error(unique_attributes.size() < 1, "no attribute(s) on <button>");
     maybe_error(unique_attributes.find("onclick") == unique_attributes.end(), "no `onclick` attribute on <button>");
     selectable = true;
     break;
   case NodeType::SCRIPT:
-    maybe_error(unique_attributes.size() != 1, "invalid or no attribute(s) on <script>");
+    maybe_error(unique_attributes.size() < 1, "no attribute(s) on <script>");
     maybe_error(unique_attributes.find("src") == unique_attributes.end(), "no `src` attribute on <script>");
     break;
   case NodeType::SLIDER:
@@ -96,12 +98,13 @@ DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vect
     selectable = true;
     break;
   case NodeType::TEXT_INPUT:
-    maybe_error(unique_attributes.size() > 1, "invalid attribute(s) on <input>");
+    // maybe_error(unique_attributes.size() > 1, "invalid attribute(s) on <input>");
     maybe_error(!unique_attributes.empty() && unique_attributes.find("oninput") == unique_attributes.end(), "invalid attribute on <input>");
     selectable = true;
     break;
   default:
-    maybe_error(!filtered_attributes.empty(), "invalid attribute");
+    // maybe_error(!filtered_attributes.empty(), "invalid attribute");
+    break;
   }
 
   for (DOMNode* child : children) {
@@ -125,7 +128,7 @@ DOMNode::DOMNode(NodeType type, std::string plaintext_content, std::vector<DOMNo
       break;
     }
     while (len > 0 && !isspace(plaintext_content.at(start + len - 1))) --len;
-    maybe_error(len == 0, plaintext_content.c_str());
+    maybe_error(len == 0, ("Text wrapping failed: " + plaintext_content).c_str());
     plaintext_data.push_back(plaintext_content.substr(start, len));
     start += len;
     len = plaintext_content.substr(start).length();
