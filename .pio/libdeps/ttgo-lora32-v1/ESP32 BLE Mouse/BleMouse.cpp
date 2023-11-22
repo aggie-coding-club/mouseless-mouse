@@ -77,6 +77,7 @@ void BleMouse::begin(void)
 
 void BleMouse::end(void)
 {
+  
 }
 
 void BleMouse::click(uint8_t b)

@@ -2,10 +2,11 @@
 Memory Configuration
 
 Name             Origin             Length             Attributes
-ram              0x00000000         0x00000200         rw
-*default*        0x00000000         0xffffffff
+ram              0x0000000000000000 0x0000000000000200 rw
+*default*        0x0000000000000000 0xffffffffffffffff
 
 Linker script and memory map
+
 
 
 .text           0x00000000       0x94 load address 0x0000000c
@@ -31,5 +32,6 @@ Linker script and memory map
                 0x000000a2        0x2 SHORT 0x94 SIZEOF (.text)
                 0x000000a4        0x2 SHORT 0x4 SIZEOF (.data)
                 0x000000a6        0x2 SHORT 0x4 SIZEOF (.bss)
+
 LOAD ulp.ulp.o
 OUTPUT(ulp_main.elf elf32-esp32ulp)
