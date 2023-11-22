@@ -20,7 +20,6 @@
 #include "io.h"
 #include "pages.h"
 #include "power.h"
-#include "CustomBLEMouse.h"
 
 #include "ICM_20948.h"
 
@@ -61,7 +60,7 @@ constexpr double MOUSE_SENSITIVITY = 0.004;
 mvmt::GaussianFilter<Eigen::Vector3d> accel_readings(0.025, 2, 0.004, Eigen::Vector3d(0, 0, 0));
 #endif
 
-CustomBLEMouse mouse("Mouseless Mouse " __TIME__, "Mouseless Team");
+BleMouse mouse("Mouseless Mouse " __TIME__, "Mouseless Team");
 Eigen::Vector3f calibratedPosX;
 Eigen::Vector3f calibratedPosZ;
 

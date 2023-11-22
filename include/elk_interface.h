@@ -202,7 +202,6 @@ namespace JS {
 
 
 
-
   struct Object : public BaseProperty {
     std::unordered_map<std::string, BaseProperty*> properties;
 
@@ -222,9 +221,9 @@ private:
     Constructor(struct js *js, Prototype *proto);
 
 public:
+    friend struct Prototype;
     struct js *env;
     Prototype *proto;
-    friend class Prototype;
 
     Object *operator() (const size_t argc, void *values...);
 
