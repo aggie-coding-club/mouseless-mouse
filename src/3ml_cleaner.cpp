@@ -58,7 +58,7 @@ void verify_body_attributes(const std::unordered_map<std::string, std::string> &
   }
 }
 
-DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vector<DOMNode*> children, DOMNode* parent)
+DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vector<DOMNode *> children, DOMNode *parent)
     : type(type), height(0), children(children), parent(parent), selectable(false), num_selectable_children(0) {
   std::vector<Attribute> filtered_attributes;
   bool id_encountered = false;
@@ -97,53 +97,57 @@ DOMNode::DOMNode(NodeType type, std::vector<Attribute> tag_attributes, std::vect
     break;
   case NodeType::TEXT_INPUT:
     maybe_error(unique_attributes.size() > 1, "invalid attribute(s) on <input>");
-    maybe_error(!unique_attributes.empty() && unique_attributes.find("oninput") == unique_attributes.end(), "invalid attribute on <input>");
+    maybe_error(!unique_attributes.empty() && unique_attributes.find("oninput") == unique_attributes.end(),
+                "invalid attribute on <input>");
     selectable = true;
     break;
   default:
     maybe_error(!filtered_attributes.empty(), "invalid attribute");
   }
 
-  for (DOMNode* child : children) {
+  for (DOMNode *child : children) {
     num_selectable_children += child->num_selectable_children;
-    if (child->selectable) num_selectable_children += 1;
+    if (child->selectable)
+      num_selectable_children += 1;
     height += child->height;
   }
 }
 
-DOMNode::DOMNode(NodeType type, std::string plaintext_content, std::vector<DOMNode*> children, DOMNode* parent)
-  : type(type), height(0), children(children), parent(parent), selectable(false), num_selectable_children(0)
-{
+DOMNode::DOMNode(NodeType type, std::string plaintext_content, std::vector<DOMNode *> children, DOMNode *parent)
+    : type(type), height(0), children(children), parent(parent), selectable(false), num_selectable_children(0) {
   display.textFormat(parent->type == NodeType::H1 ? 3 : 2, TFT_WHITE);
   size_t len = plaintext_content.length();
   size_t start = 0;
   while (plaintext_content.substr(start).length()) {
     height += display.buffer->textsize * 10;
-    while (len > 0 && display.buffer->textWidth(plaintext_content.substr(start, len).c_str()) > display.buffer->width()) --len;
+    while (len > 0 && display.buffer->textWidth(plaintext_content.substr(start, len).c_str()) > display.buffer->width())
+      --len;
     if (len == plaintext_content.substr(start).length()) {
       plaintext_data.push_back(plaintext_content.substr(start));
       break;
     }
-    while (len > 0 && !isspace(plaintext_content.at(start + len - 1))) --len;
+    while (len > 0 && !isspace(plaintext_content.at(start + len - 1)))
+      --len;
     maybe_error(len == 0, plaintext_content.c_str());
     plaintext_data.push_back(plaintext_content.substr(start, len));
     start += len;
     len = plaintext_content.substr(start).length();
   }
 
-  for (DOMNode* child : children) {
+  for (DOMNode *child : children) {
     num_selectable_children += child->num_selectable_children;
-    if (child->selectable) num_selectable_children += 1;
+    if (child->selectable)
+      num_selectable_children += 1;
     height += child->height;
   }
 }
 
 DOMNode::~DOMNode() {
-  for (DOMNode* child : children)
+  for (DOMNode *child : children)
     delete child;
 }
 
-void DOMNode::add_child(DOMNode* child) {
+void DOMNode::add_child(DOMNode *child) {
   if (child->type == NodeType::PLAINTEXT && child->plaintext_data.empty()) {
     delete child;
     return;
@@ -162,11 +166,12 @@ void DOMNode::add_child(DOMNode* child) {
   }
   children.push_back(child);
   num_selectable_children += child->num_selectable_children;
-  if (child->selectable) num_selectable_children += 1;
+  if (child->selectable)
+    num_selectable_children += 1;
   height += child->height;
 }
 
-void DOM::add_top_level_node(DOMNode* node) {
+void DOM::add_top_level_node(DOMNode *node) {
   if (node->type == NodeType::PLAINTEXT && node->plaintext_data.empty()) {
     return;
   }
@@ -200,7 +205,7 @@ DOMNode *DOM::get_element_by_id(std::string id) {
   return nullptr;
 }
 
-DOMNode* clean_node(DirtyDOMNode dirty, DOMNode* parent) {
+DOMNode *clean_node(DirtyDOMNode dirty, DOMNode *parent) {
   if (dirty.is_plaintext) {
     return new DOMNode(NodeType::PLAINTEXT, dirty.plaintext_node, std::vector<DOMNode *>(), parent);
   }
@@ -243,8 +248,8 @@ DOMNode* clean_node(DirtyDOMNode dirty, DOMNode* parent) {
   return result;
 }
 
-DOM* clean_dom(DirtyDOM dirty) {
-  DOM* result = new DOM();
+DOM *clean_dom(DirtyDOM dirty) {
+  DOM *result = new DOM();
   for (auto top_level : dirty.top_level_nodes) {
     if (!(top_level.is_plaintext && top_level.plaintext_node.empty())) {
       result->add_top_level_node(clean_node(top_level, nullptr));
@@ -253,10 +258,7 @@ DOM* clean_dom(DirtyDOM dirty) {
   return result;
 }
 
-DOM::DOM()
-  : num_selectable_nodes(0)
-  , height(0)
-{}
+DOM::DOM() : num_selectable_nodes(0), height(0) {}
 
 DOM::~DOM() {
   for (DOMNode *child : top_level_nodes)
