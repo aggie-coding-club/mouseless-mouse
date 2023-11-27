@@ -426,8 +426,8 @@ void loop() {
       mouse.move(mouseCurve(-accel_readings.get_current().x() * MOUSE_SENSITIVITY),
                  mouseCurve(-accel_readings.get_current().y() * MOUSE_SENSITIVITY));
     } else {
-      mouse.move(0, 0, mouseCurve(-accel_readings.get_current().x() * MOUSE_SENSITIVITY),
-                 mouseCurve(-accel_readings.get_current().y() * MOUSE_SENSITIVITY));
+      mouse.move(0, 0, mouseCurve(-accel_readings.get_current().x() * MOUSE_SENSITIVITY*-0.5),
+                 mouseCurve(-accel_readings.get_current().y() * MOUSE_SENSITIVITY*-0.5));
     }
   }
   delay(5);
