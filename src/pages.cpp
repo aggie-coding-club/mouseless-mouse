@@ -555,17 +555,17 @@ void Script::register3MLBindings() {
     }
   }
 
-  auto getElementByID = [](js *engine, jsval_t *args, int nargs) {
-    std::size_t lenDummy;
-    auto id = js_getstr(engine, args[0], &lenDummy);
-    auto document = reinterpret_cast<threeml::DOM *>(
-        static_cast<uintptr_t>(js_getnum(loadval(engine, lkp(engine, args[0], "__domptr", sizeof("__domptr"))))));
-    return getElementObject(engine, document->get_element_by_id(id));
-  };
+  // auto getElementByID = [](js *engine, jsval_t *args, int nargs) {
+  //   std::size_t lenDummy;
+  //   auto id = js_getstr(engine, args[0], &lenDummy);
+  //   auto document = reinterpret_cast<threeml::DOM *>(
+  //       static_cast<uintptr_t>(js_getnum(loadval(engine, lkp(engine, args[0], "__domptr", sizeof("__domptr"))))));
+  //   return getElementObject(engine, document->get_element_by_id(id));
+  // };
 
   js_set(engine, js_glob(engine), "console", consoleObject);
   js_set(engine, js_glob(engine), "document", documentObject);
-  js_set(engine, js_glob(engine), "getElementByID", js_mkfun(getElementByID));
+  // js_set(engine, js_glob(engine), "getElementByID", js_mkfun(getElementByID));
 }
 
 void DOMPage::loadScript(threeml::DOMNode *script) {
