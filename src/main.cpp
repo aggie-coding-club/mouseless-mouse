@@ -44,6 +44,9 @@
 #define SCROLL_TOUCH_CHANNEL 4
 #define LOCK_TOUCH_CHANNEL 3
 #define CALIBRATE_TOUCH_CHANNEL 2
+#define MOUSE_SCROLL_SPEED -0.05
+#define MOUSE_SCROLL_DEADZONE 0.02 
+#define MOUSE_SCROLL_OFFSET_Y -400
 
 #ifndef NO_SENSOR
 uint16_t ACCENT_COLOR = 0x461F; // TFT_eSPI::color565(64, 192, 255)
@@ -58,7 +61,7 @@ uint16_t BGND_COLOR = TFT_BLACK;                  // Color of background
 // Mouse logic globals
 #ifndef NO_SENSOR
 ICM_20948_I2C icm;
-constexpr double MOUSE_SENSITIVITY = 0.004;
+constexpr double MOUSE_SENSITIVITY = 0.003;
 mvmt::GaussianFilter<Eigen::Vector3d> accel_readings(0.025, 2, 0.004, Eigen::Vector3d(0, 0, 0));
 #endif
 
@@ -426,8 +429,8 @@ void loop() {
       mouse.move(mouseCurve(-accel_readings.get_current().x() * MOUSE_SENSITIVITY),
                  mouseCurve(-accel_readings.get_current().y() * MOUSE_SENSITIVITY));
     } else {
-      mouse.move(0, 0, mouseCurve(-accel_readings.get_current().x() * MOUSE_SENSITIVITY*-0.5),
-                 mouseCurve(-accel_readings.get_current().y() * MOUSE_SENSITIVITY*-0.5));
+      mouse.move(0, 0, mouseCurve(accel_readings.get_current().y() * MOUSE_SENSITIVITY),
+                 mouseCurve(-accel_readings.get_current().x() * MOUSE_SENSITIVITY));
     }
   }
   delay(5);
