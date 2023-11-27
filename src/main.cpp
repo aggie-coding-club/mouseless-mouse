@@ -37,10 +37,10 @@
 #define ADC_ENABLE_PIN 14
 #define UP_BUTTON_PIN 35
 #define DOWN_BUTTON_PIN 0
-#define LMB_TOUCH_CHANNEL 7
-#define RMB_TOUCH_CHANNEL 5
-#define SCROLL_TOUCH_CHANNEL 3
-#define LOCK_TOUCH_CHANNEL 4
+#define LMB_TOUCH_CHANNEL 5
+#define RMB_TOUCH_CHANNEL 7
+#define SCROLL_TOUCH_CHANNEL 4
+#define LOCK_TOUCH_CHANNEL 3
 #define CALIBRATE_TOUCH_CHANNEL 2
 
 #ifndef NO_SENSOR
@@ -290,6 +290,8 @@ void setup() {
   Wire.begin();
   Wire.setClock(400000);
   mouse.begin();
+
+
 
   // Initialize LittleFS
   if (!LittleFS.begin()) {
