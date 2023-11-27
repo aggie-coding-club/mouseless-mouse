@@ -1,7 +1,9 @@
-https://github.com/maxgerhardt/ulptool-pio/
-bodmer/TFT_eSPI@^2.5.23
-sparkfun/SparkFun 9DoF IMU Breakout - ICM 20948 - Arduino Library@^1.2.11
-t-vk/ESP32 BLE Mouse@^0.3.1
-hideakitai/ArduinoEigen @ ^0.2.3
 thijse/ArduinoLog@^1.1.1
+peterus/ESP-FTP-Server-Lib
+hideakitai/ArduinoEigen @ ^0.2.3
 adafruit/Adafruit BusIO@^1.14.1
+cesanta/elk
+sparkfun/SparkFun 9DoF IMU Breakout - ICM 20948 - Arduino Library@^1.2.11
+https://github.com/maxgerhardt/ulptool-pio/
+t-vk/ESP32 BLE Mouse@^0.3.1
+bodmer/TFT_eSPI@^2.5.23

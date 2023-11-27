@@ -2,6 +2,8 @@
 #include <ArduinoEigen/Eigen/Geometry>
 
 #include <Arduino.h>
+#include <BLEDevice.h>
+#include <BleMouse.h>
 #include <FS.h>
 #include <LittleFS.h>
 #include <TFT_eSPI.h>
@@ -24,6 +26,12 @@
 
 // Define this if you want to test functionality without an IMU connected
 // #define NO_SENSOR
+// #define DO_FTP
+
+#ifdef DO_FTP
+#include <WiFi.h>
+#include <ESP-FTP-Server-Lib.h>
+#endif
 
 // Constants
 #define ADC_ENABLE_PIN 14
@@ -34,7 +42,6 @@
 #define SCROLL_TOUCH_CHANNEL 3
 #define LOCK_TOUCH_CHANNEL 4
 #define CALIBRATE_TOUCH_CHANNEL 2
-constexpr signed char SENSITIVITY = 24;
 
 #ifndef NO_SENSOR
 uint16_t ACCENT_COLOR = 0x461F; // TFT_eSPI::color565(64, 192, 255)
@@ -66,11 +73,10 @@ xQueueHandle mouseQueue = xQueueCreate(4, sizeof(mouseEvent_t));
 TFT_eSPI tftDisplay = TFT_eSPI();
 
 // Instantiate two sprites to be used as frame buffers
-TFT_eSprite bufferA = TFT_eSprite(&tftDisplay);
-TFT_eSprite bufferB = TFT_eSprite(&tftDisplay);
+TFT_eSprite bufferSprite = TFT_eSprite(&tftDisplay);
 
 // Wrap display module and frame buffers into Display class object
-Display display(&tftDisplay, &bufferA, &bufferB);
+Display display(&tftDisplay, &bufferSprite);
 
 // Instantiate display page manager
 DisplayManager displayManager(&display);
@@ -133,20 +139,75 @@ void swapBoardRotation() {
   downButton.attach();
 }
 
+#ifdef DO_FTP
+void ftpTask(void *pvParameters) {
+  FTPServer *ftp = new FTPServer();
+  ftp->addUser("mouseless", "mouse");
+  ftp->addFilesystem("LittleFS", &LittleFS);
+  if (!ftp->begin()) {
+    Serial.println("Could not start FTP server");
+    while (true);
+  }
+  Serial.println("FTP server started!");
+
+  while (true) {
+    ftp->handle();
+  }
+}
+
+void hangAndFTP() {
+  vTaskDelete(xTaskGetHandle("server"));
+  BLEDevice::deinit(true);
+
+  WiFi.softAP(SSID);
+  IPAddress IP = WiFi.softAPIP();
+  display.buffer->deleteSprite();
+  tftDisplay.fillRect(0, 0, tftDisplay.width(), tftDisplay.height(), TFT_BLACK);
+  tftDisplay.setTextSize(2);
+  tftDisplay.setTextColor(TFT_WHITE);
+  tftDisplay.drawString("IP Address:", 20, 20);
+  tftDisplay.drawString(IP.toString(), 20, 50);
+  TaskHandle_t ftpHandle;
+  xTaskCreatePinnedToCore(
+    ftpTask,
+    "FTP Server",
+    4000,
+    NULL,
+    1,
+    &ftpHandle,
+    1
+  );
+  vTaskDelete(NULL);
+}
+
+ConfirmationPage startFTP(&display, &displayManager, "Edit Filesystem");
+#endif
+
 // Instantiate display page hierarchy
 InlineSlider themeColorSlider(&display, &displayManager, "Theme Color", modifyHue);
 ConfirmationPage flipDisplay(&display, &displayManager, "Swap Rotation");
+
 MenuPage settingsPage(&display, &displayManager, "Settings",
   &themeColorSlider,
   flipDisplay("Are you sure?", swapBoardRotation)
+#ifdef DO_FTP
+  , startFTP("Stop mouse?", hangAndFTP)
+#endif
 );
 
 InputDisplay inputViewPage(&display, &displayManager, "Input");
+DOMPage testDomPage(&display, &displayManager, "/testpage.3ml");
 DebugPage debugPage(&display, &displayManager, "Debug Page");
 KeyboardPage keyboard(&display, &displayManager, "Keyboard");
 ConfirmationPage confirm(&display, &displayManager, "Power Off");
-MenuPage mainMenuPage(&display, &displayManager, "Main Menu", &inputViewPage, &debugPage, &settingsPage,
-                      keyboard(dummyField), confirm("Are you sure?", deepSleep));
+MenuPage mainMenuPage(&display, &displayManager, "Main Menu",
+  &inputViewPage,
+  &testDomPage,
+  &debugPage,
+  &settingsPage,
+  keyboard(dummyField),
+  confirm("Are you sure?", deepSleep)
+);
 HomePage homepage(&display, &displayManager, "Home Page", &mainMenuPage);
 
 // Keep track of which mouse functions are active
@@ -194,17 +255,27 @@ void drawTask(void *pvParameters) {
   }
 }
 
-void recPrintDomNode(threeml::DOMNode node, int8_t indentation) {
+void recPrintDomNode(threeml::DOMNode* node, int8_t indentation) {
   for (int8_t i = indentation; i > 0; --i)
     Serial.print("  ");
-  Serial.printf("Node of type %i - Plaintext content: %s\n", (byte)node.type, node.plaintext_data.c_str());
-  for (threeml::DOMNode child : node.children)
+  Serial.printf("Node of type %i (Parent type %i) - Plaintext content:\n", (byte)node->type, node->parent ? (byte)node->parent->type : -1);
+  for (std::string str : node->plaintext_data) {
+    for (int8_t i = indentation + 1; i > 0; --i)
+      Serial.print("  ");
+    Serial.println(str.c_str());
+  }
+  for (threeml::DOMNode* child : node->children)
     recPrintDomNode(child, indentation + 1);
 }
 
 void printDom(threeml::DOM dom) {
-  for (threeml::DOMNode node : dom.top_level_nodes)
+  for (threeml::DOMNode* node : dom.top_level_nodes)
     recPrintDomNode(node, 0);
+}
+
+double mouseCurve(double value) {
+  auto sign = std::signbit(value)? -1.0 : 1.0;
+  return sign * (std::exp(std::abs(value)) - 1.0);
 }
 
 // Code to run once on start up
@@ -212,8 +283,7 @@ void printDom(threeml::DOM dom) {
 void setup() {
   // Begin serial and logging
   Serial.begin(115200);
-  Serial.println(__DATE__);
-  Serial.println(__TIME__);
+  Serial.println("Mouseless Mouse Build " __TIME__ " " __DATE__);
   delay(100);
 
   // Initialize mouse logic components and calibrate mouse
@@ -272,14 +342,22 @@ void setup() {
   id = (id >> 16) & 0xFF;
   Serial.printf("Flash size is %i\n", 2 << (id - 1));
 
+  // Attach button interrupts
+  upButton.attach();
+  downButton.attach();
+
+  if (ulp_iomask == 2048)
+    swapBoardRotation();
+
   // Dispatch the display drawing task
-  xTaskCreatePinnedToCore(drawTask,        // Task code is in the drawTask() function
-                          "Draw Task",     // Descriptive task name
-                          4000,            // Stack depth
-                          NULL,            // Parameter to function (unnecessary here)
-                          1,               // Task priority
-                          &drawTaskHandle, // Variable to hold new task handle
-                          1                // Pin the task to the core that doesn't handle WiFi/Bluetooth
+  xTaskCreatePinnedToCore(
+    drawTask,        // Task code is in the drawTask() function
+    "Draw Task",     // Descriptive task name
+    4000,            // Stack depth
+    NULL,            // Parameter to function (unnecessary here)
+    1,               // Task priority
+    &drawTaskHandle, // Variable to hold new task handle
+    1                // Pin the task to the core that doesn't handle WiFi/Bluetooth
   );
 
   // If we just woke up from deep sleep, don't attach the buttons until the user lets go
@@ -290,26 +368,7 @@ void setup() {
       ;
   }
 
-  // Attach button interrupts
-  upButton.attach();
-  downButton.attach();
-
-  if (ulp_iomask == 2048)
-    swapBoardRotation();
-  
-  Serial.println("Parsing sample DOM...");
-
-  const char *sampleDOM = R"DOM(
-    <head>
-    </head>
-    <body>
-      <h1>Hello, World!</h1>
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-    </body>
-  )DOM";
-
-  threeml::DOM test = threeml::clean_dom(threeml::parse_string(sampleDOM));
-  printDom(test);
+  Serial.printf("Free heap at end of setup(): %i\n", xPortGetFreeHeapSize());
 }
 
 // Code to constantly run
@@ -373,8 +432,8 @@ void loop() {
     icm.getAGMT();
     accel_readings.add_measurement(Eigen::Vector3d(icm.accX(), icm.accY(), icm.accZ()));
     if (!scrollEnableState) {
-      mouse.move(accel_readings.get_current().x() * MOUSE_SENSITIVITY,
-                 accel_readings.get_current().y() * MOUSE_SENSITIVITY);
+      mouse.move(mouseCurve(-accel_readings.get_current().x() * MOUSE_SENSITIVITY),
+                 mouseCurve(-accel_readings.get_current().y() * MOUSE_SENSITIVITY));
     } else {
       mouse.move(0, 0, accel_readings.get_current().x(), accel_readings.get_current().y());
     }

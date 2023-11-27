@@ -2,6 +2,7 @@
 #define DISPLAY_PAGES
 
 #include "display.h"
+#include "3ml_cleaner.h"
 #include <Arduino.h>
 
 // Define a blank placeholder page
@@ -75,6 +76,44 @@ public:
   InlineSlider(Display *display, DisplayManager *displayManager, const char *pageName, changeCallback_t onChange);
   void draw();
   void onEvent(pageEvent_t event);
+};
+
+struct Script {
+  char *memory;
+  struct js *engine;
+  threeml::DOM *dom;
+
+  Script(threeml::DOM *dom);
+  ~Script();
+
+  void register3MLBindings();
+};
+
+// DOM page class supporting dynamic loading and unloading on entry and exit
+class DOMPage : public DisplayPage {
+  struct SelectableNode {
+    threeml::DOMNode *node;
+    int16_t yPos;
+  };
+
+  const char *sourceFileName;
+  threeml::DOM *dom;
+  std::vector<Script*> scripts;
+  SelectableNode nextSelectableNode;
+  SelectableNode selectedNode;
+  SelectableNode prevSelectableNode;
+  int16_t scrollPos;
+  int16_t scrollTlY;
+  byte selectionIdx;
+  
+public:
+  DOMPage(Display *display, DisplayManager *displayManager, const char *fileName);
+  void draw();
+  void onEvent(pageEvent_t event);
+  void load();
+    void loadDOM();
+    void loadScript(threeml::DOMNode *script);
+  void unload();
 };
 
 #endif

@@ -1,0 +1,11 @@
+<head>
+    <title>DOM Page :D</title>
+    <script src="/helloworld.js"></script>
+</head>
+<body onload="sayHello()" onbeforeunload="sayGoodbye()">
+    <h1>Hello, World!</h1>
+    <a href="/otherpage.3ml">foo</a>
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+    <button onclick="booper()">Ta-da!</button>
+    <a href="/testpage.3ml">The quick brown fox jumps over the lazy dogs.</a>
+</body>
