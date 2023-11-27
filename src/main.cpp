@@ -25,7 +25,7 @@
 #include "ICM_20948.h"
 
 // Define this if you want to test functionality without an IMU connected
-#define NO_SENSOR
+// #define NO_SENSOR
 // #define DO_FTP
 
 #ifdef DO_FTP
@@ -42,7 +42,6 @@
 #define SCROLL_TOUCH_CHANNEL 3
 #define LOCK_TOUCH_CHANNEL 4
 #define CALIBRATE_TOUCH_CHANNEL 2
-constexpr signed char SENSITIVITY = 24;
 
 #ifndef NO_SENSOR
 uint16_t ACCENT_COLOR = 0x461F; // TFT_eSPI::color565(64, 192, 255)
@@ -274,6 +273,11 @@ void printDom(threeml::DOM dom) {
     recPrintDomNode(node, 0);
 }
 
+double mouseCurve(double value) {
+  auto sign = std::signbit(value)? -1.0 : 1.0;
+  return sign * (std::exp(std::abs(value)) - 1.0);
+}
+
 // Code to run once on start up
 
 void setup() {
@@ -428,8 +432,8 @@ void loop() {
     icm.getAGMT();
     accel_readings.add_measurement(Eigen::Vector3d(icm.accX(), icm.accY(), icm.accZ()));
     if (!scrollEnableState) {
-      mouse.move(accel_readings.get_current().x() * MOUSE_SENSITIVITY,
-                 accel_readings.get_current().y() * MOUSE_SENSITIVITY);
+      mouse.move(mouseCurve(-accel_readings.get_current().x() * MOUSE_SENSITIVITY),
+                 mouseCurve(-accel_readings.get_current().y() * MOUSE_SENSITIVITY));
     } else {
       mouse.move(0, 0, accel_readings.get_current().x(), accel_readings.get_current().y());
     }
