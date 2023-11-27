@@ -81,8 +81,9 @@ public:
 struct Script {
   char *memory;
   struct js *engine;
+  threeml::DOM *dom;
 
-  Script();
+  Script(threeml::DOM *dom);
   ~Script();
 
   void register3MLBindings();

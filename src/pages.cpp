@@ -1,21 +1,20 @@
 #include <LittleFS.h>
 #include <elk.h>
 
-#include "pages.h"
 #include "display.h"
 #include "helpers.h"
-#include "pages.h"
-#include "mouse.h"
-#include "io.h"
 #include "imgs/hand.h"
+#include "imgs/middle.h"
+#include "imgs/pinky.h"
 #include "imgs/pointer.h"
 #include "imgs/ring.h"
-#include "imgs/thumb1.h"
-#include "imgs/thumb2.h"
-#include "imgs/pinky.h"
-#include "imgs/middle.h"
 #include "imgs/scrollDown.h"
 #include "imgs/scrollUp.h"
+#include "imgs/thumb1.h"
+#include "imgs/thumb2.h"
+#include "io.h"
+#include "mouse.h"
+#include "pages.h"
 
 // Set memory space allocated to each Elk script in a DOMPage
 const size_t ELK_STACK = 4096;
@@ -25,19 +24,15 @@ extern xQueueHandle mouseQueue;
 
 // Not much to do for a blank page
 BlankPage::BlankPage(Display *display, DisplayManager *displayManager, const char *pageName)
-  : DisplayPage(display, displayManager, pageName)
-{}
+    : DisplayPage(display, displayManager, pageName) {}
 
 // Great place for debug stuff
 void BlankPage::draw() {
   display->textFormat(2, TFT_WHITE);
   display->buffer->drawString(pageName, 30, 30);
   display->buffer->drawString(String(touchRead(T7)), 30, 60);
-  display->drawNavArrow(
-    120, 110, pageName[12] & 1,
-    0.5 - 0.5 * cos(6.28318 * float(frameCounter % 90) / 90.0),
-    0x461F, TFT_BLACK
-  );
+  display->drawNavArrow(120, 110, pageName[12] & 1, 0.5 - 0.5 * cos(6.28318 * float(frameCounter % 90) / 90.0), 0x461F,
+                        TFT_BLACK);
   frameCounter++;
 };
 
@@ -49,17 +44,8 @@ void BlankPage::onEvent(pageEvent_t event) {
 
 // Create a keyboard page attached to a display and manager
 KeyboardPage::KeyboardPage(Display *display, DisplayManager *displayManager, const char *pageName)
-  : DisplayPage(display, displayManager, pageName)
-  , textBuffer(new char[32])
-  , bufferIdx(0)
-  , specialIdx(0)
-  , letterIdx(0)
-  , numberIdx(0)
-  , colIdx(1)
-  , specialTlY(0)
-  , letterTlY(0)
-  , numberTlY(0)
-{
+    : DisplayPage(display, displayManager, pageName), textBuffer(new char[32]), bufferIdx(0), specialIdx(0),
+      letterIdx(0), numberIdx(0), colIdx(1), specialTlY(0), letterTlY(0), numberTlY(0) {
   for (byte i = 0; i < 32; i++)
     textBuffer[i] = '\0';
 }
@@ -161,8 +147,7 @@ void KeyboardPage::onEvent(pageEvent_t event) {
 
 // Create a confirmation page attached to a display and manager
 ConfirmationPage::ConfirmationPage(Display *display, DisplayManager *displayManager, const char *pageName)
-  : DisplayPage(display, displayManager, pageName)
-{}
+    : DisplayPage(display, displayManager, pageName) {}
 
 // Attach the confirmation page to a specific prompt message and action
 ConfirmationPage *ConfirmationPage::operator()(const char *message, void (*callback)()) {
@@ -180,87 +165,79 @@ void ConfirmationPage::draw() {
 // Event handling for the confirmation page
 void ConfirmationPage::onEvent(pageEvent_t event) {
   switch (event) {
-    case pageEvent_t::NAV_SELECT:
-      callback();
-    case pageEvent_t::NAV_CANCEL:
-      displayManager->pageStack.pop();
-      break;
-    default:
-      break;
+  case pageEvent_t::NAV_SELECT:
+    callback();
+  case pageEvent_t::NAV_CANCEL:
+    displayManager->pageStack.pop();
+    break;
+  default:
+    break;
   }
 }
 
-
-
 // Create a page that displays a real-time visualization of mouse inputs
-InputDisplay::InputDisplay(Display* display, DisplayManager* displayManager, const char* pageName)
-  : DisplayPage(display, displayManager, pageName)
-  , lmb(false)
-  , rmb(false)
-  , scrollU(false)
-  , scrollD(false)
-  , lock(false)
-  , calibrate(false)
-{}
+InputDisplay::InputDisplay(Display *display, DisplayManager *displayManager, const char *pageName)
+    : DisplayPage(display, displayManager, pageName), lmb(false), rmb(false), scrollU(false), scrollD(false),
+      lock(false), calibrate(false) {}
 
 // Visualize the mouse input states
 void InputDisplay::draw() {
   display->textFormat(2, TFT_WHITE);
   display->buffer->drawString(pageName, 30, 30);
-  display->buffer->pushImage(60,60,64,64, hand);
-  if(lmb)
-    display->buffer->pushImage(60+12,60+24,7,11, thumb1);
-  if(rmb)
-    display->buffer->pushImage(60+12,60+35,7,11, thumb2);
-  if(scrollU) {
-    display->buffer->pushImage(60+29,60+33,5,3, scrollUp);
-    display->buffer->pushImage(60+27, 60+6, 9, 19, middle);
+  display->buffer->pushImage(60, 60, 64, 64, hand);
+  if (lmb)
+    display->buffer->pushImage(60 + 12, 60 + 24, 7, 11, thumb1);
+  if (rmb)
+    display->buffer->pushImage(60 + 12, 60 + 35, 7, 11, thumb2);
+  if (scrollU) {
+    display->buffer->pushImage(60 + 29, 60 + 33, 5, 3, scrollUp);
+    display->buffer->pushImage(60 + 27, 60 + 6, 9, 19, middle);
   }
-  if(scrollD)
-    display->buffer->pushImage(60+29,60+40,5,3, scrollDown);
-  if(lock)
-    display->buffer->pushImage(60+37,60+9,7,17,ring);
-  if(calibrate)
-    display->buffer->pushImage(60+45,60+20,5,15, pinky);
+  if (scrollD)
+    display->buffer->pushImage(60 + 29, 60 + 40, 5, 3, scrollDown);
+  if (lock)
+    display->buffer->pushImage(60 + 37, 60 + 9, 7, 17, ring);
+  if (calibrate)
+    display->buffer->pushImage(60 + 45, 60 + 20, 5, 15, pinky);
 }
 
 // Handle mouse events via a callback that doesn't disturb the queue
 void InputDisplay::onMouseEvent(mouseEvent_t event) {
-  switch(event) {
-    case mouseEvent_t::LMB_PRESS:
-      lmb = true;
-      break;
-    case mouseEvent_t::LMB_RELEASE:
-      lmb = false;
-      break;
-    case mouseEvent_t::RMB_PRESS:
-      rmb = true;
-      break;
-    case mouseEvent_t::RMB_RELEASE:
-      rmb = false;
-      break;
-    case mouseEvent_t::SCROLL_PRESS:
-      scrollU = true;
-      scrollD = true;
-      break;
-    case mouseEvent_t::SCROLL_RELEASE:
-      scrollU = false;
-      scrollD = false;
-      break;
-    case mouseEvent_t::LOCK_PRESS:
-      lock = true;
-      break;
-    case mouseEvent_t::LOCK_RELEASE:
-      lock = false;
-      break;
-    case mouseEvent_t::CALIBRATE_PRESS:
-      calibrate = true;
-      break;
-    case mouseEvent_t::CALIBRATE_RELEASE:
-      calibrate = false;
-      break;
-    default:
-      break;
+  switch (event) {
+  case mouseEvent_t::LMB_PRESS:
+    lmb = true;
+    break;
+  case mouseEvent_t::LMB_RELEASE:
+    lmb = false;
+    break;
+  case mouseEvent_t::RMB_PRESS:
+    rmb = true;
+    break;
+  case mouseEvent_t::RMB_RELEASE:
+    rmb = false;
+    break;
+  case mouseEvent_t::SCROLL_PRESS:
+    scrollU = true;
+    scrollD = true;
+    break;
+  case mouseEvent_t::SCROLL_RELEASE:
+    scrollU = false;
+    scrollD = false;
+    break;
+  case mouseEvent_t::LOCK_PRESS:
+    lock = true;
+    break;
+  case mouseEvent_t::LOCK_RELEASE:
+    lock = false;
+    break;
+  case mouseEvent_t::CALIBRATE_PRESS:
+    calibrate = true;
+    break;
+  case mouseEvent_t::CALIBRATE_RELEASE:
+    calibrate = false;
+    break;
+  default:
+    break;
   }
 }
 
@@ -273,39 +250,36 @@ void InputDisplay::onEvent(pageEvent_t event) {
 
 // Fun playground
 DebugPage::DebugPage(Display *display, DisplayManager *displayManager, const char *pageName)
-  : DisplayPage(display, displayManager, pageName)
-{}
+    : DisplayPage(display, displayManager, pageName) {}
 
 // Great place for debug stuff
 void DebugPage::draw() {
   display->textFormat(2, TFT_WHITE);
-  //frameCounter++; No animations being currently tested
+  // frameCounter++; No animations being currently tested
 };
 
 // Currently testing page events
 void DebugPage::onEvent(pageEvent_t event) {
-  switch(event) {
-    case pageEvent_t::NAV_DOWN:
-      Serial.println("Hello World!");
-      break;
-    case pageEvent_t::NAV_CANCEL:
-      this->displayManager->pageStack.pop();
-      break;
-    default:
-      break;
+  switch (event) {
+  case pageEvent_t::NAV_DOWN:
+    Serial.println("Hello World!");
+    break;
+  case pageEvent_t::NAV_CANCEL:
+    this->displayManager->pageStack.pop();
+    break;
+  default:
+    break;
   }
 };
 
-InlineSlider::InlineSlider(Display *display, DisplayManager *displayManager, const char *pageName, changeCallback_t onChange)
-  : DisplayPage(display, displayManager, pageName)
-  , sliderValue(0)
-  , onChange(onChange)
-{}
+InlineSlider::InlineSlider(Display *display, DisplayManager *displayManager, const char *pageName,
+                           changeCallback_t onChange)
+    : DisplayPage(display, displayManager, pageName), sliderValue(0), onChange(onChange) {}
 
 void InlineSlider::draw() {
   // Draw the underlying menu page
   displayManager->pageStack.pop();
-  MenuPage *menuPage = reinterpret_cast<MenuPage*>(displayManager->pageStack.top());
+  MenuPage *menuPage = reinterpret_cast<MenuPage *>(displayManager->pageStack.top());
   displayManager->pageStack.push(this);
   menuPage->draw();
   display->buffer->fillRect(0, menuPage->selectionY, 240, 30, SEL_COLOR);
@@ -314,35 +288,29 @@ void InlineSlider::draw() {
 }
 
 void InlineSlider::onEvent(pageEvent_t event) {
-  switch(event) {
-    case pageEvent_t::NAV_UP:
-      if (sliderValue > 0) onChange(--sliderValue);
-      break;
-    case pageEvent_t::NAV_DOWN:
-      if (sliderValue < 16) onChange(++sliderValue);
-      break;
-    case pageEvent_t::NAV_CANCEL:
-      displayManager->pageStack.pop();
-      break;
-    case pageEvent_t::NAV_SELECT:
-      break;
-    default:
-      break;
+  switch (event) {
+  case pageEvent_t::NAV_UP:
+    if (sliderValue > 0)
+      onChange(--sliderValue);
+    break;
+  case pageEvent_t::NAV_DOWN:
+    if (sliderValue < 16)
+      onChange(++sliderValue);
+    break;
+  case pageEvent_t::NAV_CANCEL:
+    displayManager->pageStack.pop();
+    break;
+  case pageEvent_t::NAV_SELECT:
+    break;
+  default:
+    break;
   }
 }
 
 DOMPage::DOMPage(Display *display, DisplayManager *displayManager, const char *fileName)
-  : DisplayPage(display, displayManager, fileName)  // File name will be used as page title until DOM is loaded for the first time
-  , sourceFileName(fileName)
-  , dom(nullptr)
-  , scripts(std::vector<Script*>())
-  , nextSelectableNode{nullptr, 0}
-  , selectedNode{nullptr, 0}
-  , prevSelectableNode{nullptr, 0}
-  , scrollPos(0)
-  , scrollTlY(0)
-  , selectionIdx(0)
-{}
+    : DisplayPage(display, displayManager, fileName), sourceFileName(fileName), dom(nullptr),
+      scripts(std::vector<Script *>()), nextSelectableNode{nullptr, 0}, selectedNode{nullptr, 0},
+      prevSelectableNode{nullptr, 0}, scrollPos(0), scrollTlY(0), selectionIdx(0) {}
 
 void DOMPage::draw() {
   if (!dom) {
@@ -355,10 +323,11 @@ void DOMPage::draw() {
   int8_t nodeSelector = selectionIdx;
 
   // Draw the page by recursing through the DOM tree
-  std::function<void(threeml::DOMNode*)> drawDOMNode = [&drawDOMNode, &yPos, &nodeSelector, this](threeml::DOMNode* node){
+  std::function<void(threeml::DOMNode *)> drawDOMNode = [&drawDOMNode, &yPos, &nodeSelector,
+                                                         this](threeml::DOMNode *node) {
     // Only plaintext nodes are directly drawn - their appearances are determined by their parent nodes
     if (node->type != threeml::NodeType::PLAINTEXT)
-      for (threeml::DOMNode* child : node->children) {
+      for (threeml::DOMNode *child : node->children) {
         drawDOMNode(child);
       }
     else {
@@ -392,8 +361,7 @@ void DOMPage::draw() {
             if (node->parent->type == threeml::NodeType::BUTTON)
               display->buffer->fillRect(0, yPos - 1, maxTextWidth, node->height, ACCENT_COLOR);
             selectedNode = {node, yPos};
-          }
-          else if (node->parent->type == threeml::NodeType::BUTTON)
+          } else if (node->parent->type == threeml::NodeType::BUTTON)
             // Draw unselected buttons in their unhighlighted color
             display->buffer->fillRect(0, yPos - 1, maxTextWidth, node->height, TFT_WHITE);
         }
@@ -418,7 +386,7 @@ void DOMPage::draw() {
   nextSelectableNode = {nullptr, 0};
 
   // Start the recursive drawing function at the body element
-  for (threeml::DOMNode* node : dom->top_level_nodes) {
+  for (threeml::DOMNode *node : dom->top_level_nodes) {
     if (node->type == threeml::NodeType::BODY)
       drawDOMNode(node);
   }
@@ -429,54 +397,56 @@ void DOMPage::draw() {
 
 void DOMPage::onEvent(pageEvent_t event) {
   switch (event) {
-    // Load the page before displaying it (onEvent is a blocking call in the draw task)
-    case pageEvent_t::ENTER: {
-      load();
-    } break;
-    // Unload and exit the page, making sure to fire the ENTER event for the receiving page
-    case pageEvent_t::NAV_CANCEL: {
-      displayManager->pageStack.pop();
-      unload();
-      displayManager->pageStack.top()->onEvent(pageEvent_t::ENTER);
-    } break;
-    // Handle scrolling and selection for a down button press
-    case pageEvent_t::NAV_DOWN: {
-      // Only change the selection if the element that would be selected is fully visible
-      if (nextSelectableNode.node && nextSelectableNode.yPos + nextSelectableNode.node->height <= display->buffer->height())
-          ++selectionIdx;
-      if (dom->height - scrollPos + 20 > display->buffer->height()) {
-        scrollPos += 20;
-        scrollTlY -= 20;
-      }
-    } break;
-    // Handle scrolling and selection for an up button press
-    case pageEvent_t::NAV_UP: {
-      // Only change the selection if the element that would be selected is fully visible
-      if (prevSelectableNode.node && prevSelectableNode.yPos > 10)
-          --selectionIdx;
-      if (scrollPos >= 20) {
-        scrollPos -= 20;
-        scrollTlY += 20;
-      }
-    } break;
-    // Handle selection actions for selectable elements
-    case pageEvent_t::NAV_SELECT: {
-      // Only process a selection event if the target element is fully visible
-      if (selectedNode.node && selectedNode.yPos > 10 && selectedNode.yPos + selectedNode.node->height <= display->buffer->height()) {
-        if (selectedNode.node->parent->type == threeml::NodeType::A) {
-          Serial.printf("Not yet implemented - navigate to `%s`\n", selectedNode.node->parent->unique_attributes.at("href").c_str());
+  // Load the page before displaying it (onEvent is a blocking call in the draw task)
+  case pageEvent_t::ENTER: {
+    load();
+  } break;
+  // Unload and exit the page, making sure to fire the ENTER event for the receiving page
+  case pageEvent_t::NAV_CANCEL: {
+    displayManager->pageStack.pop();
+    unload();
+    displayManager->pageStack.top()->onEvent(pageEvent_t::ENTER);
+  } break;
+  // Handle scrolling and selection for a down button press
+  case pageEvent_t::NAV_DOWN: {
+    // Only change the selection if the element that would be selected is fully visible
+    if (nextSelectableNode.node &&
+        nextSelectableNode.yPos + nextSelectableNode.node->height <= display->buffer->height())
+      ++selectionIdx;
+    if (dom->height - scrollPos + 20 > display->buffer->height()) {
+      scrollPos += 20;
+      scrollTlY -= 20;
+    }
+  } break;
+  // Handle scrolling and selection for an up button press
+  case pageEvent_t::NAV_UP: {
+    // Only change the selection if the element that would be selected is fully visible
+    if (prevSelectableNode.node && prevSelectableNode.yPos > 10)
+      --selectionIdx;
+    if (scrollPos >= 20) {
+      scrollPos -= 20;
+      scrollTlY += 20;
+    }
+  } break;
+  // Handle selection actions for selectable elements
+  case pageEvent_t::NAV_SELECT: {
+    // Only process a selection event if the target element is fully visible
+    if (selectedNode.node && selectedNode.yPos > 10 &&
+        selectedNode.yPos + selectedNode.node->height <= display->buffer->height()) {
+      if (selectedNode.node->parent->type == threeml::NodeType::A) {
+        displayManager->pageStack.push(
+            new DOMPage(display, displayManager, selectedNode.node->parent->unique_attributes.at("href").c_str()));
+        displayManager->pageStack.top()->onEvent(pageEvent_t::ENTER);
+        Serial.printf("Navigate to `%s`\n", selectedNode.node->parent->unique_attributes.at("href").c_str());
+      } else if (selectedNode.node->parent->type == threeml::NodeType::BUTTON) {
+        for (Script *script : scripts) {
+          js_eval(script->engine, selectedNode.node->parent->unique_attributes.at("onclick").c_str(), ~0);
         }
-        else if (selectedNode.node->parent->type == threeml::NodeType::BUTTON) {
-          for (Script *script : scripts) {
-            jsval_t result = js_eval(script->engine, selectedNode.node->parent->unique_attributes.at("onclick").c_str(), ~0);
-            // Serial.printf("Onclick script result: %s\n", js_str(script->engine, result));
-            (void) result;
-          }
-        }
       }
-    } break;
-    default:
-      break;
+    }
+  } break;
+  default:
+    break;
   }
 }
 
@@ -486,7 +456,8 @@ void DOMPage::load() {
   selectionIdx = 0;
   loadDOM();
   // Abort if loading the DOM failed
-  if (!dom) return;
+  if (!dom)
+    return;
   for (threeml::DOMNode *node : dom->top_level_nodes)
     // Process metadata in the head element
     if (node->type == threeml::NodeType::HEAD) {
@@ -509,8 +480,7 @@ void DOMPage::load() {
         if (attr.first == "onload")
           for (Script *script : scripts) {
             jsval_t result = js_eval(script->engine, attr.second.c_str(), ~0);
-            // Serial.printf("Onload script result: %s\n", js_str(script->engine, result));
-            (void) result;
+            (void)result;
           }
       }
     }
@@ -531,7 +501,7 @@ void DOMPage::loadDOM() {
     return;
   }
   size_t fileSize = sourceFile.available();
-  char *sourceCode = (char*)calloc(fileSize + 1, sizeof(char));
+  char *sourceCode = (char *)calloc(fileSize + 1, sizeof(char));
   if (!sourceCode) {
     Serial.println("Failed to allocate space for 3ML source code buffer - likely out of memory");
     sourceFile.close();
@@ -547,32 +517,55 @@ void DOMPage::loadDOM() {
   // Serial.printf("DOMPage loaded - free heap: %i\n", xPortGetFreeHeapSize());
 }
 
-Script::Script()
-  : memory((char*)calloc(ELK_STACK, sizeof(char)))
-  , engine(js_create(memory, ELK_STACK))
-{}
+Script::Script(threeml::DOM *dom)
+    : memory((char *)calloc(ELK_STACK, sizeof(char))), engine(js_create(memory, ELK_STACK)), dom(dom) {}
 
-Script::~Script() {
-  free(memory);
+Script::~Script() { free(memory); }
+
+jsval_t getElementObject(js *engine, threeml::DOMNode *node) {
+  jsval_t result = js_mkobj(engine);
+  js_set(engine, result, "__nodeptr", js_mknum(static_cast<double>(reinterpret_cast<uintptr_t>(node))));
+  return result;
 }
 
 // Register standard JavaScript bindings necessary for working with a 3ML page
 void Script::register3MLBindings() {
   // Implement `console.log`
-  jsval_t consoleObject = js_mkobj(engine);       // Create `console` object
-  js_set(engine, consoleObject, "log", js_mkfun(  // Create `log` method and attach it to `console`
-    [](struct js *eng, jsval_t *args, int nargs) {
-      size_t lenDummy;
-      for (int8_t i = 0; i < nargs; ++i) {
-        Serial.print(js_getstr(eng, *(args + i), &lenDummy));
-        if (i < nargs - 1)
-          Serial.print(' ');
-      }
-      Serial.println();
-      return js_mkval(JS_UNDEF);
+
+  jsval_t consoleObject = js_mkobj(engine); // Create `console` object
+  auto log = [](struct js *eng, jsval_t *args, int nargs) {
+    size_t lenDummy;
+    for (int8_t i = 0; i < nargs; ++i) {
+      Serial.print(js_getstr(eng, *(args + i), &lenDummy));
+      if (i < nargs - 1)
+        Serial.print(' ');
     }
-  ));
-  js_set(engine, js_glob(engine), "console", consoleObject);  // Attach `console` to the root namespace
+    Serial.println();
+    return js_mkval(JS_UNDEF);
+  };
+  js_set(engine, consoleObject, "log", js_mkfun(log));
+
+  jsval_t documentObject = js_mkobj(engine);
+  js_set(engine, documentObject, "__domptr", js_mknum(static_cast<double>(reinterpret_cast<uintptr_t>(dom))));
+  for (const auto node : dom->top_level_nodes) {
+    if (node->type == threeml::NodeType::HEAD) {
+      js_set(engine, documentObject, "head", getElementObject(engine, node));
+    } else if (node->type == threeml::NodeType::BODY) {
+      js_set(engine, documentObject, "body", getElementObject(engine, node));
+    }
+  }
+
+  auto getElementByID = [](js *engine, jsval_t *args, int nargs) {
+    std::size_t lenDummy;
+    auto id = js_getstr(engine, args[0], &lenDummy);
+    auto document = reinterpret_cast<threeml::DOM *>(
+        static_cast<uintptr_t>(js_getnum(loadval(engine, lkp(engine, args[0], "__domptr", sizeof("__domptr"))))));
+    return getElementObject(engine, document->get_element_by_id(id));
+  };
+
+  js_set(engine, js_glob(engine), "console", consoleObject);
+  js_set(engine, js_glob(engine), "document", documentObject);
+  js_set(engine, js_glob(engine), "getElementByID", js_mkfun(getElementByID));
 }
 
 void DOMPage::loadScript(threeml::DOMNode *script) {
@@ -584,7 +577,7 @@ void DOMPage::loadScript(threeml::DOMNode *script) {
     return;
   }
   // Create a Script object
-  Script *result = new Script();
+  Script *result = new Script(dom);
   if (!result->engine) {
     Serial.println("Failed to create Elk script engine - likely out of memory");
     delete result;
@@ -592,7 +585,7 @@ void DOMPage::loadScript(threeml::DOMNode *script) {
   }
   // Read the source code from the source file
   size_t fileSize = sourceFile.available();
-  char *sourceCode = (char*)calloc(fileSize + 1, sizeof(char));
+  char *sourceCode = (char *)calloc(fileSize + 1, sizeof(char));
   if (!sourceCode) {
     Serial.println("Failed to allocate space for Elk source code buffer - likely out of memory");
     sourceFile.close();
@@ -609,9 +602,10 @@ void DOMPage::loadScript(threeml::DOMNode *script) {
   // Elk copies all necessary information to the runtime space, so the source code is no longer necessary
   free(sourceCode);
   // Serial.printf("Script result (not a callback): %s\n", js_str(result->engine, scriptResult));
-  (void) scriptResult;
+  (void)scriptResult;
 
-  // The script engine now contains all variables and functions registered by the source code - save it for callback execution
+  // The script engine now contains all variables and functions registered by the source code - save it for callback
+  // execution
   scripts.push_back(result);
 }
 
@@ -624,7 +618,7 @@ void DOMPage::unload() {
           for (Script *script : scripts) {
             jsval_t result = js_eval(script->engine, attr.second.c_str(), ~0);
             // Serial.printf("Onbeforeunload script result: %s\n", js_str(script->engine, result));
-            (void) result;
+            (void)result;
           }
       }
     }
