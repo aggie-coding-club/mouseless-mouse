@@ -47,6 +47,9 @@ jsval_t js_mkstr(struct js *, const void *, size_t);           // Create string
 jsval_t js_mknum(double);                                      // Create number
 jsval_t js_mkerr(struct js *js, const char *fmt, ...);         // Create error
 jsval_t js_mkfun(jsval_t (*fn)(struct js *, jsval_t *, int));  // Create func
+typedef uint32_t jsoff_t;
+jsval_t loadval(struct js *js, jsoff_t off);
+jsoff_t lkp(struct js *js, jsval_t obj, const char *buf, size_t len);
 
 // Extract C values from JS values
 double js_getnum(jsval_t val);  // Get number

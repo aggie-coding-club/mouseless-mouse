@@ -33,7 +33,7 @@
 #define JS_GC_THRESHOLD 0.75
 #endif
 
-typedef uint32_t jsoff_t;
+// typedef uint32_t jsoff_t;
 
 struct js {
   const char *code;   // Currently parsed code snippet
@@ -151,7 +151,7 @@ static void saveval(struct js *js, jsoff_t off, jsval_t val) { memcpy(&js->mem[o
 static jsoff_t loadoff(struct js *js, jsoff_t off) { jsoff_t v = 0; assert(js->brk <= js->size); memcpy(&v, &js->mem[off], sizeof(v)); return v; }
 static jsoff_t offtolen(jsoff_t off) { return (off >> 2) - 1; }
 static jsoff_t vstrlen(struct js *js, jsval_t v) { return offtolen(loadoff(js, (jsoff_t) vdata(v))); }
-static jsval_t loadval(struct js *js, jsoff_t off) { jsval_t v = 0; memcpy(&v, &js->mem[off], sizeof(v)); return v; }
+jsval_t loadval(struct js *js, jsoff_t off) { jsval_t v = 0; memcpy(&v, &js->mem[off], sizeof(v)); return v; }
 static jsval_t upper(struct js *js, jsval_t scope) { return mkval(T_OBJ, loadoff(js, (jsoff_t) (vdata(scope) + sizeof(jsoff_t)))); }
 static jsoff_t align32(jsoff_t v) { return ((v + 3) >> 2) << 2; }
 // clang-format on
@@ -592,7 +592,7 @@ static jsval_t do_assign_op(struct js *js, uint8_t op, jsval_t l, jsval_t r) {
 }
 
 // Seach for property in a single object
-static jsoff_t lkp(struct js *js, jsval_t obj, const char *buf, size_t len) {
+jsoff_t lkp(struct js *js, jsval_t obj, const char *buf, size_t len) {
   jsoff_t off = loadoff(js, (jsoff_t) vdata(obj)) & ~3U;  // Load first prop off
   // printf("LKP: %lu %u [%.*s]\n", vdata(obj), off, (int) len, buf);
   while (off < js->brk && off != 0) {  // Iterate over props
