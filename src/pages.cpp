@@ -556,14 +556,18 @@ Script::~Script() {
   free(memory);
 }
 
-JS::Prototype Bob(
-  new JS::PropertyType<int>("id"),
-  new JS::PropertyType<const char*>("content"),
-  new JS::PropertyType<std::function<int(const char*)>>("sayHello")
-);
+// JS::Prototype Bob(
+//   new JS::PropertyType<int>("id"),
+//   new JS::PropertyType<const char*>("content"),
+//   new JS::PropertyType<std::function<int(const char*)>>("sayHello")
+// );
 
 // struct js *myJs;
-// JS::Object *myBob = Bob[myJs]("Bobbothy", 7, "Hello, World!", [](){ Serial.println("Hello, world!"); });
+// JS::Object *myBob = Bob[myJs]("Bobbothy",
+//   7,
+//   "Hello, World!",
+//   (std::function<int(const char*)>)[](const char *str){ Serial.println(str); return 1; }
+// );
 
 // Register standard JavaScript bindings necessary for working with a 3ML page
 void Script::register3MLBindings() {

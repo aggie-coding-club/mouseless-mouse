@@ -4,6 +4,8 @@
 #include <functional>
 #include <type_traits>
 #include <unordered_map>
+#include <vector>
+#include <../lib/integer_sequence.hpp>
 
 #include <Arduino.h>
 #include <elk.h>
@@ -13,6 +15,9 @@ struct is_function : std::false_type {};
 
 template <typename FN, typename... Args>
 struct is_function<std::function<FN(Args...)>> : std::true_type {};
+
+template <typename T>
+struct is_function<T, decltype(&T::operator())> : std::true_type {};
 
 template <typename T, typename U, typename... Ts>
 struct get_second_type { typedef U type; };
@@ -29,6 +34,7 @@ namespace JS {
 
   struct Object;
   struct Prototype;
+  struct Constructor;
 
 
 
@@ -47,9 +53,13 @@ namespace JS {
       UNKNOWN_T
     } type;
 
+  private:
+    BaseProperty();
+    friend struct Constructor;
+
+  public:
     const char *name;
 
-    BaseProperty() = delete;
     BaseProperty(const char *name);
     BaseProperty(Type type, const char *name);
 
@@ -216,33 +226,9 @@ namespace JS {
 
 
 
-  struct Constructor {
-private:
-    Constructor(struct js *js, Prototype *proto);
-
-public:
-    friend struct Prototype;
-    struct js *env;
-    Prototype *proto;
-
-    Object *operator() (const size_t argc, void *values...);
-
-    template <typename... Ts>
-    Object *operator() (Ts... values) {
-      if (sizeof...(Ts) == proto->properties.size()) {
-        // NYI
-        return this->operator() (sizeof...(values), &values...);
-        // std::tuple<Property<Ts>...>
-      }
-      // We're not gonna worry about this for now...
-      // std::tuple<Ts...>{properties...};
-    }
-  };
-
-
-
   struct Prototype : public BaseProperty {
     std::unordered_map<std::string, BaseProperty*> properties;
+    std::vector<BaseProperty*> properties_vec;
 
     Prototype(const size_t argc, BaseProperty *argv...);
 
@@ -254,9 +240,39 @@ public:
     //   (void)dummy{(this->properties.insert(std::pair<std::string, BaseProperty*>(properties->name, properties)), 0)...};
     // }
 
-    Constructor& operator[] (struct js *env) {
-        Constructor *result = new Constructor(env, this);
-        return *result;
+    Constructor& operator[] (struct js *env);
+  };
+
+
+
+  struct Constructor {
+  private:
+    Constructor(struct js *js, Prototype *proto);
+
+    template <typename... Ts, size_t... I>
+    Object *make_object (index_sequence<I...> s, const char *name, Ts... values) {
+      Object *result = new Object(name, new Property<Ts>(proto->properties_vec[I]->name, values)...);
+
+      return result;
+    }
+
+  public:
+    friend struct Prototype;
+    struct js *env;
+    Prototype *proto;
+
+    Object *operator() (const size_t argc, const char *name, void *values...);
+
+    template <typename... Ts>
+    Object *operator() (const char *name, Ts... values) {
+      if (sizeof...(Ts) != proto->properties.size()) {
+        Serial.println("JS -> C++: Wrong number of initializers provided to object constructor");
+        while (true);
+      }
+      Object *result = make_object<Ts...>(make_index_sequence<sizeof...(Ts)>(), name, values...);
+
+      delete this;
+      return result;
     }
   };
 
